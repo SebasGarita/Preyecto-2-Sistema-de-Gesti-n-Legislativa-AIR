@@ -1,4 +1,5 @@
 --Creacion del schema inicial
+-- Prueba
 
 CREATE TABLE sys_usuario (
     id_usuario      SERIAL          PRIMARY KEY,
