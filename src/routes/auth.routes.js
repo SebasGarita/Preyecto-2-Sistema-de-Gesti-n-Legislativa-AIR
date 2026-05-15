@@ -1,17 +1,19 @@
-const express        = require('express');
-const router         = express.Router();
+const express = require('express');
+const router = express.Router();
+
 const AuthController = require('../controllers/AuthController');
 const { verificarToken, requierePermiso } = require('../middlewares/auth');
 
-// Pública
+// Ruta pública
 router.post('/login', AuthController.login);
 
-// Protegidas
+// Ruta protegida
 router.post('/logout',
   verificarToken,
   AuthController.logout
 );
 
+// Crear usuarios (solo admin)
 router.post('/usuarios',
   verificarToken,
   requierePermiso('GESTIONAR_USUARIOS'),
