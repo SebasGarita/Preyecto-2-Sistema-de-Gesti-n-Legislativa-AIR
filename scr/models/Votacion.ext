@@ -1,1 +1,55 @@
+const pool = require('../config/db.ext');
 
+class VotacionModel {
+
+    // Verificar si hay quórum legal en una sesión
+    async verificarQuorum(idSesion) {
+        const result = await pool.query(
+            'SELECT validar_quorum_legal($1) AS hay_quorum',
+            [idSesion]
+        );
+        return result.rows[0].hay_quorum;
+    }
+
+    // Calcular resultado de votación (simple = 50%+1, calificada = 66%)
+    async calcularResultado(votosFavor, votosContra, tipoMayoria) {
+        const result = await pool.query(
+            'SELECT calcular_resultado_votacion($1, $2, $3) AS resultado',
+            [votosFavor, votosContra, tipoMayoria]
+        );
+        return result.rows[0].resultado;
+    }
+
+    // Obtener índice de participación de todos los asambleístas
+    async obtenerParticipacion() {
+        const result = await pool.query(
+            'SELECT * FROM v_participacion_activa ORDER BY indice_participacion_pct DESC'
+        );
+        return result.rows;
+    }
+
+    // Registrar asistencia masiva a una sesión
+    async registrarAsistencia(idSesion, listaPresentes) {
+        for (const idAsambleista of listaPresentes) {
+            await pool.query(
+                `INSERT INTO asistencia_sesion_plenaria
+                 (id_asambleista, id_sesion)
+                 VALUES ($1, $2)
+                 ON CONFLICT (id_asambleista, id_sesion) DO NOTHING`,
+                [idAsambleista, idSesion]
+            );
+        }
+    }
+
+    // Obtener sesiones registradas
+    async obtenerSesiones() {
+        const result = await pool.query(
+            `SELECT id_sesion, numero_sesion, fecha, quorum_requerido
+             FROM sesiones
+             ORDER BY fecha DESC`
+        );
+        return result.rows;
+    }
+}
+
+module.exports = VotacionModel;
