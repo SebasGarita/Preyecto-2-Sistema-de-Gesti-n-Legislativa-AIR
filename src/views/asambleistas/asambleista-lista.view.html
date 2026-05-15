@@ -1,1 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de Asambleístas — AIR</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
 
+  <nav class="navbar">
+    <span>AIR – Sistema de Gestión Normativa</span>
+    <span id="usuario-actual"></span>
+  </nav>
+
+  <main class="contenedor">
+    <div class="encabezado-seccion">
+      <h1>Gestión de Asambleístas</h1>
+      <a href="/asambleistas/nuevo" class="btn btn-primario">+ Nuevo</a>
+    </div>
+
+    <!-- Buscador -->
+    <div class="barra-busqueda">
+      <input type="text" id="input-busqueda"
+             placeholder="Buscar por nombre o cédula..."
+             oninput="buscar(this.value)">
+    </div>
+
+    <!-- Tabla -->
+    <table id="tabla-asambleistas">
+      <thead>
+        <tr>
+          <th>Nombre completo</th>
+          <th>Cédula</th>
+          <th>Sector actual</th>
+          <th>Desde</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-tabla">
+        <tr><td colspan="6">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+
+    async function cargarLista(busqueda = '') {
+      const url = `/asambleistas${busqueda ? '?busqueda=' + encodeURIComponent(busqueda) : ''}`;
+      const res  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      renderTabla(data);
+    }
+
+    function renderTabla(lista) {
+      const tbody = document.getElementById('cuerpo-tabla');
+
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No se encontraron resultados.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(a => `
+        <tr>
+          <td>${a.nombre}</td>
+          <td>${a.cedula}</td>
+          <td>${a.sector_actual ?? '<em>Sin nombramiento</em>'}</td>
+          <td>${a.fecha_inicio ? formatFecha(a.fecha_inicio) : '—'}</td>
+          <td>
+            <span class="badge ${a.estado === 'VIGENTE' ? 'badge-verde' : 'badge-gris'}">
+              ${a.estado ?? 'Sin nombramiento'}
+            </span>
+          </td>
+          <td>
+            <a href="/asambleistas/${a.asambleista_id}" class="btn btn-sm">Ver</a>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function formatFecha(f) {
+      return new Date(f).toLocaleDateString('es-CR');
+    }
+
+    // Debounce para no llamar en cada tecla
+    let timer;
+    function buscar(valor) {
+      clearTimeout(timer);
+      timer = setTimeout(() => cargarLista(valor), 300);
+    }
+
+    cargarLista();
+  </script>
+</body>
+</html>
