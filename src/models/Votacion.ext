@@ -1,3 +1,4 @@
+// Issue #2 - Motor de Trazabilidad y Participación Activa
 const pool = require('../config/db.js');
 
 class VotacionModel {
