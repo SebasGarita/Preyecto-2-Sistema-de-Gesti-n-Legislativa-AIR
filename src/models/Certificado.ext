@@ -1,5 +1,5 @@
 // Issue #1 - Implementación de Lógica de Foliado y Asignación de Consecutivo Legal
-const pool = require('../config/db.ext');
+const pool = require('../config/db.js');
 const CryptoService = require('../services/CryptoService.ext');
 
 class CertificadoModel {

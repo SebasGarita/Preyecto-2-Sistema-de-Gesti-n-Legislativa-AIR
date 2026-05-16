@@ -1,4 +1,4 @@
-const pool = require('../config/db.ext');
+const pool = require('../config/db.js');
 
 class VotacionModel {
 
