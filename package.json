@@ -1,7 +1,7 @@
 {
   "name": "preyecto-2-sistema-de-gesti-n-legislativa-air",
   "version": "1.0.0",
-  "description": "El proyecto consiste en solucinar  la fragmentación de la información en la Asamblea Institucional Representativa.",
+  "description": "El proyecto consiste en solucinar la fragmentación de la información en la Asamblea Institucional Representativa.",
   "main": "index.js",
   "directories": {
     "doc": "docs",
@@ -9,7 +9,8 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -28,9 +29,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.20.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+    "pdfkit": "^0.18.0",
+    "pg": "^8.20.0",
+    "qrcode": "^1.5.4"
   }
 }
