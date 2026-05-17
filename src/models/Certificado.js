@@ -194,7 +194,7 @@ class CertificadoModel {
              JOIN public.asambleista a
                ON a.asambleista_id = ce.id_asambleista
              LEFT JOIN public.sys_usuario u
-               ON ce.usuario_secretaria = u.id_usuario
+  ON ce.usuario_secretaria = u.id_usuario::text
              ${where}
              ORDER BY ce.fecha_emision DESC
              LIMIT $${idx} OFFSET $${idx + 1}`,

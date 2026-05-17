@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -218,11 +217,8 @@
         Página principal de navegación del sistema administrativo
     </div>
 </main>
-<script>
-    if (!localStorage.getItem('token')) {
-    window.location.href = '/login.html';
-}
-</script>
+<script src="/shared/auth.js"></script>
+
 </body>
 </html>
 ```

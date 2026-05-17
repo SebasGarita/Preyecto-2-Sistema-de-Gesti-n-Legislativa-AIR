@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -371,16 +370,15 @@
     </div>
 </main>
 
+<script src="/shared/auth.js"></script>
 <script>
-    const token = localStorage.getItem('token');
 
     async function cargar() {
         const [sesiones, cats] = await Promise.all([
-            fetch('/sesiones', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch('/sesiones/catalogos', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+            fetch('/sesiones').then(r => r.json()),
+            fetch('/sesiones/catalogos').then(r => r.json())
         ]);
 
-        // Llenar selects
         cats.tipos.forEach(t => document.getElementById('tipo-sesion').add(new Option(t.nombre, t.id_tipo_sesion)));
         cats.modalidades.forEach(m => document.getElementById('tipo-modalidad').add(new Option(m.nombre, m.id_tipo_modalidad)));
 
@@ -402,35 +400,37 @@
 
     async function guardarSesion() {
         const body = {
-            numero_sesion:    document.getElementById('numero-sesion').value,
-            fecha:            document.getElementById('fecha-sesion').value,
-            id_tipo_sesion:   document.getElementById('tipo-sesion').value,
+            numero_sesion:     document.getElementById('numero-sesion').value,
+            fecha:             document.getElementById('fecha-sesion').value,
+            id_tipo_sesion:    document.getElementById('tipo-sesion').value,
             id_tipo_modalidad: document.getElementById('tipo-modalidad').value,
-            quorum_requerido: document.getElementById('quorum').value || 0
+            quorum_requerido:  document.getElementById('quorum').value || 0
         };
 
         const res = await fetch('/sesiones', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(body)
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body)
         });
         const data = await res.json();
-        if (!res.ok) { 
-            document.getElementById('mensaje-error').textContent = data.error; 
-            document.getElementById('mensaje-error').style.display = 'block'; 
-            return; 
+
+        if (!res.ok) {
+            document.getElementById('mensaje-error').textContent    = data.error;
+            document.getElementById('mensaje-error').style.display  = 'block';
+            return;
         }
-        document.getElementById('mensaje-ok').textContent = 'Sesión creada.';
+
+        document.getElementById('mensaje-ok').textContent   = 'Sesión creada.';
         document.getElementById('mensaje-ok').style.display = 'block';
         ocultarFormSesion();
         cargar();
     }
 
-    function mostrarFormSesion() { 
-        document.getElementById('form-nueva-sesion').style.display = 'block'; 
+    function mostrarFormSesion() {
+        document.getElementById('form-nueva-sesion').style.display = 'block';
     }
-    function ocultarFormSesion() { 
-        document.getElementById('form-nueva-sesion').style.display = 'none'; 
+    function ocultarFormSesion() {
+        document.getElementById('form-nueva-sesion').style.display = 'none';
     }
 
     cargar();

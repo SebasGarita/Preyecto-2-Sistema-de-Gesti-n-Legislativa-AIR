@@ -256,7 +256,7 @@
                placeholder="Buscar por nombre o cédula..."
                oninput="buscar(this.value)">
       </div>
-      <a href="/src/views/asambleistas/asambleista-registro.view.html" class="btn btn-primario">Agregar Nuevo asambleísta</a>
+      <a href="/asambleistas/asambleista-registro.view.html" class="btn btn-primario">Agregar Nuevo asambleísta</a>
     </div>
 
     <!-- ── Tabla ── -->
@@ -283,53 +283,54 @@
     </div>
   </main>
 
-  <script>
-    const token = localStorage.getItem('token');
+<script src="/shared/auth.js"></script>
+<script>
 
     async function cargarLista(busqueda = '') {
-      const url = `/asambleistas${busqueda ? '?busqueda=' + encodeURIComponent(busqueda) : ''}`;
-      const res  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      renderTabla(data);
+        const url = `/asambleistas${busqueda ? '?busqueda=' + encodeURIComponent(busqueda) : ''}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        renderTabla(data);
     }
 
     function renderTabla(lista) {
-      const tbody = document.getElementById('cuerpo-tabla');
+        const tbody = document.getElementById('cuerpo-tabla');
 
-      if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:28px 16px;">No se encontraron resultados.</td></tr>';
-        return;
-      }
+        if (!lista.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:28px 16px;">No se encontraron resultados.</td></tr>';
+            return;
+        }
 
-      tbody.innerHTML = lista.map(a => `
-        <tr>
-          <td>${a.nombre}</td>
-          <td>${a.cedula}</td>
-          <td>${a.sector_actual ?? '<em>Sin nombramiento</em>'}</td>
-          <td>${a.fecha_inicio ? formatFecha(a.fecha_inicio) : '—'}</td>
-          <td>
-            <span class="badge ${a.estado === 'VIGENTE' ? 'badge-verde' : 'badge-gris'}">
-              ${a.estado ?? 'Sin nombramiento'}
-            </span>
-          </td>
-          <td>
-            <a href="/asambleistas/${a.asambleista_id}" class="btn btn-sm">Ver</a>
-          </td>
-        </tr>
-      `).join('');
+        tbody.innerHTML = lista.map(a => `
+            <tr>
+                <td>${a.nombre}</td>
+                <td>${a.cedula}</td>
+                <td>${a.sector_actual ?? '<em>Sin nombramiento</em>'}</td>
+                <td>${a.fecha_inicio ? formatFecha(a.fecha_inicio) : '—'}</td>
+                <td>
+                    <span class="badge ${a.estado === 'VIGENTE' ? 'badge-verde' : 'badge-gris'}">
+                        ${a.estado ?? 'Sin nombramiento'}
+                    </span>
+                </td>
+                <td>
+                    <a href="/asambleistas/${a.asambleista_id}" class="btn btn-sm">Ver</a>
+                </td>
+            </tr>
+        `).join('');
     }
 
     function formatFecha(f) {
-      return new Date(f).toLocaleDateString('es-CR');
+        return new Date(f).toLocaleDateString('es-CR');
     }
 
     let timer;
     function buscar(valor) {
-      clearTimeout(timer);
-      timer = setTimeout(() => cargarLista(valor), 300);
+        clearTimeout(timer);
+        timer = setTimeout(() => cargarLista(valor), 300);
     }
 
     cargarLista();
-  </script>
+</script>
+ 
 </body>
 </html>

@@ -241,22 +241,17 @@
 <!-- ── Toast ── -->
 <div id="toast"></div>
 
+<script src="/shared/auth.js"></script>
 <script>
-    // ──────────────────────────────────────────────
-    // Estado de la vista
-    // ──────────────────────────────────────────────
-    let paginaActual        = 1;
-    let idCertAnular        = null;
-    let idCertSustituir     = null;
+    let paginaActual    = 1;
+    let idCertAnular    = null;
+    let idCertSustituir = null;
 
-    // ──────────────────────────────────────────────
-    // Carga de tabla
-    // ──────────────────────────────────────────────
     async function cargarCertificaciones(pagina = 1) {
         paginaActual = pagina;
-        const estado  = document.getElementById('filtroEstado').value;
-        const desde   = document.getElementById('filtroDesde').value;
-        const hasta   = document.getElementById('filtroHasta').value;
+        const estado = document.getElementById('filtroEstado').value;
+        const desde  = document.getElementById('filtroDesde').value;
+        const hasta  = document.getElementById('filtroHasta').value;
 
         const params = new URLSearchParams({ pagina, porPagina: 15 });
         if (estado) params.set('estado', estado);
@@ -285,9 +280,7 @@
         tbody.innerHTML = filas.map(f => `
             <tr>
                 <td><code>${f.folio_unico}</code>
-                    ${f.folio_sustituido_por
-                        ? `<br><small style="color:#888">→ ${f.folio_sustituido_por}</small>`
-                        : ''}
+                    ${f.folio_sustituido_por ? `<br><small style="color:#888">→ ${f.folio_sustituido_por}</small>` : ''}
                 </td>
                 <td>${f.nombre_asambleista}</td>
                 <td>${f.cedula_asambleista}</td>
@@ -319,15 +312,11 @@
         if (totalPags <= 1) { cont.innerHTML = ''; return; }
         let html = '';
         for (let i = 1; i <= totalPags; i++) {
-            html += `<button class="${i === actual ? 'activo' : ''}"
-                        onclick="cargarCertificaciones(${i})">${i}</button>`;
+            html += `<button class="${i === actual ? 'activo' : ''}" onclick="cargarCertificaciones(${i})">${i}</button>`;
         }
         cont.innerHTML = html;
     }
 
-    // ──────────────────────────────────────────────
-    // Modal — Anular
-    // ──────────────────────────────────────────────
     function abrirModalAnular(id, folio) {
         idCertAnular = id;
         document.getElementById('folioAnularLabel').textContent = folio;
@@ -364,36 +353,32 @@
             cerrarModal('overlayAnular');
             mostrarToast(json.msg, 'exito');
             cargarCertificaciones(paginaActual);
-
         } catch (e) {
             errDiv.textContent   = 'Error de conexión. Intente de nuevo.';
             errDiv.style.display = 'block';
         }
     }
 
-    // ──────────────────────────────────────────────
-    // Modal — Sustituir
-    // ──────────────────────────────────────────────
     function abrirModalSustituir(id, folio, asambleistaId) {
-        idCertSustituir  = id;
-        document.getElementById('folioSustituirLabel').textContent   = folio;
-        document.getElementById('asambleistaIdSustituir').value      = asambleistaId;
-        document.getElementById('motivoSustitucion').value           = '';
-        document.getElementById('contenidoNuevo').value              = '';
-        document.getElementById('errorSustituir').style.display      = 'none';
-        document.getElementById('exitoSustituir').style.display      = 'none';
+        idCertSustituir = id;
+        document.getElementById('folioSustituirLabel').textContent  = folio;
+        document.getElementById('asambleistaIdSustituir').value     = asambleistaId;
+        document.getElementById('motivoSustitucion').value          = '';
+        document.getElementById('contenidoNuevo').value             = '';
+        document.getElementById('errorSustituir').style.display     = 'none';
+        document.getElementById('exitoSustituir').style.display     = 'none';
         document.getElementById('overlaySustituir').classList.add('visible');
         document.getElementById('motivoSustitucion').focus();
     }
 
     async function confirmarSustitucion() {
-        const motivo          = document.getElementById('motivoSustitucion').value.trim();
-        const contenidoNuevo  = document.getElementById('contenidoNuevo').value.trim();
-        const asambleistaId   = document.getElementById('asambleistaIdSustituir').value;
-        const errDiv          = document.getElementById('errorSustituir');
-        const exitoDiv        = document.getElementById('exitoSustituir');
+        const motivo         = document.getElementById('motivoSustitucion').value.trim();
+        const contenidoNuevo = document.getElementById('contenidoNuevo').value.trim();
+        const asambleistaId  = document.getElementById('asambleistaIdSustituir').value;
+        const errDiv         = document.getElementById('errorSustituir');
+        const exitoDiv       = document.getElementById('exitoSustituir');
 
-        errDiv.style.display  = 'none';
+        errDiv.style.display   = 'none';
         exitoDiv.style.display = 'none';
 
         if (!motivo) {
@@ -421,36 +406,29 @@
                 return;
             }
 
-            exitoDiv.innerHTML   = `✅ ${json.msg}`;
+            exitoDiv.innerHTML     = `✅ ${json.msg}`;
             exitoDiv.style.display = 'block';
 
-            // Esperar 2 s y cerrar
             setTimeout(() => {
                 cerrarModal('overlaySustituir');
                 cargarCertificaciones(paginaActual);
             }, 2200);
-
         } catch (e) {
             errDiv.textContent   = 'Error de conexión. Intente de nuevo.';
             errDiv.style.display = 'block';
         }
     }
 
-    // ──────────────────────────────────────────────
-    // Utilidades
-    // ──────────────────────────────────────────────
     function cerrarModal(id) {
         document.getElementById(id).classList.remove('visible');
     }
 
-    // Cerrar al hacer clic en el overlay (fuera del modal)
     document.querySelectorAll('.overlay').forEach(overlay => {
         overlay.addEventListener('click', e => {
             if (e.target === overlay) cerrarModal(overlay.id);
         });
     });
 
-    // Cerrar con Escape
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             document.querySelectorAll('.overlay.visible').forEach(o => cerrarModal(o.id));
@@ -464,10 +442,8 @@
         setTimeout(() => { t.className = ''; }, 3500);
     }
 
-    // ──────────────────────────────────────────────
-    // Inicializar
-    // ──────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', () => cargarCertificaciones(1));
 </script>
+
 </body>
 </html>
