@@ -8,7 +8,9 @@ const verificarToken = (req, res, next) => {
   const token      = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
   if (!token) {
-    return res.status(401).json({ error: 'Acceso denegado: token requerido' });
+    return req.accepts('html')
+      ? res.redirect('/login.html')
+      : res.status(401).json({ error: 'Acceso denegado: token requerido' });
   }
 
   try {
@@ -16,7 +18,9 @@ const verificarToken = (req, res, next) => {
     req.usuario   = payload;   // disponible en controladores como req.usuario
     next();
   } catch (err) {
-    return res.status(403).json({ error: 'Token inválido o expirado' });
+    return req.accepts('html')
+      ? res.redirect('/login.html')
+      : res.status(403).json({ error: 'Token inválido o expirado' });
   }
 };
 
@@ -25,9 +29,11 @@ const requierePermiso = (permiso) => {
   return (req, res, next) => {
     const permisos = req.usuario?.permisos || [];
     if (!permisos.includes(permiso)) {
-      return res.status(403).json({
-        error: `Sin autorización: se requiere permiso "${permiso}"`
-      });
+      return req.accepts('html')
+        ? res.redirect('/login.html')
+        : res.status(403).json({
+            error: `Sin autorización: se requiere permiso "${permiso}"`
+          });
     }
     next();
   };
