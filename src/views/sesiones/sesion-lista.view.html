@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sesiones — AIR</title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <nav class="navbar">
+    <span>AIR – Sistema de Gestión Normativa</span>
+  </nav>
+
+  <main class="contenedor">
+    <div class="encabezado-seccion">
+      <h1>Sesiones de la AIR</h1>
+      <button class="btn btn-primario" onclick="mostrarFormSesion()">+ Nueva Sesión</button>
+    </div>
+
+    <!-- Formulario nueva sesión (oculto por defecto) -->
+    <div id="form-nueva-sesion" style="display:none" class="card">
+      <h2>Registrar nueva sesión</h2>
+      <div class="campo">
+        <label>Número de sesión *</label>
+        <input type="text" id="numero-sesion" placeholder="ej: AIR-110-2024">
+      </div>
+      <div class="campo">
+        <label>Fecha *</label>
+        <input type="date" id="fecha-sesion">
+      </div>
+      <div class="fila-dos-columnas">
+        <div class="campo">
+          <label>Tipo de sesión *</label>
+          <select id="tipo-sesion">
+            <option value="">Seleccione...</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Modalidad *</label>
+          <select id="tipo-modalidad">
+            <option value="">Seleccione...</option>
+          </select>
+        </div>
+      </div>
+      <div class="campo">
+        <label>Quórum requerido</label>
+        <input type="number" id="quorum" placeholder="ej: 40" min="1">
+      </div>
+      <div class="acciones-formulario">
+        <button class="btn btn-secundario" onclick="ocultarFormSesion()">Cancelar</button>
+        <button class="btn btn-primario" onclick="guardarSesion()">Guardar sesión</button>
+      </div>
+    </div>
+
+    <div id="mensaje-error" class="alerta alerta-error" style="display:none"></div>
+    <div id="mensaje-ok"    class="alerta alerta-ok"    style="display:none"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>N° Sesión</th>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Modalidad</th>
+          <th>Puntos agenda</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-tabla">
+        <tr><td colspan="6">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+
+    async function cargar() {
+      const [sesiones, cats] = await Promise.all([
+        fetch('/sesiones', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        fetch('/sesiones/catalogos', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json())
+      ]);
+
+      // Llenar selects
+      cats.tipos.forEach(t => document.getElementById('tipo-sesion').add(new Option(t.nombre, t.id_tipo_sesion)));
+      cats.modalidades.forEach(m => document.getElementById('tipo-modalidad').add(new Option(m.nombre, m.id_tipo_modalidad)));
+
+      renderTabla(sesiones);
+    }
+
+    function renderTabla(lista) {
+      document.getElementById('cuerpo-tabla').innerHTML = lista.map(s => `
+        <tr>
+          <td>${s.numero_sesion}</td>
+          <td>${new Date(s.fecha).toLocaleDateString('es-CR')}</td>
+          <td>${s.tipo_sesion}</td>
+          <td>${s.tipo_modalidad}</td>
+          <td>${s.total_puntos}</td>
+          <td><a href="/sesiones/${s.id_sesion}" class="btn btn-sm">Ver agenda</a></td>
+        </tr>
+      `).join('');
+    }
+
+    async function guardarSesion() {
+      const body = {
+        numero_sesion:    document.getElementById('numero-sesion').value,
+        fecha:            document.getElementById('fecha-sesion').value,
+        id_tipo_sesion:   document.getElementById('tipo-sesion').value,
+        id_tipo_modalidad: document.getElementById('tipo-modalidad').value,
+        quorum_requerido: document.getElementById('quorum').value || 0
+      };
+
+      const res = await fetch('/sesiones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) { document.getElementById('mensaje-error').textContent = data.error; document.getElementById('mensaje-error').style.display = 'block'; return; }
+      document.getElementById('mensaje-ok').textContent = 'Sesión creada.';
+      document.getElementById('mensaje-ok').style.display = 'block';
+      ocultarFormSesion();
+      cargar();
+    }
+
+    function mostrarFormSesion() { document.getElementById('form-nueva-sesion').style.display = 'block'; }
+    function ocultarFormSesion() { document.getElementById('form-nueva-sesion').style.display = 'none'; }
+
+    cargar();
+  </script>
+</body>
+</html>
