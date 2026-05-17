@@ -1,5 +1,7 @@
+// Issue #16 - Exportación de Datos y Reportería Administrativa
+// Issue #15 - Gestión de Anulaciones y Sustituciones
 const CertificadoModel = require('../models/Certificado.js');
-const CryptoService = require('../services/CryptoService.js');
+const CryptoService    = require('../services/CryptoService.js');
 
 const certificadoModel = new CertificadoModel();
 
@@ -36,10 +38,7 @@ class ReporteController {
             });
 
         } catch (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
+            return res.status(500).json({ ok: false, error: error.message });
         }
     }
 
@@ -47,11 +46,9 @@ class ReporteController {
     // CONSULTA
     // ----------------------------------------------------------
 
-    // Obtener detalle de una certificación por folio
     async obtenerCertificacion(req, res) {
         try {
             const { folio } = req.params;
-
             const certificacion = await certificadoModel.obtenerPorFolio(folio);
 
             if (!certificacion) {
@@ -61,43 +58,28 @@ class ReporteController {
                 });
             }
 
-            return res.json({
-                ok: true,
-                datos: certificacion
-            });
+            return res.json({ ok: true, datos: certificacion });
 
         } catch (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
+            return res.status(500).json({ ok: false, error: error.message });
         }
     }
 
-    // Historial de certificaciones
     async historialCertificaciones(req, res) {
         try {
-
             const filtros = {
-                estado: req.query.estado ?? null,
-                desde: req.query.desde ?? null,
-                hasta: req.query.hasta ?? null,
-                pagina: parseInt(req.query.pagina ?? '1'),
+                estado   : req.query.estado    ?? null,
+                desde    : req.query.desde     ?? null,
+                hasta    : req.query.hasta     ?? null,
+                pagina   : parseInt(req.query.pagina    ?? '1'),
                 porPagina: parseInt(req.query.porPagina ?? '20')
             };
 
             const data = await certificadoModel.historial(filtros);
-
-            return res.json({
-                ok: true,
-                ...data
-            });
+            return res.json({ ok: true, ...data });
 
         } catch (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
+            return res.status(500).json({ ok: false, error: error.message });
         }
     }
 
@@ -105,12 +87,9 @@ class ReporteController {
     // VERIFICACIÓN
     // ----------------------------------------------------------
 
-    // Verificar autenticidad mediante hash
     async verificarAutenticidad(req, res) {
         try {
-
             const { folio, datos } = req.body;
-
             const certificacion = await certificadoModel.obtenerPorFolio(folio);
 
             if (!certificacion) {
@@ -120,10 +99,7 @@ class ReporteController {
                 });
             }
 
-            const esValido = CryptoService.verificarHash(
-                datos,
-                certificacion.hash_seguridad
-            );
+            const esValido = CryptoService.verificarHash(datos, certificacion.hash_seguridad);
 
             return res.json({
                 ok: true,
@@ -135,31 +111,18 @@ class ReporteController {
             });
 
         } catch (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
+            return res.status(500).json({ ok: false, error: error.message });
         }
     }
 
-    // Verificación pública de folio
     async verificarFolioPublico(req, res) {
         try {
-
             const { folio } = req.params;
-
             const resultado = await certificadoModel.verificarFolio(folio);
-
-            return res.json({
-                ok: true,
-                ...resultado
-            });
+            return res.json({ ok: true, ...resultado });
 
         } catch (error) {
-            return res.status(500).json({
-                ok: false,
-                error: error.message
-            });
+            return res.status(500).json({ ok: false, error: error.message });
         }
     }
 
@@ -169,8 +132,7 @@ class ReporteController {
 
     async anularCertificacion(req, res) {
         try {
-
-            const { id } = req.params;
+            const { id }     = req.params;
             const { motivo } = req.body;
 
             if (!motivo || motivo.trim() === '') {
@@ -180,20 +142,16 @@ class ReporteController {
                 });
             }
 
-            await certificadoModel.anular(
-                parseInt(id),
-                motivo.trim()
-            );
+            await certificadoModel.anular(parseInt(id), motivo.trim());
 
             return res.json({
-                ok: true,
+                ok : true,
                 msg: `La certificación #${id} fue anulada correctamente.`
             });
 
         } catch (error) {
-
             const esError400 =
-                error.message.includes('obligatorio') ||
+                error.message.includes('obligatorio')    ||
                 error.message.includes('No se encontró') ||
                 error.message.includes('ya está anulada');
 
@@ -210,15 +168,8 @@ class ReporteController {
 
     async sustituirCertificacion(req, res) {
         try {
-
             const { id } = req.params;
-
-            const {
-                motivo,
-                contenidoNuevo,
-                asambleistaId
-            } = req.body;
-
+            const { motivo, contenidoNuevo, asambleistaId } = req.body;
             const usuarioId = req.session?.usuarioId ?? 'sistema';
 
             if (!motivo || motivo.trim() === '') {
@@ -227,14 +178,12 @@ class ReporteController {
                     error: 'El motivo de sustitución es obligatorio.'
                 });
             }
-
             if (!contenidoNuevo || contenidoNuevo.trim() === '') {
                 return res.status(400).json({
                     ok: false,
                     error: 'El contenido del nuevo documento es obligatorio.'
                 });
             }
-
             if (!asambleistaId) {
                 return res.status(400).json({
                     ok: false,
@@ -251,18 +200,17 @@ class ReporteController {
             );
 
             return res.json({
-                ok: true,
+                ok          : true,
                 folioAnulado: resultado.folioAnulado,
-                folioNuevo: resultado.folioNuevo,
-                hash: resultado.hash,
-                fecha: resultado.fecha,
-                msg: `Folio ${resultado.folioAnulado} anulado y sustituido por ${resultado.folioNuevo}`
+                folioNuevo  : resultado.folioNuevo,
+                hash        : resultado.hash,
+                fecha       : resultado.fecha,
+                msg         : `Folio ${resultado.folioAnulado} anulado y sustituido por ${resultado.folioNuevo}`
             });
 
         } catch (error) {
-
             const esError400 =
-                error.message.includes('obligatorio') ||
+                error.message.includes('obligatorio')    ||
                 error.message.includes('No se encontró') ||
                 error.message.includes('ya está anulada');
 
