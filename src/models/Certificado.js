@@ -4,17 +4,14 @@ const CryptoService = require('../services/CryptoService.js');
 class CertificadoModel {
 
     // ----------------------------------------------------------
-    // EMISIÓN — Issue #17
     // ----------------------------------------------------------
 
     /**
      * Emite una certificación oficial.
-     * Genera folio DAIR-XXX-YYYY de forma atómica y calcula el hash.
      *
      * @param {number} asambleistaId
      * @param {string|object} contenidoCertificado — texto plano u objeto con datos
      * @param {string} usuarioId
-     * @returns {{ folio, hash, fecha, id }}
      */
     async emitir(asambleistaId, contenidoCertificado, usuarioId) {
         const client = await pool.connect();
@@ -49,11 +46,9 @@ class CertificadoModel {
                 ultimoNumero = lockRes.rows[0].ultimo_numero;
             }
 
-            // 2. Calcular nuevo número y folio
             const nuevoNumero = ultimoNumero + 1;
             const folio = `DAIR-${String(nuevoNumero).padStart(3, '0')}-${anio}`;
 
-            // 3. Generar hash — compatible con ambas formas de llamarlo
             const datosHash = typeof contenidoCertificado === 'object'
                 ? { asambleistaId, ...contenidoCertificado, folio, timestamp: new Date().toISOString() }
                 : { folio, asambleistaId, contenido: contenidoCertificado, usuarioSecretaria: usuarioId };
@@ -95,11 +90,12 @@ class CertificadoModel {
     }
 
     // ----------------------------------------------------------
-    // CONSULTA — Issue #17
+    // CONSULTA — Issue #1 / Issue #17
     // ----------------------------------------------------------
 
     /**
      * Obtiene una certificación por su folio único.
+     * Usado para reimpresión sin generar nuevo folio.
      * Incluye datos del asambleísta y, si está anulada, el motivo.
      */
     async obtenerPorFolio(folioUnico) {
