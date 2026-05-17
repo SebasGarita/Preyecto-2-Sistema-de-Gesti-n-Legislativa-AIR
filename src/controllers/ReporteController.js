@@ -172,7 +172,7 @@ class ReporteController {
         try {
             const { id }                             = req.params;
             const { motivo, contenidoNuevo, asambleistaId } = req.body;
-            const usuarioId = req.session?.usuarioId ?? 'sistema';
+            const usuarioId = req.usuario?.id || 'sistema';
 
             if (!motivo || motivo.trim() === '') {
                 return res.status(400).json({
