@@ -168,7 +168,7 @@ class ReporteController {
 
     async sustituirCertificacion(req, res) {
         try {
-            const { id }                             = req.params;
+            const { id } = req.params;
             const { motivo, contenidoNuevo, asambleistaId } = req.body;
             const usuarioId = req.session?.usuarioId ?? 'sistema';
 
@@ -200,12 +200,12 @@ class ReporteController {
             );
 
             return res.json({
-                ok         : true,
+                ok          : true,
                 folioAnulado: resultado.folioAnulado,
-                folioNuevo : resultado.folioNuevo,
-                hash       : resultado.hash,
-                fecha      : resultado.fecha,
-                msg        : `Folio ${resultado.folioAnulado} anulado y sustituido por ${resultado.folioNuevo}`
+                folioNuevo  : resultado.folioNuevo,
+                hash        : resultado.hash,
+                fecha       : resultado.fecha,
+                msg         : `Folio ${resultado.folioAnulado} anulado y sustituido por ${resultado.folioNuevo}`
             });
 
         } catch (error) {
