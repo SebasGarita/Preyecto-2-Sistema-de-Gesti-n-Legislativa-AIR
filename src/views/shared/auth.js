@@ -54,3 +54,39 @@ if (ruta !== '/' && !ruta.includes('index') && !ruta.includes('login')) {
 
     document.body.appendChild(btnInicio);
 }
+
+// Botón cerrar sesión
+if (!ruta.includes('login')) {
+    const btnLogout = document.createElement('button');
+
+    btnLogout.textContent = 'Cerrar sesión';
+    btnLogout.title = 'Cerrar sesión';
+
+    btnLogout.style.cssText = `
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        background: #c0392b;
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 18px;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: .88rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0,0,0,.25);
+        z-index: 9999;
+    `;
+
+    btnLogout.onmouseenter = () => btnLogout.style.opacity = '.85';
+    btnLogout.onmouseleave = () => btnLogout.style.opacity = '1';
+
+    btnLogout.onclick = async () => {
+        await fetch('/auth/logout', { method: 'POST' });
+        sessionStorage.removeItem('token');
+        window.location.href = '/login.html';
+    };
+
+    document.body.appendChild(btnLogout);
+}
