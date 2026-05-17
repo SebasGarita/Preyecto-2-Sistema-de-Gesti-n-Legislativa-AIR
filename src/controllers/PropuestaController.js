@@ -1,3 +1,5 @@
+const db = require('../config/db');
+
 const Propuesta = require('../models/Propuesta');
 const Usuario   = require('../models/Usuario');
 
@@ -35,10 +37,17 @@ const PropuestaController = {
     }
 
     // Estado inicial: BORRADOR
-    const estadoBorrador = await db_query_helper(
-      'SELECT id_estado_propuesta FROM catalogo_estado_propuestas WHERE nombre = $1',
-      ['BORRADOR']
-    );
+   const estadoResult = await db.query(
+  'SELECT id_estado_propuesta FROM catalogo_estado_propuestas WHERE nombre = $1',
+  ['BORRADOR']
+);
+
+const estadoBorrador = estadoResult.rows[0]?.id_estado_propuesta;
+    
+if (!estadoBorrador) {
+  return res.status(500).json({ 
+    error: 'Estado BORRADOR no existe en BD' });
+}
 
     const nueva = await Propuesta.create({
       id_reglamento_base, id_etapa_propuesta,
