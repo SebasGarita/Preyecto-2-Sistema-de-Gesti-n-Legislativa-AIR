@@ -435,11 +435,12 @@
             }
 
             // Guardar token y redirigir
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('usuario', JSON.stringify({
-                username: data.username || username,
-                roles: data.roles || []
-            }));
+            sessionStorage.setItem('token', data.token);
+
+sessionStorage.setItem('usuario', JSON.stringify({
+    username: data.username || username,
+    roles: data.roles || []
+}));
 
             window.location.href = '/index.html';
 
@@ -459,10 +460,6 @@
         div.classList.add('visible');
     }
 
-    // Si ya hay token válido, ir directo al menú
-    if (localStorage.getItem('token')) {
-        window.location.href = '/index.html';
-    }
 </script>
 
 </body>
