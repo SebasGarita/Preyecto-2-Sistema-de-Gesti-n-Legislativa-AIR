@@ -1,7 +1,9 @@
 // Issue #16 - Exportación de Datos y Reportería Administrativa
 // Issue #15 - Gestión de Anulaciones y Sustituciones
+// Issue #14
 const CertificadoModel = require('../models/Certificado.js');
 const CryptoService    = require('../services/CryptoService.js');
+const PDFService = require('../services/PDFService.js');
 
 const certificadoModel = new CertificadoModel();
 
@@ -218,6 +220,120 @@ class ReporteController {
                 ok: false,
                 error: error.message
             });
+        }
+    }
+
+    // ----------------------------------------------------------
+    // GENERACIÓN DE PDF CON QR — Issue #14
+    // ----------------------------------------------------------
+
+    /**
+     * GET /certificaciones/:folio/pdf
+     * Descarga el PDF oficial de una certificación con QR incluido.
+     */
+    async descargarPDF(req, res) {
+        try {
+            const { folio } = req.params;
+            const cert = await certificadoModel.obtenerPorFolio(folio);
+
+            if (!cert) {
+                return res.status(404).json({
+                    ok   : false,
+                    error: `No se encontró ninguna certificación con el folio ${folio}.`
+                });
+            }
+
+            // Si está anulada, generar PDF con marca de agua
+            let pdfBuffer;
+            if (cert.estado === 'Anulado') {
+                pdfBuffer = await PDFService.generarCertificacionAnulada({
+                    folio               : cert.folio_unico,
+                    nombreAsambleista   : cert.nombre_asambleista,
+                    cedulaAsambleista   : cert.cedula_asambleista,
+                    contenido           : cert.contenido ?? '(contenido no disponible)',
+                    fechaEmision        : cert.fecha_emision,
+                    motivoAnulacion     : cert.motivo_anulacion,
+                    fechaAnulacion      : cert.fecha_anulacion
+                });
+            } else {
+                const urlBase = `${req.protocol}://${req.get('host')}`;
+                pdfBuffer = await PDFService.generarCertificacion({
+                    folio              : cert.folio_unico,
+                    hash               : cert.hash_seguridad,
+                    nombreAsambleista  : cert.nombre_asambleista,
+                    cedulaAsambleista  : cert.cedula_asambleista,
+                    contenido          : cert.contenido ?? '(contenido no disponible)',
+                    usuarioSecretaria  : cert.usuario_secretaria,
+                    fechaEmision       : cert.fecha_emision,
+                    urlBase
+                });
+            }
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader(
+                'Content-Disposition',
+                `attachment; filename="${folio}.pdf"`
+            );
+            return res.send(pdfBuffer);
+
+        } catch (error) {
+            return res.status(500).json({ ok: false, error: error.message });
+        }
+    }
+
+    /**
+     * GET /verificar/:folio/pdf
+     * Ruta pública — descarga el PDF para verificación externa.
+     * No requiere autenticación.
+     */
+    async descargarPDFPublico(req, res) {
+        try {
+            const { folio } = req.params;
+            const resultado = await certificadoModel.verificarFolio(folio);
+
+            if (!resultado.esValido && resultado.estado === null) {
+                return res.status(404).json({
+                    ok   : false,
+                    error: 'Folio no encontrado.'
+                });
+            }
+
+            const cert = await certificadoModel.obtenerPorFolio(folio);
+            const urlBase = `${req.protocol}://${req.get('host')}`;
+
+            let pdfBuffer;
+            if (cert.estado === 'Anulado') {
+                pdfBuffer = await PDFService.generarCertificacionAnulada({
+                    folio              : cert.folio_unico,
+                    nombreAsambleista  : cert.nombre_asambleista,
+                    cedulaAsambleista  : cert.cedula_asambleista,
+                    contenido          : cert.contenido ?? '(contenido no disponible)',
+                    fechaEmision       : cert.fecha_emision,
+                    motivoAnulacion    : cert.motivo_anulacion,
+                    fechaAnulacion     : cert.fecha_anulacion
+                });
+            } else {
+                pdfBuffer = await PDFService.generarCertificacion({
+                    folio              : cert.folio_unico,
+                    hash               : cert.hash_seguridad,
+                    nombreAsambleista  : cert.nombre_asambleista,
+                    cedulaAsambleista  : cert.cedula_asambleista,
+                    contenido          : cert.contenido ?? '(contenido no disponible)',
+                    usuarioSecretaria  : cert.usuario_secretaria,
+                    fechaEmision       : cert.fecha_emision,
+                    urlBase
+                });
+            }
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader(
+                'Content-Disposition',
+                `inline; filename="${folio}.pdf"`
+            );
+            return res.send(pdfBuffer);
+
+        } catch (error) {
+            return res.status(500).json({ ok: false, error: error.message });
         }
     }
 }
