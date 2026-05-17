@@ -282,69 +282,98 @@
 </main>
 
 <script>
+    if (!localStorage.getItem('token')) {
+    window.location.href = '/login.html';
+    }
+
     const token = localStorage.getItem('token');
     let arbolPlano = [];
 
-    async function cargarReglamentos() {
-        const res  = await fetch('/normativa', { headers: { Authorization: `Bearer ${token}` } });
-        const data = await res.json();
-        data.forEach(r => {
-            document.getElementById('selector-reglamento').add(
-                new Option(`${r.sigla} — ${r.nombre_normativa}`, r.id_reglamento)
-            );
+async function cargarReglamentos() {
+    try {
+        const res = await fetch('/normativa', { 
+            headers: { Authorization: `Bearer ${token}` } 
         });
+        
+        if (!res.ok) {
+            console.error('Error HTTP:', res.status, await res.text());
+            return;
+        }
+        
+        const data = await res.json();
+        console.log('Reglamentos recibidos:', data); // ← ve esto en la consola
+        
+        const selector = document.getElementById('selector-reglamento');
+        selector.innerHTML = '<option value="">Seleccione un reglamento...</option>';
+        data.forEach(r => {
+            selector.add(new Option(`${r.sigla} — ${r.nombre_normativa}`, r.id_reglamento));
+        });
+    } catch (err) {
+        console.error('Fetch falló:', err);
     }
+}
 
-    async function cargarArbol(id_reglamento) {
-        if (!id_reglamento) return;
-        document.getElementById('panel-arbol').style.display = 'none';
+async function cargarArbol(id_reglamento) {
+    if (!id_reglamento) return;
+document.getElementById('panel-arbol').style.display = 'none';
 
-        const res  = await fetch(`/normativa/${id_reglamento}/arbol`,
-            { headers: { Authorization: `Bearer ${token}` } });
-        arbolPlano = await res.json();
+    // REVISIÓN: Asegúrate de usar backticks (``) y que id_reglamento contenga el número esperado (ej: 1)
+    const res = await fetch(`/normativa/${id_reglamento}/arbol`, { 
+        headers: { Authorization: `Bearer ${token}` } 
+    });
+    arbolPlano = await res.json();
 
-        renderArbol(arbolPlano);
-        document.getElementById('panel-arbol').style.display = 'grid';
-    }
+    renderArbol(arbolPlano);
+    document.getElementById('panel-arbol').style.display = 'grid';
+}
 
     // Convierte la lista plana (con profundidad) en un árbol HTML
-    function renderArbol(nodos) {
-        const ul = document.getElementById('contenedor-arbol');
-        ul.innerHTML = '';
+   function renderArbol(nodos) {
+    const ul = document.getElementById('contenedor-arbol');
+    ul.innerHTML = '';
 
-        // Mapa de id -> elemento de lista
-        const mapa = {};
+    const mapa = {};
 
-        nodos.forEach(n => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span class="nodo nivel-${n.nivel}"
-                      onclick="seleccionarNodo(${n.id_elemento}, this)"
-                      data-id="${n.id_elemento}">
-                    ${n.numer_etiqueta}
-                </span>
-            `;
-            mapa[n.id_elemento] = li;
+    // Primer ciclo: Registrar y estructurar visualmente cada nodo individual
+    nodos.forEach(n => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <span class="nodo nivel-${n.nivel}"
+                  onclick="seleccionarNodo('${n.id_elemento}', this)"
+                  data-id="${n.id_elemento}">
+                ${n.numer_etiqueta}
+            </span>
+        `;
+        mapa[n.id_elemento] = li;
+    });
 
-            if (!n.id_elemento_padre) {
-                ul.appendChild(li);
-            } else {
-                const padre = mapa[n.id_elemento_padre];
-                if (padre) {
-                    let subUl = padre.querySelector('ul');
-                    if (!subUl) { subUl = document.createElement('ul'); padre.appendChild(subUl); }
-                    subUl.appendChild(li);
+    // Segundo ciclo: Armar la jerarquía de forma segura
+    nodos.forEach(n => {
+        const li = mapa[n.id_elemento];
+        if (!n.id_elemento_padre) {
+            // Es un nodo raíz (por ejemplo, Título I)
+            ul.appendChild(li);
+        } else {
+            // Es un nodo hijo (Capítulo, Artículo, etc.)
+            const padre = mapa[n.id_elemento_padre];
+            if (padre) {
+                let subUl = padre.querySelector('ul');
+                if (!subUl) { 
+                    subUl = document.createElement('ul'); 
+                    padre.appendChild(subUl); 
                 }
+                subUl.appendChild(li);
             }
-        });
-    }
+        }
+    });
+}
 
     async function seleccionarNodo(id_elemento, spanEl) {
         // Marca el nodo activo
         document.querySelectorAll('.nodo.seleccionado').forEach(n => n.classList.remove('seleccionado'));
         spanEl.classList.add('seleccionado');
 
-        const nodo = arbolPlano.find(n => n.id_elemento === id_elemento);
+        const nodo = arbolPlano.find(n => String(n.id_elemento) === String(id_elemento));
         if (!nodo) return;
 
         // Carga historial para trazabilidad

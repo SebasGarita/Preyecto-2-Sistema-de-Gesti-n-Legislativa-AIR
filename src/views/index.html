@@ -152,7 +152,7 @@
         <article class="card">
             <h2>Certificaciones</h2>
             <p>Gestión completa de certificaciones emitidas, anulaciones y documentos oficiales.</p>
-            <a href="/src/views/certificaciones/anulacion-certificacion.view.html" class="btn btn-primario">
+            <a href="/certificaciones/anulacion-certificacion.view.html" class="btn btn-primario">
                 Ir a certificaciones
             </a>
         </article>
@@ -160,7 +160,7 @@
         <article class="card">
             <h2>Asambleístas</h2>
             <p>Lista completa de asambleístas, búsqueda por nombre/cédula y acceso a detalles.</p>
-            <a href="/src/views/asambleistas/asambleista-lista.view.html" class="btn btn-primario">
+            <a href="/asambleistas/asambleista-lista.view.html" class="btn btn-primario">
                 Ver listado de asambleístas
             </a>
         </article>
@@ -168,7 +168,7 @@
         <article class="card">
             <h2>Agregar nuevos Asambleísta</h2>
             <p>Registro de nuevos asambleístas con datos de identidad y nombramiento inicial.</p>
-            <a href="/src/views/asambleistas/asambleista-registro.view.html" class="btn btn-primario">
+            <a href="/asambleistas/asambleista-registro.view.html" class="btn btn-primario">
                 Registrar asambleísta
             </a>
         </article>
@@ -176,7 +176,7 @@
         <article class="card">
             <h2>Normativa</h2>
             <p>Explorador de árbol normativo, consulta y administración de leyes y decretos.</p>
-            <a href="/src/views/normativa/normativa-arbol.view.html" class="btn btn-primario">
+            <a href="/normativa/normativa-arbol.view.html" class="btn btn-primario">
                 Ir a Normativa
             </a>
         </article>
@@ -184,7 +184,7 @@
         <article class="card">
             <h2>sesiones</h2>
             <p>Gestión de sesiones plenarias, actas, agendas y control de deliberaciones.</p>
-            <a href="/src/views/sesiones/sesion-lista.view.html" class="btn btn-primario">
+            <a href="/sesiones/sesion-lista.view.html" class="btn btn-primario">
                 Ir a sesiones
             </a>
         </article>
@@ -218,7 +218,11 @@
         Página principal de navegación del sistema administrativo
     </div>
 </main>
-
+<script>
+    if (!localStorage.getItem('token')) {
+    window.location.href = '/login.html';
+}
+</script>
 </body>
 </html>
 ```
