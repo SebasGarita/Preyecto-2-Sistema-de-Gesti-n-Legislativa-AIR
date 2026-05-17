@@ -4,17 +4,17 @@ const CryptoService = require('../services/CryptoService.js');
 class CertificadoModel {
 
     // ----------------------------------------------------------
-    // EMISIÓN — Issue #17
+    // EMISIÓN — Issue #1 / Issue #17
     // ----------------------------------------------------------
 
     /**
      * Emite una certificación oficial.
-     * Genera folio DAIR-XXX-YYYY de forma atómica y calcula el hash.
+     * Genera folio DAIR-XXX-YYYY de forma atómica y calcula el hash SHA-256.
      *
      * @param {number} asambleistaId
      * @param {string|object} contenidoCertificado — texto plano u objeto con datos
      * @param {string} usuarioId
-     * @returns {{ folio, hash, fecha, id }}
+     * @returns {{ id, folio, hash, fecha }}
      */
     async emitir(asambleistaId, contenidoCertificado, usuarioId) {
         const client = await pool.connect();
@@ -36,6 +36,7 @@ class CertificadoModel {
             let idControl;
 
             if (lockRes.rows.length === 0) {
+                // Primera emisión del año: crear registro de control
                 const insCtrl = await client.query(
                     `INSERT INTO public.control_folio (anio, ultimo_numero, fecha_actualizacion)
                      VALUES ($1, 0, now())
@@ -49,11 +50,11 @@ class CertificadoModel {
                 ultimoNumero = lockRes.rows[0].ultimo_numero;
             }
 
-            // 2. Calcular nuevo número y folio
+            // 2. Calcular nuevo número y folio DAIR
             const nuevoNumero = ultimoNumero + 1;
             const folio = `DAIR-${String(nuevoNumero).padStart(3, '0')}-${anio}`;
 
-            // 3. Generar hash — compatible con ambas formas de llamarlo
+            // 3. Generar hash SHA-256 — compatible con objeto o texto plano
             const datosHash = typeof contenidoCertificado === 'object'
                 ? { asambleistaId, ...contenidoCertificado, folio, timestamp: new Date().toISOString() }
                 : { folio, asambleistaId, contenido: contenidoCertificado, usuarioSecretaria: usuarioId };
@@ -95,11 +96,12 @@ class CertificadoModel {
     }
 
     // ----------------------------------------------------------
-    // CONSULTA — Issue #17
+    // CONSULTA — Issue #1 / Issue #17
     // ----------------------------------------------------------
 
     /**
      * Obtiene una certificación por su folio único.
+     * Usado para reimpresión sin generar nuevo folio.
      * Incluye datos del asambleísta y, si está anulada, el motivo.
      */
     async obtenerPorFolio(folioUnico) {
@@ -182,6 +184,7 @@ class CertificadoModel {
                 ce.id_asambleista,
                 ce.folio_unico,
                 ce.fecha_emision,
+                ce.hash_seguridad,
                 ce.estado,
                 ce.folio_sustituido_por,
                 a.nombre       AS nombre_asambleista,
@@ -273,8 +276,10 @@ class CertificadoModel {
 
         const folioAnulado = original.folio_unico;
 
+        // Emitir la certificación nueva (genera su propio folio y hash)
         const nueva = await this.emitir(asambleistaId, contenidoNuevo, usuarioSecretaria);
 
+        // Anular la original referenciando el folio nuevo
         await this.anular(
             certificacionOriginalId,
             `${motivoAnulacion.trim()} — Sustituida por: ${nueva.folio}`,
