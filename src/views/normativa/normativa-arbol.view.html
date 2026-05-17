@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Compilador Normativo — AIR</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .arbol { list-style: none; padding-left: 0; }
+    .arbol ul { list-style: none; padding-left: 20px; border-left: 2px solid #ddd; margin-left: 8px; }
+    .nodo { padding: 4px 8px; cursor: pointer; border-radius: 4px; margin: 2px 0; }
+    .nodo:hover { background: #eef4fb; }
+    .nodo.seleccionado { background: #d6e4f0; font-weight: bold; }
+    .nivel-Título    { color: #1a3a5c; font-weight: bold; }
+    .nivel-Capítulo  { color: #2e6da4; font-weight: 600; }
+    .nivel-Artículo  { color: #333; }
+    .nivel-Inciso    { color: #555; font-size: 0.95em; }
+    .nivel-Sub-inciso { color: #777; font-size: 0.9em; }
+    .visor { padding: 20px; background: #fafafa; border: 1px solid #ddd; border-radius: 6px; }
+    .badge-vigente   { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; }
+    .trazabilidad    { background: #fff8dc; border-left: 3px solid #f0c040; padding: 10px; margin-top: 16px; font-size: 0.9em; }
+    .layout-split    { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <span>AIR – Compilador Normativo Vigente</span>
+  </nav>
+
+  <main class="contenedor">
+    <h1>Explorador Normativo</h1>
+
+    <div class="campo">
+      <label>Seleccionar reglamento</label>
+      <select id="selector-reglamento" onchange="cargarArbol(this.value)">
+        <option value="">Seleccione un reglamento...</option>
+      </select>
+    </div>
+
+    <div class="layout-split" id="panel-arbol" style="display:none">
+
+      <!-- Árbol jerárquico -->
+      <div>
+        <h3>Estructura normativa</h3>
+        <ul class="arbol" id="contenedor-arbol"></ul>
+      </div>
+
+      <!-- Visor del artículo seleccionado -->
+      <div>
+        <div class="visor" id="visor-contenido">
+          <p style="color:#888">Seleccione un elemento del árbol para ver su contenido.</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    let arbolPlano = [];
+
+    async function cargarReglamentos() {
+      const res  = await fetch('/normativa', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      data.forEach(r => {
+        document.getElementById('selector-reglamento').add(
+          new Option(`${r.sigla} — ${r.nombre_normativa}`, r.id_reglamento)
+        );
+      });
+    }
+
+    async function cargarArbol(id_reglamento) {
+      if (!id_reglamento) return;
+      document.getElementById('panel-arbol').style.display = 'none';
+
+      const res  = await fetch(`/normativa/${id_reglamento}/arbol`,
+        { headers: { Authorization: `Bearer ${token}` } });
+      arbolPlano = await res.json();
+
+      renderArbol(arbolPlano);
+      document.getElementById('panel-arbol').style.display = 'grid';
+    }
+
+    // Convierte la lista plana (con profundidad) en un árbol HTML
+    function renderArbol(nodos) {
+      const ul = document.getElementById('contenedor-arbol');
+      ul.innerHTML = '';
+
+      // Mapa de id -> elemento de lista
+      const mapa = {};
+
+      nodos.forEach(n => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="nodo nivel-${n.nivel}"
+                onclick="seleccionarNodo(${n.id_elemento}, this)"
+                data-id="${n.id_elemento}">
+            ${n.numer_etiqueta}
+          </span>
+        `;
+        mapa[n.id_elemento] = li;
+
+        if (!n.id_elemento_padre) {
+          ul.appendChild(li);
+        } else {
+          const padre = mapa[n.id_elemento_padre];
+          if (padre) {
+            let subUl = padre.querySelector('ul');
+            if (!subUl) { subUl = document.createElement('ul'); padre.appendChild(subUl); }
+            subUl.appendChild(li);
+          }
+        }
+      });
+    }
+
+    async function seleccionarNodo(id_elemento, spanEl) {
+      // Marca el nodo activo
+      document.querySelectorAll('.nodo.seleccionado').forEach(n => n.classList.remove('seleccionado'));
+      spanEl.classList.add('seleccionado');
+
+      const nodo = arbolPlano.find(n => n.id_elemento === id_elemento);
+      if (!nodo) return;
+
+      // Carga historial para trazabilidad
+      const histRes  = await fetch(`/normativa/elemento/${id_elemento}/historial`,
+        { headers: { Authorization: `Bearer ${token}` } });
+      const historial = await histRes.json();
+
+      const anterior = historial.find(h => h.estado_vigencia === 'Histórico');
+
+      document.getElementById('visor-contenido').innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <h2 style="margin:0">${nodo.nivel} ${nodo.numer_etiqueta}</h2>
+          <span class="badge-vigente">● Vigente</span>
+        </div>
+
+        <p>${nodo.contenido_texto}</p>
+
+        <div class="trazabilidad">
+          <strong>Trazabilidad y versión</strong><br>
+          Vigente desde: ${nodo.fecha_inicio_vigencia
+            ? new Date(nodo.fecha_inicio_vigencia).toLocaleDateString('es-CR')
+            : 'Fecha de creación del reglamento'}
+          ${anterior ? `<br><em>Versión anterior existente — Última modificación el
+            ${new Date(anterior.fecha_fin_vigencia).toLocaleDateString('es-CR')}</em>` : ''}
+          ${historial[0]?.acuerdo_origen
+            ? `<br>Resolución de origen: <strong>${historial[0].acuerdo_origen}</strong>` : ''}
+        </div>
+
+        <div style="margin-top:16px">
+          <button class="btn btn-secundario btn-sm"
+                  onclick="window.location.href='/propuestas/nueva?elemento=${id_elemento}'">
+            + Proponer reforma a este elemento
+          </button>
+        </div>
+      `;
+    }
+
+    cargarReglamentos();
+  </script>
+</body>
+</html>
