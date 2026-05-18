@@ -17,6 +17,7 @@
 8. [Manual de Usuario — Asambleísta](#8-manual-de-usuario--asambleísta)
 9. [Flujos Principales del Sistema](#9-flujos-principales-del-sistema)
 10. [Preguntas Frecuentes](#10-preguntas-frecuentes)
+11. [Video Sprint 2](# 11. Video de defensa - Sprint 2)
 
 ---
 
@@ -446,6 +447,10 @@ Si al intentar realizar una acción el sistema redirige a la pantalla de inicio 
 
 **¿Se puede recuperar un asambleísta eliminado?**  
 El sistema no elimina registros de asambleístas; en su lugar, los marca como inactivos. Toda la información histórica se conserva. Contactar al Administrador para reactivar un registro.
+
+## 11. Video de defensa - Sprint 2
+
+Enlace: https://teams.microsoft.com/l/meetingrecap?driveId=b%21mIeTecjOe0WNKndNy4u-ugFU-YEIXfpPuEMagXfBlT1Zb5_eUt9JS7ivABpOg5Q5&driveItemId=014OZ2HGXAQQXJYUPBARDZJW46AVHGTVNA&sitePath=https%3A%2F%2Festudianteccr-my.sharepoint.com%2F%3Av%3A%2Fg%2Fpersonal%2Fs_garita_1_estudiantec_cr%2FIQDghC6cUeEER5TbngVOadWgAZDxlCZEjRE84QpKoxyx5yQ&fileUrl=https%3A%2F%2Festudianteccr-my.sharepoint.com%2F%3Av%3A%2Fg%2Fpersonal%2Fs_garita_1_estudiantec_cr%2FIQDghC6cUeEER5TbngVOadWgAZDxlCZEjRE84QpKoxyx5yQ&threadId=19%3A123a01e3-13c8-4891-8afc-a47fecb13d51_c78bd3aa-182a-431d-bdbc-4bcd4badbee5%40unq.gbl.spaces&callId=b423efec-11e6-4d2f-af1d-4421ce357878&threadType=OneOnOneChat&meetingType=Unknown&subType=RecapSharingLink_RecapChiclet
 
 ---
 
