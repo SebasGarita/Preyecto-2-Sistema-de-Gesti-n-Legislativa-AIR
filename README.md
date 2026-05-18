@@ -450,8 +450,7 @@ El sistema no elimina registros de asambleístas; en su lugar, los marca como in
 
 ## 11. Video de defensa - Sprint 2
 
-Enlace: https://teams.microsoft.com/l/meetingrecap?driveId=b%21mIeTecjOe0WNKndNy4u-ugFU-YEIXfpPuEMagXfBlT1Zb5_eUt9JS7ivABpOg5Q5&driveItemId=014OZ2HGXAQQXJYUPBARDZJW46AVHGTVNA&sitePath=https%3A%2F%2Festudianteccr-my.sharepoint.com%2F%3Av%3A%2Fg%2Fpersonal%2Fs_garita_1_estudiantec_cr%2FIQDghC6cUeEER5TbngVOadWgAZDxlCZEjRE84QpKoxyx5yQ&fileUrl=https%3A%2F%2Festudianteccr-my.sharepoint.com%2F%3Av%3A%2Fg%2Fpersonal%2Fs_garita_1_estudiantec_cr%2FIQDghC6cUeEER5TbngVOadWgAZDxlCZEjRE84QpKoxyx5yQ&threadId=19%3A123a01e3-13c8-4891-8afc-a47fecb13d51_c78bd3aa-182a-431d-bdbc-4bcd4badbee5%40unq.gbl.spaces&callId=b423efec-11e6-4d2f-af1d-4421ce357878&threadType=OneOnOneChat&meetingType=Unknown&subType=RecapSharingLink_RecapChiclet
-
+Enlace: https://estudianteccr-my.sharepoint.com/:v:/g/personal/s_garita_1_estudiantec_cr/IQDghC6cUeEER5TbngVOadWgAfx3XNaHu3u91wWUuu8QhEo?e=Vi8xsz
 ---
 
 *Sprint 2 — Semanas 1-2 | Curso: Bases de Datos | Instituto Tecnológico de Costa Rica*
