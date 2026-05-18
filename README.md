@@ -17,7 +17,7 @@
 8. [Manual de Usuario — Asambleísta](#8-manual-de-usuario--asambleísta)
 9. [Flujos Principales del Sistema](#9-flujos-principales-del-sistema)
 10. [Preguntas Frecuentes](#10-preguntas-frecuentes)
-11. [Video Sprint 2](# 11. Video de defensa - Sprint 2)
+11. [Video de defensa Sprint 2](#11-video-de-defensa---sprint-2)
 
 ---
 
