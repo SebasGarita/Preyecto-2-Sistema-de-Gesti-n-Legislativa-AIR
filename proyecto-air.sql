@@ -570,6 +570,9 @@ ALTER TABLE public.certificacion_emitida
 ALTER TABLE public.anulacion_certificacion
     ADD COLUMN IF NOT EXISTS folio_sustitucion VARCHAR(50) NULL;
 
+ALTER TABLE control_folio
+ADD COLUMN prefijo VARCHAR(20) NOT NULL DEFAULT 'DAIR';
+
 -- folio_sustitucion: folio del documento nuevo que reemplaza al anulado
 
 -- 3. Índice único: solo puede haber UNA anulación por certificación

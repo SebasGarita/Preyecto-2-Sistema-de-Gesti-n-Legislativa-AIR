@@ -9,6 +9,26 @@ const certificadoModel = new CertificadoModel();
 
 class ReporteController {
 
+    async siguienteFolio(req, res) {
+    try {
+        const anio = new Date().getFullYear();
+        const result = await require('../config/db.js').query(
+            `SELECT ultimo_numero, prefijo
+             FROM public.control_folio
+             WHERE anio = $1`,
+            [anio]
+        );
+
+        const ultimo  = result.rows[0]?.ultimo_numero ?? 0;
+        const prefijo = result.rows[0]?.prefijo       ?? 'DAIR';
+        const siguiente = `${prefijo}-${String(ultimo + 1).padStart(3, '0')}-${anio}`;
+
+        return res.json({ ok: true, siguienteFolio: siguiente });
+
+    } catch (error) {
+        return res.status(500).json({ ok: false, error: error.message });
+    }
+};
     // ----------------------------------------------------------
     // EMISIÓN
     // ----------------------------------------------------------
@@ -16,6 +36,11 @@ class ReporteController {
     async emitirCertificacion(req, res) {
         try {
             const { asambleistaId, contenido } = req.body;
+
+            // 👇 DEBUG TEMPORAL
+            console.log("📩 asambleistaId recibido:", asambleistaId);
+            console.log("📩 tipo:", typeof asambleistaId);
+
             const usuarioId = req.session?.usuarioId ?? 'sistema';
 
             if (!asambleistaId || !contenido) {
@@ -196,7 +221,7 @@ class ReporteController {
             const resultado = await certificadoModel.sustituir(
                 parseInt(id),
                 motivo.trim(),
-                parseInt(asambleistaId),
+                asambleistaId,
                 contenidoNuevo.trim(),
                 usuarioId
             );

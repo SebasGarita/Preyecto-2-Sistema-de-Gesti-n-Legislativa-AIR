@@ -52,7 +52,8 @@ class CertificadoModel {
 
             // 2. Calcular nuevo número y folio DAIR
             const nuevoNumero = ultimoNumero + 1;
-            const folio = `DAIR-${String(nuevoNumero).padStart(3, '0')}-${anio}`;
+            const prefijo = lockRes.rows[0]?.prefijo ?? 'DAIR';
+            const folio   = `${prefijo}-${String(nuevoNumero).padStart(3, '0')}-${anio}`;
 
             // 3. Generar hash SHA-256 — compatible con objeto o texto plano
             const datosHash = typeof contenidoCertificado === 'object'
@@ -60,6 +61,18 @@ class CertificadoModel {
                 : { folio, asambleistaId, contenido: contenidoCertificado, usuarioSecretaria: usuarioId };
 
             const hashSeguridad = CryptoService.generarHash(datosHash);
+
+
+            const checkAsambleista = await client.query(
+                `SELECT 1 
+                FROM public.asambleista 
+                WHERE asambleista_id = $1`,
+                [asambleistaId]
+            );
+
+            if (checkAsambleista.rows.length === 0) {
+                throw new Error(`Asambleísta no existe: ${asambleistaId}`);
+            }
 
             // 4. Insertar la certificación
             const insRes = await client.query(

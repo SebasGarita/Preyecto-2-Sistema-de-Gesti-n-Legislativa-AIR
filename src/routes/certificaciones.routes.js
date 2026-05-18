@@ -10,6 +10,10 @@ router.get('/verificar/:folio/pdf', ctrl.descargarPDFPublico);
 // ── Todas las demás rutas requieren token ──
 router.use(verificarToken);
 
+router.get('/siguiente-folio',
+    requierePermiso('EMITIR_CERTIFICACION'),
+    ctrl.siguienteFolio
+);
 // Historial y consulta
 router.get('/',           ctrl.historialCertificaciones);
 router.get('/:folio',     ctrl.obtenerCertificacion);
