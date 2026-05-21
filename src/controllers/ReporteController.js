@@ -41,7 +41,7 @@ class ReporteController {
             console.log("📩 asambleistaId recibido:", asambleistaId);
             console.log("📩 tipo:", typeof asambleistaId);
 
-            const usuarioId = req.session?.usuarioId ?? 'sistema';
+            const usuarioId = req.usuario?.id ?? 'sistema';
 
             if (!asambleistaId || !contenido) {
                 return res.status(400).json({
