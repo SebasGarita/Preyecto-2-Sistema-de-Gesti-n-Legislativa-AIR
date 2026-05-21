@@ -164,7 +164,19 @@ const Propuesta = {
       mayorias:     mayorias.rows,
       reglamentos:  reglamentos.rows
     };
+  },
+  
+  async obtenerLeyendaPorPropuesta(id_propuesta) {
+    const result = await db.query(`
+      SELECT tpl.leyenda_legal, tpl.descripcion_origen
+      FROM propuesta p
+      JOIN tipo_propuesta_leyenda tpl ON p.id_leyenda = tpl.id_leyenda
+      WHERE p.id_propuesta = $1
+        AND tpl.activo = TRUE
+    `, [id_propuesta]);
+    return result.rows[0] || null;
   }
+
 };
 
 module.exports = Propuesta;

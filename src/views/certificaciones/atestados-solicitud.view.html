@@ -1,5 +1,6 @@
 <!-- src/views/certificaciones/atestados-solicitud.view.html -->
 <!-- Issue #1 / Issue #17 — Emisión de Certificaciones con Folio Previo -->
+<!-- Issue #6  — Motor de Reglas para Notas Condicionales               -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -137,6 +138,36 @@
         .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
         .alerta-info  { background: #e7f3ff; color: #004085; border: 1px solid #b8daff; }
 
+        /* ── Issue #6: Nota condicional ── */
+        .nota-condicional-box {
+            border: 1.5px solid #b8daff;
+            border-left: 4px solid var(--color-acento);
+            border-radius: var(--radio);
+            background: #e7f3ff;
+            padding: 14px 16px;
+            margin-top: 12px;
+            display: none;
+        }
+        .nota-condicional-box.visible { display: block; }
+        .nota-condicional-box .nota-titulo {
+            font-size: .78rem; font-weight: 700; color: var(--color-acento);
+            text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px;
+        }
+        .nota-condicional-box .nota-origen {
+            font-size: .75rem; color: #5a7aa5; margin-bottom: 8px;
+        }
+        .nota-condicional-box .nota-texto {
+            font-size: .86rem; color: #003366; line-height: 1.55;
+            margin-bottom: 10px;
+        }
+        .nota-condicional-box .btn-insertar {
+            background: var(--color-acento); color: #fff;
+            border: none; border-radius: var(--radio);
+            padding: 6px 14px; font-size: .8rem; font-weight: 600;
+            cursor: pointer; transition: opacity .15s;
+        }
+        .nota-condicional-box .btn-insertar:hover { opacity: .85; }
+
         /* ── Buttons ── */
         .btn {
             display: inline-flex; align-items: center; gap: 8px;
@@ -152,31 +183,6 @@
         .btn-sm { padding: 7px 14px; font-size: .82rem; }
 
         .acciones { display: flex; justify-content: flex-end; gap: 12px; padding: 20px 24px; border-top: 1px solid #eef0f3; background: #fff; }
-
-        /* ── Modal confirmación ── */
-        .overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,.5);
-            display: none; align-items: center; justify-content: center; z-index: 999;
-        }
-        .overlay.visible { display: flex; }
-        .modal {
-            background: #fff; border-radius: var(--radio);
-            box-shadow: 0 8px 32px rgba(0,0,0,.25);
-            width: 100%; max-width: 480px; padding: 32px; position: relative;
-        }
-        .modal-icono { text-align: center; margin-bottom: 16px; }
-        .modal h2 { margin: 0 0 6px; font-size: 1.2rem; color: var(--color-primario); text-align: center; }
-        .modal .subtitulo { font-size: .88rem; color: #666; margin-bottom: 24px; text-align: center; }
-        .modal-folio {
-            background: linear-gradient(135deg, #003366 0%, #005fa3 100%);
-            border-radius: var(--radio); padding: 18px;
-            text-align: center; margin-bottom: 20px;
-        }
-        .modal-folio .etiqueta { color: rgba(255,255,255,.7); font-size: .78rem; letter-spacing: 1px; text-transform: uppercase; }
-        .modal-folio .numero   { color: #fff; font-size: 2rem; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 3px; margin-top: 6px; }
-        .modal-aviso { background: var(--bg-advertencia); border-left: 4px solid #f0ad4e; border-radius: var(--radio); padding: 12px 16px; font-size: .85rem; color: var(--color-advertencia); margin-bottom: 20px; line-height: 1.5; }
-        .modal-acciones { display: flex; gap: 10px; justify-content: center; }
-        .cerrar-modal { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
 
         /* ── Spinner ── */
         .spinner {
@@ -279,7 +285,27 @@
                 <div class="alerta alerta-info" style="margin-bottom:16px">
                     ℹ️ El folio DAIR se asignará automáticamente al confirmar. Se mostrará el número exacto antes de emitir.
                 </div>
+
+                <!-- ══ Issue #6: Selector de propuesta relacionada ══ -->
                 <div class="campo">
+                    <label for="propuestaRelacionada">Propuesta relacionada (opcional)</label>
+                    <select id="propuestaRelacionada" onchange="cargarNotaCondicional(this.value)">
+                        <option value="">— Sin propuesta específica —</option>
+                    </select>
+                </div>
+
+                <!-- Caja de nota condicional — se muestra solo si aplica -->
+                <div id="notaCondicionalBox" class="nota-condicional-box">
+                    <div class="nota-titulo">⚖️ Nota legal sugerida</div>
+                    <div class="nota-origen" id="notaOrigenTexto"></div>
+                    <div class="nota-texto" id="notaCondicionalTexto"></div>
+                    <button class="btn-insertar" onclick="insertarNota()">
+                        Insertar nota en el contenido
+                    </button>
+                </div>
+                <!-- ══ Fin Issue #6 ══ -->
+
+                <div class="campo" style="margin-top:16px">
                     <label for="contenidoCert">Texto de la certificación <span style="color:red">*</span></label>
                     <textarea id="contenidoCert"
                         placeholder="La Secretaría de la Asamblea Institucional Representativa del Instituto Tecnológico de Costa Rica certifica que..."></textarea>
@@ -449,8 +475,8 @@
             mostrarMsg('No se pudo consultar el siguiente folio: ' + e.message);
         }
 
-        document.getElementById('resumenNombre').textContent   = asambleistaSeleccionado.nombre;
-        document.getElementById('resumenCedula').textContent   = `Cédula: ${asambleistaSeleccionado.cedula}`;
+        document.getElementById('resumenNombre').textContent    = asambleistaSeleccionado.nombre;
+        document.getElementById('resumenCedula').textContent    = `Cédula: ${asambleistaSeleccionado.cedula}`;
         document.getElementById('resumenContenido').textContent = document.getElementById('contenidoCert').value.trim();
     }
 
@@ -487,7 +513,6 @@
 
             if (!json.ok) throw new Error(json.error);
 
-            // Redirigir al certificado final
             window.location.href = `/certificaciones/certificado-final.view.html?folio=${encodeURIComponent(json.folio)}`;
 
         } catch (e) {
@@ -496,6 +521,68 @@
             btn.disabled = false;
         }
     }
+
+    // ══════════════════════════════════════════════════════════
+    // Issue #6 — Motor de reglas para notas condicionales
+    // ══════════════════════════════════════════════════════════
+
+    // Carga el listado de propuestas en el select al entrar al paso 2
+    async function cargarPropuestas() {
+        try {
+            const res  = await fetch('/propuestas');
+            const json = await res.json();
+            const lista = Array.isArray(json) ? json : (json.datos ?? []);
+
+            const select = document.getElementById('propuestaRelacionada');
+            lista.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value       = p.id_propuesta;
+                opt.textContent = `${p.codigo_air ?? 'S/C'} — ${p.titulo}`;
+                select.appendChild(opt);
+            });
+        } catch {
+            // Si falla, el select queda vacío; no rompe el flujo principal
+        }
+    }
+
+    // Se dispara cuando el usuario elige una propuesta del select
+    async function cargarNotaCondicional(idPropuesta) {
+        const box = document.getElementById('notaCondicionalBox');
+
+        if (!idPropuesta) {
+            box.classList.remove('visible');
+            return;
+        }
+
+        try {
+            const res  = await fetch(`/propuestas/${idPropuesta}/nota`);
+            const json = await res.json();
+
+            if (json.ok && json.nota) {
+                document.getElementById('notaCondicionalTexto').textContent = json.nota;
+                document.getElementById('notaOrigenTexto').textContent      = `Origen: ${json.origen ?? ''}`;
+                box.classList.add('visible');
+            } else {
+                // La propuesta existe pero no tiene nota condicional (ej: dictaminada por comisión)
+                box.classList.remove('visible');
+            }
+        } catch {
+            box.classList.remove('visible');
+        }
+    }
+
+    // Inserta la nota legal al final del textarea de contenido
+    function insertarNota() {
+        const nota     = document.getElementById('notaCondicionalTexto').textContent;
+        const textarea = document.getElementById('contenidoCert');
+        const separador = textarea.value.trim() ? '\n\n' : '';
+        textarea.value += `${separador}Nota: ${nota}`;
+        textarea.focus();
+        // Desplaza el cursor al final
+        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    }
+
+    // ══════════════════════════════════════════════════════════
 
     function mostrarMsg(msg) {
         const el = document.getElementById('msgGlobal');
@@ -507,6 +594,11 @@
     function escapar(s) {
         return String(s ?? '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
+
+    // Carga propuestas al iniciar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarPropuestas();
+    });
 </script>
 </body>
 </html>
