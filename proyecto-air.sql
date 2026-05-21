@@ -663,8 +663,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
--- Ejemplo de uso:
-SELECT anular_certificacion(123, 'Error en el periodo reportado', 'DAIR-010-2026');
+
 
 ROLLBACK;
 BEGIN;
