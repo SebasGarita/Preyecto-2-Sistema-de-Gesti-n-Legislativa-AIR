@@ -76,11 +76,15 @@ class CertificadoModel {
 
             // 4. Insertar la certificación
             const insRes = await client.query(
-                `INSERT INTO public.certificacion_emitida
-                    (id_asambleista, folio_unico, hash_seguridad, fecha_emision, usuario_secretaria, estado)
-                 VALUES ($1, $2, $3, now(), $4, 'Activo')
-                 RETURNING id_certificacion, fecha_emision`,
-                [asambleistaId, folio, hashSeguridad, usuarioId]
+                `INSERT INTO certificacion_emitida
+                    (id_asambleista, folio_unico, hash_seguridad,
+                    fecha_emision, usuario_secretaria, estado, contenido)
+                VALUES ($1, $2, $3, now(), $4, 'Activo', $5)
+                RETURNING id_certificacion, fecha_emision`,
+                [asambleistaId, folio, hashSeguridad, usuarioId,
+                typeof contenidoCertificado === 'string'
+                    ? contenidoCertificado
+                    : JSON.stringify(contenidoCertificado)]
             );
 
             // 5. Actualizar el control de folio
@@ -128,6 +132,7 @@ class CertificadoModel {
                 ce.usuario_secretaria,
                 ce.estado,
                 ce.folio_sustituido_por,
+                ce.contenido,
                 a.nombre          AS nombre_asambleista,
                 a.cedula          AS cedula_asambleista,
                 ac.motivo         AS motivo_anulacion,
