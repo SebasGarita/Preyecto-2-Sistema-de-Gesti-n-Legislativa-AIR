@@ -519,6 +519,10 @@
         document.getElementById('mensaje-error').style.display = 'none';
         document.getElementById('mensaje-ok').style.display = 'none';
     }
+    function mostrarFormNombramiento() {
+      window.location.href =
+      `/asambleistas/${idEnUrl}/nombramientos/nuevo`;
+    }
 
     cargarCatalogos();
 </script>
