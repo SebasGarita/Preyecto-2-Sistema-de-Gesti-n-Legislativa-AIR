@@ -10,15 +10,15 @@ router.get('/',          ctrl.listar);
 router.get('/:id',       ctrl.obtener);
 
 router.post('/',
-  requierePermiso('GESTIONAR_SESIONES'),
+  requierePermiso('GESTIONAR_PROPUESTAS'),
   ctrl.crear
 );
 router.post('/:id/proponentes',
-  requierePermiso('GESTIONAR_SESIONES'),
+  requierePermiso('GESTIONAR_PROPUESTAS'),
   ctrl.agregarProponente
 );
 router.patch('/:id/estado',
-  requierePermiso('GESTIONAR_SESIONES'),
+  requierePermiso('GESTIONAR_PROPUESTAS'),
   ctrl.cambiarEstado
 );
 
