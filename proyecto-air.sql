@@ -837,4 +837,42 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Issue 6
+-- Issue 6
+-- Issue 6
+-- Issue 6
+-- Issue 6
+-- Issue 6
 
+-- Tabla para leyendas legales según el origen de la propuesta
+CREATE TABLE tipo_propuesta_leyenda (
+    id_leyenda SERIAL PRIMARY KEY,
+    codigo_origen VARCHAR(50) UNIQUE NOT NULL,  -- ej: 'CI', 'DIEZ_PORCIENTO', 'COMISION'
+    descripcion_origen VARCHAR(200) NOT NULL,
+    leyenda_legal TEXT NOT NULL,
+    activo BOOLEAN DEFAULT TRUE
+);
+
+ALTER TABLE tipo_propuesta_leyenda 
+ALTER COLUMN leyenda_legal DROP NOT NULL;
+
+-- Datos semilla
+INSERT INTO tipo_propuesta_leyenda (codigo_origen, descripcion_origen, leyenda_legal) VALUES
+(
+    'CI',
+    'Propuesta presentada por el Consejo Institucional',
+    'La Secretaría de la AIR no dispone de registros de asistencia para las propuestas presentadas directamente por el Consejo Institucional, dado que su origen no involucra el proceso de procedencia con participación de asambleístas.'
+),
+(
+    'DIEZ_PORCIENTO',
+    'Propuesta por el 10% de la Asamblea (etapa de procedencia)',
+    'La Secretaría de la AIR no dispone de registros de asistencia para la etapa de procedencia del 10% de asambleístas, ya que dicha etapa no genera convocatorias formales registradas en el sistema.'
+),
+(
+    'COMISION',
+    'Propuesta dictaminada por comisión',
+    NULL  -- No aplica nota, hay registros completos
+);
+
+ALTER TABLE propuesta 
+ADD COLUMN id_leyenda INT REFERENCES tipo_propuesta_leyenda(id_leyenda);
