@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menú Principal — AIR</title>
     <style>
-        /* ── Variables ── */
         :root {
             --color-primario   : #003366;
             --color-acento     : #005fa3;
@@ -26,7 +25,6 @@
             margin: 0; 
         }
 
-        /* ── Layout ── */
         .page-header {
             background: var(--color-primario); 
             color: #fff;
@@ -59,7 +57,6 @@
             padding: 0 20px; 
         }
 
-        /* ── Grid de Cards ── */
         .grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -114,7 +111,6 @@
             color: #fff; 
         }
 
-        /* ── Footer ── */
         .footer {
             text-align: center;
             padding: 24px 0;
@@ -124,7 +120,6 @@
             margin-top: 44px;
         }
 
-        /* ── Responsive ── */
         @media (max-width: 768px) {
             .grid-cards {
                 grid-template-columns: 1fr;
@@ -139,7 +134,6 @@
 </head>
 <body>
 
-<!-- ── Encabezado ── -->
 <header class="page-header">
     <h1>Bienvenido al sistema</h1>
     <p class="subtitulo">Navega rápidamente por las secciones principales de la aplicación legislativa</p>
@@ -148,6 +142,7 @@
 
 <main class="contenedor">
     <section class="grid-cards">
+
         <article class="card">
             <h2>Certificaciones</h2>
             <p>Gestión completa de certificaciones emitidas, anulaciones y documentos oficiales.</p>
@@ -157,34 +152,42 @@
         </article>
 
         <article class="card">
-            <h2>Asambleístas</h2>
-            <p>Lista completa de asambleístas, búsqueda por nombre/cédula y acceso a detalles.</p>
+            <h2>Asambleistas</h2>
+            <p>Lista completa de asambleístas, búsqueda por nombre o cédula y acceso a detalles.</p>
             <a href="/asambleistas/asambleista-lista.view.html" class="btn btn-primario">
-                Ver listado de asambleístas
+                Ver listado de asambleistas
             </a>
         </article>
 
         <article class="card">
-            <h2>Agregar nuevos Asambleísta</h2>
+            <h2>Registrar Asambleista</h2>
             <p>Registro de nuevos asambleístas con datos de identidad y nombramiento inicial.</p>
             <a href="/asambleistas/asambleista-registro.view.html" class="btn btn-primario">
-                Registrar asambleísta
+                Registrar asambleista
             </a>
         </article>
 
         <article class="card">
             <h2>Normativa</h2>
-            <p>Explorador de árbol normativo, consulta y administración de leyes y decretos.</p>
+            <p>Explorador de árbol normativo, consulta y administración de reglamentos vigentes.</p>
             <a href="/normativa/normativa-arbol.view.html" class="btn btn-primario">
                 Ir a Normativa
             </a>
         </article>
 
         <article class="card">
-            <h2>sesiones</h2>
+            <h2>Sesiones</h2>
             <p>Gestión de sesiones plenarias, actas, agendas y control de deliberaciones.</p>
             <a href="/sesiones/sesion-lista.view.html" class="btn btn-primario">
                 Ir a sesiones
+            </a>
+        </article>
+
+        <article class="card">
+            <h2>Emitir Certificacion DAIR</h2>
+            <p>Emita atestados institucionales con folio consecutivo legal. Incluye verificación de autenticidad y descarga de PDF.</p>
+            <a href="/certificaciones/atestados-solicitud.view.html" class="btn btn-primario">
+                Ir a certificaciones
             </a>
         </article>
 
@@ -197,6 +200,14 @@
         </article>
 
         <article class="card">
+            <h2>Bitacora de Auditoria</h2>
+            <p>Registro forense de todas las acciones críticas realizadas en el sistema.</p>
+            <a href="/auditoria/bitacora.view.html" class="btn btn-primario">
+                Ver bitacora
+            </a>
+        </article>
+
+        <article class="card">
             <h2>Reportes</h2>
             <p>Análisis, estadísticas y reportes ejecutivos para toma de decisiones.</p>
             <a href="reportes.view.html" class="btn btn-primario">
@@ -205,31 +216,21 @@
         </article>
 
         <article class="card">
-            <h2>Configuración</h2>
+            <h2>Configuracion</h2>
             <p>Parámetros del sistema, preferencias y ajustes generales.</p>
             <a href="configuracion.view.html" class="btn btn-primario">
-                Ir a configuración
+                Ir a configuracion
             </a>
         </article>
 
-    <article class="card">
-        <h2>Certificaciones</h2>
-        <p>
-            Emita y gestione atestados institucionales con folio consecutivo legal (DAIR).
-            Incluye verificación de autenticidad y descarga de PDF.
-        </p>
-        <a href="/src/views/certificaciones/atestados-solicitud.view.html" class="btn btn-primario">
-            Ir a certificaciones
-        </a>
-    </article>
     </section>
 
     <div class="footer">
         Página principal de navegación del sistema administrativo
     </div>
 </main>
+
 <script src="/shared/auth.js"></script>
 
 </body>
 </html>
-```
