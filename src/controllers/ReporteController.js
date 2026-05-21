@@ -361,6 +361,28 @@ class ReporteController {
             return res.status(500).json({ ok: false, error: error.message });
         }
     }
+
+    // ----------------------------------------------------------
+    // NOTAS CONDICIONALES — Issue #6
+    // ----------------------------------------------------------
+
+    async obtenerNotaCondicional(req, res) {
+        try {
+            const { id } = req.params;
+            const Propuesta = require('../models/Propuesta.js');
+
+            const leyenda = await Propuesta.obtenerLeyendaPorPropuesta(parseInt(id));
+
+            return res.json({
+                ok: true,
+                nota: leyenda?.leyenda_legal ?? null,
+                origen: leyenda?.descripcion_origen ?? null
+            });
+
+        } catch (error) {
+            return res.status(500).json({ ok: false, error: error.message });
+        }
+    }
 }
 
 module.exports = new ReporteController();
