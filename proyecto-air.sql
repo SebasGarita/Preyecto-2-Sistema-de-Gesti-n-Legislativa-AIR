@@ -562,6 +562,8 @@ ALTER TABLE public.certificacion_emitida
     ADD COLUMN IF NOT EXISTS estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
     ADD COLUMN IF NOT EXISTS folio_sustituido_por VARCHAR(50) NULL;
 
+ALTER TABLE certificacion_emitida ADD COLUMN contenido TEXT;
+
 -- folio_sustituido_por: si esta cert fue reemplazada, apunta al folio nuevo
 
 
