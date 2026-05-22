@@ -19,7 +19,13 @@ window.fetch = function(url, opciones = {}) {
         };
     }
 
-    return _fetchOriginal(url, opciones);
+    return _fetchOriginal(url, opciones).then(res => {
+        if (res.status === 401 || res.status === 403) {
+            sessionStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+        return res;
+    });
 };
 
 // Botón flotante — nunca en index ni login
