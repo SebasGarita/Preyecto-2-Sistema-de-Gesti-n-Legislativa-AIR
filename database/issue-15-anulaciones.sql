@@ -118,5 +118,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
+
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+
+CREATE TRIGGER tg_no_repudio_cert_upd
+  BEFORE UPDATE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+CREATE TRIGGER tg_no_repudio_cert_del
+  BEFORE DELETE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
 -- Ejemplo de uso:
 SELECT anular_certificacion(123, 'Error en el periodo reportado', 'DAIR-010-2026');

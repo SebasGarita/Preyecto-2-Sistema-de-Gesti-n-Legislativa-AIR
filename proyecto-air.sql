@@ -674,6 +674,19 @@ END;
 $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
 
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+
+CREATE TRIGGER tg_no_repudio_cert_upd
+  BEFORE UPDATE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+CREATE TRIGGER tg_no_repudio_cert_del
+  BEFORE DELETE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
 -- ── Función: validar quórum legal ─────────────────────────────
 CREATE OR REPLACE FUNCTION validar_quorum_legal(p_id_sesion INT)
 RETURNS BOOLEAN AS $$
