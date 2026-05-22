@@ -1,9 +1,10 @@
 const express = require('express');
 const router  = express.Router();
 const ctrl    = require('../controllers/PropuestaController');
-const { verificarToken, requierePermiso } = require('../middlewares/auth');
+const { verificarToken, requierePermiso, auditarEscritura } = require('../middlewares/auth');
 
 router.use(verificarToken);
+router.use(auditarEscritura); 
 
 router.get('/catalogos', ctrl.catalogos);
 router.get('/',          ctrl.listar);

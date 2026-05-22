@@ -1,7 +1,8 @@
 const express = require('express');
 const router  = express.Router();
 const ctrl    = require('../controllers/ReporteController');
-const { verificarToken, requierePermiso } = require('../middlewares/auth');
+const { verificarToken, requierePermiso, auditarEscritura } = require('../middlewares/auth');
+
 
 // ── Ruta pública — verificación de folio sin token ──
 router.get('/verificar/:folio',     ctrl.verificarFolioPublico);
@@ -9,6 +10,7 @@ router.get('/verificar/:folio/pdf', ctrl.descargarPDFPublico);
 
 // ── Todas las demás rutas requieren token ──
 router.use(verificarToken);
+router.use(auditarEscritura); 
 
 router.get('/siguiente-folio',
     requierePermiso('EMITIR_CERTIFICACION'),
