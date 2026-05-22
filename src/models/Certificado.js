@@ -37,10 +37,10 @@ class CertificadoModel {
 
             if (lockRes.rows.length === 0) {
                 // Primera emisión del año: crear registro de control
-                const insCtrl = await client.query(
-                    `INSERT INTO public.control_folio (anio, ultimo_numero, fecha_actualizacion)
-                     VALUES ($1, 0, now())
-                     RETURNING id_control, ultimo_numero`,
+               const insCtrl = await client.query(
+                    `INSERT INTO public.control_folio (anio, ultimo_numero, prefijo, fecha_actualizacion)
+                    VALUES ($1, 0, 'DAIR', now())
+                    RETURNING id_control, ultimo_numero`,
                     [anio]
                 );
                 idControl    = insCtrl.rows[0].id_control;
