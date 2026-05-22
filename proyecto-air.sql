@@ -675,8 +675,8 @@ $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
 
 
-ROLLBACK;
-BEGIN;
+
+
 
 -- 1. Insertar Niveles de Reglamento controlando conflictos por el campo UNIQUE 'nombre'
 INSERT INTO catalogo_nivel_reglamento (id_nivel_reglamento, nombre) 
