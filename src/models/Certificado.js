@@ -78,7 +78,7 @@ class CertificadoModel {
             const insRes = await client.query(
                 `INSERT INTO certificacion_emitida
                     (id_asambleista, folio_unico, hash_seguridad,
-                    fecha_emision, usuario_secretaria, estado, contenido)
+                    fecha_emision, id_usuario_secretaria, estado, contenido)
                 VALUES ($1, $2, $3, now(), $4, 'Activo', $5)
                 RETURNING id_certificacion, fecha_emision`,
                 [asambleistaId, folio, hashSeguridad, usuarioId,
@@ -129,7 +129,7 @@ class CertificadoModel {
                 ce.folio_unico,
                 ce.hash_seguridad,
                 ce.fecha_emision,
-                ce.usuario_secretaria,
+                ce.id_usuario_secretaria,
                 ce.estado,
                 ce.folio_sustituido_por,
                 ce.contenido,
@@ -212,7 +212,7 @@ class CertificadoModel {
              JOIN public.asambleista a
                ON a.asambleista_id = ce.id_asambleista
              LEFT JOIN public.sys_usuario u
-  ON ce.usuario_secretaria = u.id_usuario::text
+            ON ce.id_usuario_secretaria = u.id_usuario
              ${where}
              ORDER BY ce.fecha_emision DESC
              LIMIT $${idx} OFFSET $${idx + 1}`,

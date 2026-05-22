@@ -8,6 +8,19 @@ ALTER TABLE public.certificacion_emitida
 
 ALTER TABLE certificacion_emitida ADD COLUMN contenido TEXT;
 
+--cambiar a FK entera (requiere migración de datos)
+ALTER TABLE certificacion_emitida
+  ADD COLUMN id_usuario_secretaria INT REFERENCES sys_usuario(id_usuario);
+
+-- Migrar datos existentes:
+UPDATE certificacion_emitida ce
+SET id_usuario_secretaria = u.id_usuario::INT
+FROM sys_usuario u
+WHERE ce.usuario_secretaria = u.id_usuario::TEXT;
+
+-- Luego eliminar la columna vieja:
+ALTER TABLE certificacion_emitida DROP COLUMN usuario_secretaria;
+
 -- folio_sustituido_por: si esta cert fue reemplazada, apunta al folio nuevo
 
 
@@ -42,7 +55,7 @@ BEGIN
     IF (OLD).folio_unico        <> (NEW).folio_unico        OR
        (OLD).hash_seguridad     <> (NEW).hash_seguridad     OR
        (OLD).id_asambleista     <> (NEW).id_asambleista     OR
-       (OLD).usuario_secretaria <> (NEW).usuario_secretaria THEN
+       (OLD).id_usuario_secretaria <> (NEW).id_usuario_secretaria THEN
         RAISE EXCEPTION
             'La certificación con folio % es un documento de fe pública y sus campos de identidad no pueden modificarse.',
             (OLD).folio_unico;

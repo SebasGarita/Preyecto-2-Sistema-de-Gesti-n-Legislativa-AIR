@@ -175,3 +175,26 @@ SELECT setval(
 );
 
 COMMIT;
+
+--Issue 15
+ALTER TABLE certificacion_emitida
+  ADD COLUMN id_usuario_secretaria INT REFERENCES sys_usuario(id_usuario);
+
+-- Migrar datos existentes:
+UPDATE certificacion_emitida ce
+SET id_usuario_secretaria = u.id_usuario::INT
+FROM sys_usuario u
+WHERE ce.usuario_secretaria = u.id_usuario::TEXT;
+
+-- Luego eliminar la columna vieja:
+ALTER TABLE certificacion_emitida DROP COLUMN usuario_secretaria;
+
+SELECT *
+FROM certificacion_emitida
+WHERE id_usuario_secretaria IS NULL;
+
+ALTER TABLE certificacion_emitida
+ADD COLUMN usuario_secretaria VARCHAR(100);
+
+UPDATE certificacion_emitida
+SET usuario_secretaria = id_usuario_secretaria::TEXT;
