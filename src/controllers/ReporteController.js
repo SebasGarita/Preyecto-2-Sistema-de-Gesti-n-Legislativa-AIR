@@ -37,9 +37,6 @@ class ReporteController {
         try {
             const { asambleistaId, contenido } = req.body;
 
-            // 👇 DEBUG TEMPORAL
-            console.log("📩 asambleistaId recibido:", asambleistaId);
-            console.log("📩 tipo:", typeof asambleistaId);
 
             const usuarioId = req.usuario?.id ?? 'sistema';
 
