@@ -1,9 +1,12 @@
-// Redirigir al login si no hay token
+// ── Guard: redirigir al login solo si no hay token ──────────────
+// sessionStorage se borra al cerrar la pestaña/ventana (comportamiento deseado)
+// pero persiste en recargas de página
 if (!sessionStorage.getItem('token')) {
     window.location.href = '/login.html';
 }
 
-// Interceptor fetch — agrega token automáticamente
+// ── Interceptor fetch — agrega token automáticamente ────────────
+// NO redirige al login si hay errores; eso le corresponde a cada página
 const _fetchOriginal = window.fetch;
 
 window.fetch = function(url, opciones = {}) {
@@ -19,16 +22,35 @@ window.fetch = function(url, opciones = {}) {
         };
     }
 
-    return _fetchOriginal(url, opciones);
+    // Devuelve la promesa SIN capturar errores aquí.
+    // Si el servidor responde 401, cada página decide qué hacer.
+    // Si hay un error de red o bug, no redirige al login.
+    return _fetchOriginal(url, opciones).then(response => {
+        // Solo redirige al login si el servidor explícitamente dice 401
+        // Y solo si la URL es una llamada a la API (no recursos estáticos)
+        if (
+            response.status === 401 &&
+            typeof url === 'string' &&
+            !url.includes('.html') &&
+            !url.includes('.js') &&
+            !url.includes('.css')
+        ) {
+            sessionStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+        return response;
+    });
+    // Sin .catch() aquí — los errores de red (500, bugs, rutas inexistentes)
+    // los maneja cada página individualmente, no este interceptor
 };
 
-// Botón flotante — nunca en index ni login
+// ── Botón flotante — nunca en index ni login ────────────────────
 const ruta = window.location.pathname;
 
 if (ruta !== '/' && !ruta.includes('index') && !ruta.includes('login')) {
     const btnInicio = document.createElement('a');
 
-    btnInicio.href = '/index.html';
+    btnInicio.href  = '/index.html';
     btnInicio.title = 'Volver al menú principal';
 
     btnInicio.style.cssText = `
@@ -55,12 +77,12 @@ if (ruta !== '/' && !ruta.includes('index') && !ruta.includes('login')) {
     document.body.appendChild(btnInicio);
 }
 
-// Botón cerrar sesión
+// ── Botón cerrar sesión ─────────────────────────────────────────
 if (!ruta.includes('login')) {
     const btnLogout = document.createElement('button');
 
     btnLogout.textContent = 'Cerrar sesión';
-    btnLogout.title = 'Cerrar sesión';
+    btnLogout.title       = 'Cerrar sesión';
 
     btnLogout.style.cssText = `
         position: fixed;
@@ -83,9 +105,14 @@ if (!ruta.includes('login')) {
     btnLogout.onmouseleave = () => btnLogout.style.opacity = '1';
 
     btnLogout.onclick = async () => {
-        await fetch('/auth/logout', { method: 'POST' });
-        sessionStorage.removeItem('token');
-        window.location.href = '/login.html';
+        try {
+            await fetch('/auth/logout', { method: 'POST' });
+        } catch {
+            // Si falla el logout en el servidor, igual se limpia el token local
+        } finally {
+            sessionStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
     };
 
     document.body.appendChild(btnLogout);
