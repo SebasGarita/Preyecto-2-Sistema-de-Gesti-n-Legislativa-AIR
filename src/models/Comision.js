@@ -231,17 +231,15 @@ const Comision = {
   /** Registra o actualiza la asistencia de un asambleísta a una sesión */
   async registrarAsistencia({ id_sesion_comision, asambleista_id, id_estado_asistencia }) {
     const result = await db.query(`
-      INSERT INTO asistencia_sesion_comision
-        (id_sesion_comision, asambleista_id, id_estado_asistencia, comision_id)
-      SELECT $1, $2, $3, sc.id_comision
-      FROM sesion_comision sc
-      WHERE sc.id_sesion_comision = $1
-      ON CONFLICT (id_sesion_comision, asambleista_id)
-      DO UPDATE SET id_estado_asistencia = EXCLUDED.id_estado_asistencia
-      RETURNING *
+        INSERT INTO asistencia_sesion_comision
+        (id_sesion_comision, asambleista_id, id_estado_asistencia)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (id_sesion_comision, asambleista_id)
+        DO UPDATE SET id_estado_asistencia = EXCLUDED.id_estado_asistencia
+        RETURNING *
     `, [id_sesion_comision, asambleista_id, id_estado_asistencia]);
     return result.rows[0];
-  },
+},
 
   /** Registra asistencia masiva (array de { asambleista_id, id_estado_asistencia }) */
   async registrarAsistenciaMasiva(id_sesion_comision, registros) {
@@ -311,11 +309,11 @@ const Comision = {
           ORDER BY p.titulo ASC
         `),
         db.query(`
-          SELECT s.id_sesion, s.numero_sesion, s.fecha
-          FROM sesiones s
-          ORDER BY s.fecha DESC
-          LIMIT 50
-        `)
+            SELECT s.id_sesion, s.numero_sesion, s.fecha::text AS fecha
+            FROM sesiones s
+            ORDER BY s.fecha DESC
+            LIMIT 50
+            `)
       ]);
 
     return {

@@ -8,12 +8,14 @@ router.use(verificarToken);
 router.use(auditarEscritura);
 
 // ── Catálogos (selectores del formulario) ─────────────────────
-router.get('/catalogos', ctrl.catalogos);
+router.get('/catalogos',          ctrl.catalogos);
+router.get('/sesiones/:sesionId', ctrl.obtenerSesion);
+router.get('/',                   ctrl.listar);
+router.get('/:id',                ctrl.obtener);
 
 // ── Listado y detalle ─────────────────────────────────────────
 // Secretaría y Consulta pueden ver
-router.get('/',    ctrl.listar);
-router.get('/:id', ctrl.obtener);
+
 
 // ── Crear / editar comisión ───────────────────────────────────
 router.post('/',
@@ -43,7 +45,7 @@ router.post('/:id/sesiones',
 
 // Detalle de sesión y registro de asistencia viven bajo /sesiones/:id
 // (sin prefijo de comisión, el sesionId ya identifica todo)
-router.get('/sesiones/:sesionId',           ctrl.obtenerSesion);
+
 router.post('/sesiones/:sesionId/asistencia',
   requierePermiso('GESTIONAR_COMISIONES'),
   ctrl.registrarAsistencia

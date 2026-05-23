@@ -410,7 +410,7 @@
 <script src="/shared/auth.js"></script>
 <script>
   // ── Estado global ──────────────────────────────────────────
-  const idComision = window.location.pathname.split('/').at(-2);  // /comisiones/:id/detalle
+  const idComision = new URLSearchParams(window.location.search).get('id');
   let catalogos    = {};
   let datoComision = {};
   let sesionActivaId   = null;
