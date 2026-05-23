@@ -535,8 +535,8 @@
         <td><strong>${esc(i.nombre_asambleista)}</strong></td>
         <td>${esc(i.cedula)}</td>
         <td><span class="badge badge-azul">${esc(i.nombre_rol)}</span></td>
-        <td>${i.fecha_ingreso_nombramiento ?? '—'}</td>
-        <td>${i.fecha_fin_nombramiento ?? '—'}</td>
+        <td>${formatFecha(i.fecha_ingreso_nombramiento)}</td>
+        <td>${formatFecha(i.fecha_fin_nombramiento)}</td>
         <td>${estadoBadge(i.estado)}</td>
         <td>
           ${i.estado === 'ACTIVO' ? `
@@ -565,8 +565,8 @@
     }
 
     const integrantes = seleccionados.map(id => ({
-      id_asambleista:  Number(id),
-      id_rol_comision: Number(idRol)
+      id_asambleista:  id,
+      id_rol_comision: idRol
     }));
 
     const res  = await fetch(`/comisiones/${idComision}/integrantes/bulk`, {
@@ -621,7 +621,7 @@
       return;
     }
     tbody.innerHTML = lista.map(s => {
-      const fecha = new Date(s.fecha_hora).toLocaleString('es-CR');
+      const fecha = formatFecha(s.fecha_hora);
       return `
         <tr>
           <td>${esc(s.numero_sesion ?? '—')}</td>
@@ -745,7 +745,7 @@
         <td><strong>${esc(inf.titulo ?? '—')}</strong></td>
         <td>${inf.titulo_propuesta ? esc(inf.titulo_propuesta) : '—'}</td>
         <td>${inf.sesion_plenaria  ? esc(inf.sesion_plenaria)  : '—'}</td>
-        <td>${inf.fecha_presentacion ?? '—'}</td>
+        <td>${formatFecha(inf.fecha_presentacion)}</td>
         <td>
           <div class="td-acciones">
             <button class="btn btn-sm btn-secundario"
@@ -852,6 +852,12 @@
     const el = document.getElementById('msg-warn');
     el.textContent = msg; el.style.display = 'block';
     setTimeout(() => el.style.display = 'none', 6000);
+  }
+  function formatFecha(f) {
+  if (!f) return '—';
+  return new Date(f).toLocaleDateString('es-CR', {
+    day: 'numeric', month: 'short', year: 'numeric'
+  });
   }
 
   init();
