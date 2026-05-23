@@ -166,7 +166,7 @@ class ReporteController {
                 });
             }
 
-            await certificadoModel.anular(parseInt(id), motivo.trim());
+            await certificadoModel.anular(id, motivo.trim());
 
             return res.json({
                 ok : true,
@@ -216,7 +216,7 @@ class ReporteController {
             }
 
             const resultado = await certificadoModel.sustituir(
-                parseInt(id),
+                id,
                 motivo.trim(),
                 asambleistaId,
                 contenidoNuevo.trim(),

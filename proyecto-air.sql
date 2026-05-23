@@ -1098,3 +1098,174 @@ JOIN catalogo_rol_comision  rc ON rc.id_rol_comision   = ic.id_rol_comision;
 
 ALTER TABLE comision
   ADD COLUMN IF NOT EXISTS objeto_acta TEXT;
+
+-- ISSUE #17 — Fe Púb
+-- Esta parte conecta las funciones ya definidas en la BD con sus triggers,
+-- agrega la función generar_hash_verificacion y el seed de control_folio.
+
+
+-- 1. TRIGGER: tg_no_repudio_cert
+
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+CREATE TRIGGER tg_no_repudio_cert
+    BEFORE UPDATE OR DELETE
+    ON public.certificacion_emitida
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_proteger_certificacion();
+
+
+-- 2. TRIGGER: tg_auditoria_certificacion
+-- Lanzará error si el campo no existe.
+ 
+DROP TRIGGER IF EXISTS tg_auditoria_certificacion ON public.certificacion_emitida;
+ 
+CREATE OR REPLACE FUNCTION public.fn_auditoria_certificacion()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+DECLARE
+    v_registro_id INT8;
+BEGIN
+    v_registro_id := CASE
+        WHEN TG_OP = 'DELETE' THEN (old).id_certificacion
+        ELSE                       (new).id_certificacion
+    END;
+ 
+    INSERT INTO public.sys_log_auditoria (
+        accion,
+        tabla_afectada,
+        detalle,
+        registro_id
+    ) VALUES (
+        TG_OP,
+        TG_TABLE_NAME,
+        'Cambio en certificación, folio: ' || COALESCE(
+            CASE WHEN TG_OP = 'DELETE' THEN (old).folio_unico
+                 ELSE (new).folio_unico
+            END, 'N/A'
+        ),
+        v_registro_id
+    );
+ 
+    RETURN COALESCE(new, old);
+END;
+$$;
+ 
+CREATE TRIGGER tg_auditoria_certificacion
+    AFTER INSERT OR UPDATE OR DELETE
+    ON public.certificacion_emitida
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_auditoria_certificacion();
+-- 3. FUNCIÓN: generar_hash_verificacion
+
+DROP FUNCTION IF EXISTS public.generar_hash_verificacion(text);
+ 
+CREATE OR REPLACE FUNCTION public.generar_hash_verificacion(p_contenido TEXT)
+    RETURNS TEXT
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+BEGIN
+    RETURN sha256(p_contenido);
+END;
+$$;
+ 
+
+
+-- 4. FUNCIÓN: verificar_permiso_usuario  (Issue #0 / Issue #17)
+DROP FUNCTION IF EXISTS public.verificar_permiso_usuario(INT8, TEXT);
+
+CREATE OR REPLACE FUNCTION public.verificar_permiso_usuario(
+    p_id_usuario INT8,
+    p_accion     TEXT
+)
+    RETURNS BOOLEAN
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+DECLARE
+    v_tiene_permiso BOOLEAN := FALSE;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.sys_usuario        u
+        JOIN public.sys_usuario_rol    ur ON ur.id_usuario = u.id_usuario
+        JOIN public.sys_rol_permiso    rp ON rp.id_rol     = ur.id_rol
+        JOIN public.sys_permiso        sp ON sp.id_permiso = rp.id_permiso
+        WHERE u.id_usuario = p_id_usuario
+          AND u.activo     = TRUE
+          AND sp.nombre_permiso    = p_accion
+    ) INTO v_tiene_permiso;
+
+    RETURN v_tiene_permiso;
+END;
+$$;
+
+
+
+INSERT INTO public.control_folio (anio, ultimo_numero, prefijo, fecha_actualizacion)
+VALUES (EXTRACT(YEAR FROM current_date())::INT8, 0, 'DAIR', current_timestamp())
+ON CONFLICT DO NOTHING;
+
+
+
+--    Ejecutar estas consultas para demostrar que si sirven.
+--Ver triggers activos sobre certificacion_emitida:
+SELECT trigger_name, event_manipulation, action_timing
+FROM information_schema.triggers
+WHERE event_object_table = 'certificacion_emitida';
+
+--Probar la función de hash:
+SELECT generar_hash_verificacion('DAIR-001-2026');
+
+-- Ver registro de control de folio:
+SELECT * FROM public.control_folio;
+
+-- Probar protección de fe pública (debe lanzar excepción):
+UPDATE public.certificacion_emitida
+SET folio_unico = 'HACKEADO'
+WHERE id_certificacion = 1;
+
+---- Corregir anular certificación issue 17
+CREATE OR REPLACE FUNCTION public.anular_certificacion(
+    p_certificacion_id INT8,
+    p_motivo TEXT,
+    p_folio_sustitucion VARCHAR DEFAULT NULL
+)
+    RETURNS void
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+DECLARE
+    v_estado_actual VARCHAR(20);
+BEGIN
+    IF (p_motivo IS NULL) OR (btrim(p_motivo) = '') THEN
+        RAISE EXCEPTION 'El motivo de anulación es obligatorio.';
+    END IF;
+
+    SELECT estado
+    INTO v_estado_actual
+    FROM public.certificacion_emitida
+    WHERE id_certificacion = p_certificacion_id;
+
+    IF v_estado_actual IS NULL THEN
+        RAISE EXCEPTION 'No se encontró la certificación con id %', p_certificacion_id;
+    END IF;
+
+    IF v_estado_actual = 'Anulado' THEN
+        RAISE EXCEPTION 'La certificación ya se encuentra anulada.';
+    END IF;
+
+    INSERT INTO public.anulacion_certificacion
+        (certificacion_id, motivo, fecha, folio_sustitucion)
+    VALUES
+        (p_certificacion_id, btrim(p_motivo), current_date(), p_folio_sustitucion);
+
+    UPDATE public.certificacion_emitida
+    SET estado = 'Anulado',
+        folio_sustituido_por = p_folio_sustitucion
+    WHERE id_certificacion = p_certificacion_id;
+END;
+$$;
