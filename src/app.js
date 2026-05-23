@@ -14,6 +14,7 @@ app.use('/sesiones',     require('./routes/sesiones.routes'));
 app.use('/propuestas',   require('./routes/propuestas.routes'));
 app.use('/asambleistas', require('./routes/asambleistas.routes'));
 app.use('/certificaciones', require('./routes/certificaciones.routes'));
+app.use('/comisiones', require('./routes/comisiones.routes'));
 
 app.get('/', (req, res) => {
   res.redirect('/login.html');
