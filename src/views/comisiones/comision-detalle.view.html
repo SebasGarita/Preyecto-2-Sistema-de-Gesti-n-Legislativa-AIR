@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle Comisión — AIR</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
   <style>
     :root {
       --color-primario   : #003366;
@@ -20,7 +21,6 @@
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
 
-    /* Navbar */
     .navbar {
       background: var(--color-primario); color: #fff;
       padding: 0 28px; display: flex; align-items: center;
@@ -29,28 +29,30 @@
     .navbar a { color: rgba(255,255,255,.85); text-decoration: none; }
     .navbar a:hover { color: #fff; }
 
-    /* Header */
     .page-header {
       background: var(--color-primario); color: #fff;
       padding: 24px 28px; text-align: center;
     }
     .page-header h1 { margin: 0 0 6px; font-size: 1.6rem; font-weight: 600; }
     .page-header p  { margin: 0; font-size: .9rem; opacity: .9; }
+    .page-header .objeto-acta {
+      margin: 10px auto 0; max-width: 700px;
+      font-size: .85rem; opacity: .85; font-style: italic;
+      line-height: 1.5;
+    }
     .badge-modulo {
       background: rgba(255,255,255,.18); border-radius: 20px;
       padding: 4px 14px; font-size: .78rem; display: inline-block; margin-top: 10px;
     }
 
-    /* Layout */
     .contenedor { max-width: 960px; margin: 24px auto; padding: 0 20px; }
 
-    /* Alertas */
     .alerta { padding: 12px 16px; border-radius: var(--radio); font-size: .9rem;
                font-weight: 500; margin-bottom: 16px; }
     .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border: 1px solid #f5c6cb; }
     .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
+    .alerta-warn  { background: var(--bg-advertencia); color: var(--color-advertencia); border: 1px solid #ffc107; }
 
-    /* Stats row */
     .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
     .stat-card {
       background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
@@ -59,7 +61,6 @@
     .stat-card .numero { font-size: 2rem; font-weight: 700; color: var(--color-acento); }
     .stat-card .etiqueta { font-size: .82rem; color: #666; margin-top: 4px; }
 
-    /* Tabs */
     .tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #d0d7de; }
     .tab {
       padding: 12px 22px; cursor: pointer; font-size: .9rem; font-weight: 600;
@@ -72,7 +73,6 @@
     .tab-panel { display: none; padding-top: 20px; }
     .tab-panel.activo { display: block; }
 
-    /* Cards */
     .card {
       background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
       border: 1px solid rgba(0,0,0,.05); overflow: hidden; margin-bottom: 16px;
@@ -84,7 +84,6 @@
     .card-header h3 { margin: 0; font-size: 1rem; color: var(--color-primario); }
     .card-body { padding: 20px; }
 
-    /* Tabla */
     .card-table {
       background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
       border: 1px solid rgba(0,0,0,.05); overflow: hidden; margin-bottom: 16px;
@@ -99,7 +98,7 @@
     tbody td { padding: 11px 14px; color: #333; vertical-align: middle; }
     .td-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
 
-    /* Formularios inline */
+    /* Formularios */
     .form-inline {
       display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
       padding: 16px 20px; background: #f8f9fa;
@@ -120,6 +119,28 @@
     .campo textarea { resize: vertical; min-height: 72px; }
     .form-acciones { grid-column: 1/-1; display: flex; justify-content: flex-end; gap: 10px; }
 
+    /* Tom Select overrides para consistencia visual */
+    .ts-wrapper { font-family: 'Segoe UI', sans-serif; }
+    .ts-control {
+      border: 1px solid #d0d7de !important;
+      border-radius: var(--radio) !important;
+      font-size: .88rem !important;
+      min-height: 40px !important;
+      padding: 4px 8px !important;
+    }
+    .ts-control:focus-within {
+      border-color: var(--color-acento) !important;
+      box-shadow: 0 0 0 3px rgba(0,95,163,.12) !important;
+    }
+    .ts-dropdown { border-radius: var(--radio) !important; font-size: .88rem !important; }
+    .ts-dropdown .option.selected,
+    .ts-dropdown .option:hover { background: var(--color-acento) !important; color: #fff !important; }
+    .ts-control .item {
+      background: #d0e8ff !important; color: #003f8a !important;
+      border-radius: 20px !important; padding: 2px 10px !important;
+      font-size: .78rem !important; font-weight: 600 !important;
+    }
+
     /* Asistencia */
     .asistencia-grid {
       display: grid; grid-template-columns: 1fr auto; align-items: center;
@@ -129,7 +150,6 @@
     .asistencia-grid select { padding: 6px 10px; border-radius: var(--radio);
       border: 1px solid #d0d7de; font-size: .85rem; }
 
-    /* Botones */
     .btn {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 9px 18px; border-radius: var(--radio); border: none;
@@ -142,7 +162,6 @@
     .btn-sm { padding: 5px 12px; font-size: .8rem; }
     .btn-peligro { background: var(--bg-peligro); color: var(--color-peligro); }
 
-    /* Badges */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
               font-size: .76rem; font-weight: 600; }
     .badge-verde  { background: var(--bg-exito);  color: var(--color-exito); }
@@ -150,10 +169,14 @@
     .badge-azul   { background: #d0e8ff;           color: #003f8a; }
     .badge-amarillo { background: var(--bg-advertencia); color: var(--color-advertencia); }
 
-    /* Empty */
-    .empty { text-align: center; padding: 36px 20px; color: #888; font-size: .9rem; }
+    /* Separador de secciones dentro del tab */
+    .seccion-titulo {
+      font-size: .8rem; font-weight: 700; color: #888;
+      text-transform: uppercase; letter-spacing: .5px;
+      margin: 0 0 10px; padding: 0;
+    }
 
-    /* Footer */
+    .empty { text-align: center; padding: 36px 20px; color: #888; font-size: .9rem; }
     .footer { text-align: center; padding: 24px 0; color: #666;
                font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 40px; }
 
@@ -168,21 +191,22 @@
 <body>
 
 <nav class="navbar">
-  <a href="/comisiones">← Volver a comisiones</a>
+  <a href="/comisiones/comisiones-lista.view.html">← Volver a comisiones</a>
   <span>AIR – Sistema de Gestión Normativa</span>
 </nav>
 
 <header class="page-header">
   <h1 id="titulo-comision">Cargando...</h1>
   <p id="tipo-comision"></p>
+  <p class="objeto-acta" id="objeto-acta" style="display:none"></p>
   <span class="badge-modulo">Comisiones de Trabajo</span>
 </header>
 
 <main class="contenedor">
   <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
   <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
+  <div id="msg-warn"  class="alerta alerta-warn"  style="display:none"></div>
 
-  <!-- Stats resumen -->
   <div class="stats-row">
     <div class="stat-card">
       <div class="numero" id="stat-integrantes">—</div>
@@ -198,22 +222,16 @@
     </div>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
-    <button class="tab activo" onclick="cambiarTab('integrantes', this)">
-      👥 Integrantes
-    </button>
-    <button class="tab" onclick="cambiarTab('sesiones', this)">
-      📅 Sesiones
-    </button>
-    <button class="tab" onclick="cambiarTab('informes', this)">
-      📄 Informes del Directorio
-    </button>
+    <button class="tab activo" onclick="cambiarTab('integrantes', this)">👥 Integrantes</button>
+    <button class="tab" onclick="cambiarTab('sesiones', this)">📅 Sesiones</button>
+    <button class="tab" onclick="cambiarTab('informes', this)">📄 Informes del Directorio</button>
   </div>
 
-  <!-- ── TAB: INTEGRANTES ─────────────────────────────────── -->
+  <!-- ── TAB: INTEGRANTES ──────────────────────────────────── -->
   <div class="tab-panel activo" id="panel-integrantes">
 
+    <!-- Tabla de integrantes actuales -->
     <div class="card">
       <div class="card-header">
         <h3>Integrantes de la comisión</h3>
@@ -236,14 +254,18 @@
           </tbody>
         </table>
       </div>
+    </div>
 
-      <!-- Formulario: agregar integrante -->
+    <!-- Formulario: agregar en masa con Tom Select -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Agregar integrantes</h3>
+      </div>
       <div class="form-inline">
-        <div class="campo">
-          <label>Asambleísta *</label>
-          <select id="f-int-asambleista">
-            <option value="">Seleccione...</option>
-          </select>
+        <!-- Tom Select multiselect de asambleístas -->
+        <div class="campo" style="grid-column:1/-1">
+          <label>Asambleístas a agregar * <span style="font-weight:400;color:#888">(busca y selecciona varios)</span></label>
+          <select id="f-int-asambleistas" multiple placeholder="Buscar asambleísta..."></select>
         </div>
         <div class="campo">
           <label>Rol en la comisión *</label>
@@ -260,8 +282,8 @@
           <input type="date" id="f-int-fecha-fin">
         </div>
         <div class="form-acciones">
-          <button class="btn btn-primario" onclick="agregarIntegrante()">
-            + Agregar integrante
+          <button class="btn btn-primario" onclick="agregarIntegrantes()">
+            + Agregar integrantes
           </button>
         </div>
       </div>
@@ -269,9 +291,8 @@
 
   </div>
 
-  <!-- ── TAB: SESIONES ─────────────────────────────────────── -->
+  <!-- ── TAB: SESIONES ──────────────────────────────────────── -->
   <div class="tab-panel" id="panel-sesiones">
-
     <div class="card">
       <div class="card-header">
         <h3>Sesiones de la comisión</h3>
@@ -294,7 +315,6 @@
         </table>
       </div>
 
-      <!-- Formulario: crear sesión -->
       <div class="form-inline">
         <div class="campo">
           <label>N° de sesión</label>
@@ -313,34 +333,26 @@
           <input type="url" id="f-ses-acta" placeholder="https://...">
         </div>
         <div class="form-acciones">
-          <button class="btn btn-primario" onclick="crearSesion()">
-            + Registrar sesión
-          </button>
+          <button class="btn btn-primario" onclick="crearSesion()">+ Registrar sesión</button>
         </div>
       </div>
     </div>
 
-    <!-- Panel asistencia de sesión seleccionada -->
+    <!-- Panel asistencia sesión seleccionada -->
     <div class="card" id="panel-asistencia" style="display:none">
       <div class="card-header">
         <h3 id="titulo-asistencia">Asistencia — Sesión</h3>
         <button class="btn btn-sm btn-secundario" onclick="cerrarAsistencia()">✕ Cerrar</button>
       </div>
-      <div id="lista-asistencia" class="card-body">
-        <!-- Se llena dinámicamente -->
-      </div>
+      <div id="lista-asistencia" class="card-body"></div>
       <div style="padding:0 20px 16px;display:flex;justify-content:flex-end;">
-        <button class="btn btn-primario" onclick="guardarAsistencia()">
-          Guardar asistencia
-        </button>
+        <button class="btn btn-primario" onclick="guardarAsistencia()">Guardar asistencia</button>
       </div>
     </div>
-
   </div>
 
   <!-- ── TAB: INFORMES DEL DIRECTORIO ──────────────────────── -->
   <div class="tab-panel" id="panel-informes">
-
     <div class="card">
       <div class="card-header">
         <h3>Informes del Directorio</h3>
@@ -362,7 +374,6 @@
         </table>
       </div>
 
-      <!-- Formulario: crear informe -->
       <div class="form-inline">
         <div class="campo" style="grid-column:1/-1">
           <label>Título oficial del informe *</label>
@@ -371,15 +382,11 @@
         </div>
         <div class="campo">
           <label>Propuesta asociada</label>
-          <select id="f-inf-propuesta">
-            <option value="">— Sin propuesta —</option>
-          </select>
+          <select id="f-inf-propuesta"><option value="">— Sin propuesta —</option></select>
         </div>
         <div class="campo">
           <label>Sesión plenaria</label>
-          <select id="f-inf-sesion">
-            <option value="">— Sin sesión —</option>
-          </select>
+          <select id="f-inf-sesion"><option value="">— Sin sesión —</option></select>
         </div>
         <div class="campo">
           <label>Fecha de presentación</label>
@@ -395,34 +402,42 @@
                   style="display:none" onclick="cancelarEditarInforme()">
             Cancelar
           </button>
-          <button class="btn btn-primario" onclick="guardarInforme()">
-            + Registrar informe
-          </button>
+          <button class="btn btn-primario" onclick="guardarInforme()">+ Registrar informe</button>
         </div>
       </div>
     </div>
-
   </div>
 
   <div class="footer">Módulo de Comisiones de Trabajo — AIR</div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="/shared/auth.js"></script>
 <script>
   // ── Estado global ──────────────────────────────────────────
-  const idComision = new URLSearchParams(window.location.search).get('id');
-  let catalogos    = {};
-  let datoComision = {};
-  let sesionActivaId   = null;
+  const idComision      = new URLSearchParams(window.location.search).get('id');
+  let catalogos         = {};
+  let datoComision      = {};
+  let sesionActivaId    = null;
   let informeEditandoId = null;
+  let tomSelectInstance = null;  // instancia del buscador multiselect
 
   // ── Inicialización ─────────────────────────────────────────
   async function init() {
+    if (!idComision) {
+      mostrarError('No se especificó una comisión. Vuelve al listado.');
+      return;
+    }
+
     try {
       const [catRes, detRes] = await Promise.all([
         fetch('/comisiones/catalogos'),
         fetch(`/comisiones/${idComision}`)
       ]);
+
+      if (!catRes.ok) throw new Error('Error al cargar catálogos');
+      if (!detRes.ok) throw new Error('Comisión no encontrada');
+
       catalogos    = await catRes.json();
       datoComision = await detRes.json();
 
@@ -435,30 +450,70 @@
       document.getElementById('tipo-comision').textContent   = datoComision.tipo_comision;
       document.title = `${datoComision.nombre_comision} — AIR`;
 
-      // Stats
-      const intActivos = datoComision.integrantes.filter(i => i.estado === 'ACTIVO').length;
-      document.getElementById('stat-integrantes').textContent = intActivos;
-      document.getElementById('stat-sesiones').textContent    = datoComision.sesiones.length;
-      document.getElementById('stat-informes').textContent    = datoComision.informes.length;
+      // Objeto según acta
+      if (datoComision.objeto_acta) {
+        const el = document.getElementById('objeto-acta');
+        el.textContent = `Objeto: ${datoComision.objeto_acta}`;
+        el.style.display = 'block';
+      }
 
-      // Poblar selects
-      poblarSelect('f-int-asambleista', catalogos.asambleistas,
-                   'asambleista_id', a => `${a.nombre} (${a.cedula})`);
+      // Stats
+      actualizarStats();
+
+      // Poblar selects normales
       poblarSelect('f-int-rol', catalogos.roles_comision,
                    'id_rol_comision', r => r.nombre_rol);
       poblarSelect('f-inf-propuesta', catalogos.propuestas,
-                   'id_propuesta', p => `${p.codigo_air ? p.codigo_air+' - ' : ''}${p.titulo}`);
+                   'id_propuesta', p => `${p.codigo_air ? p.codigo_air + ' - ' : ''}${p.titulo}`);
       poblarSelect('f-inf-sesion', catalogos.sesiones_plenarias,
                    'id_sesion', s => `${s.numero_sesion} (${s.fecha})`);
+
+      // Tom Select: multiselect de asambleístas con búsqueda
+      iniciarTomSelect();
 
       renderIntegrantes();
       renderSesiones();
       renderInformes();
 
     } catch (e) {
-      mostrarError('Error al cargar los datos de la comisión');
+      mostrarError('Error al cargar los datos de la comisión: ' + e.message);
       console.error(e);
     }
+  }
+
+  function iniciarTomSelect() {
+    // Destruir instancia previa si existe (en recargas)
+    if (tomSelectInstance) { tomSelectInstance.destroy(); }
+
+    // Construir opciones — excluye los que ya son integrantes activos
+    const activos = new Set(
+      datoComision.integrantes
+        .filter(i => i.estado === 'ACTIVO')
+        .map(i => String(i.asambleista_id))
+    );
+
+    const opciones = catalogos.asambleistas.map(a => ({
+      value: String(a.asambleista_id),
+      text:  `${a.nombre} (${a.cedula})`,
+      disabled: activos.has(String(a.asambleista_id))
+    }));
+
+    tomSelectInstance = new TomSelect('#f-int-asambleistas', {
+      options:     opciones,
+      plugins:     ['remove_button'],
+      maxOptions:  200,
+      placeholder: 'Buscar asambleísta...',
+      render: {
+        option: (data) => {
+          if (data.disabled) {
+            return `<div class="option" style="color:#aaa">
+                      ${data.text} <em style="font-size:.75rem">(ya integrante)</em>
+                    </div>`;
+          }
+          return `<div class="option">${data.text}</div>`;
+        }
+      }
+    });
   }
 
   // ── Tabs ───────────────────────────────────────────────────
@@ -467,6 +522,13 @@
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
     btn.classList.add('activo');
     document.getElementById(`panel-${nombre}`).classList.add('activo');
+  }
+
+  function actualizarStats() {
+    const intActivos = datoComision.integrantes.filter(i => i.estado === 'ACTIVO').length;
+    document.getElementById('stat-integrantes').textContent = intActivos;
+    document.getElementById('stat-sesiones').textContent    = datoComision.sesiones.length;
+    document.getElementById('stat-informes').textContent    = datoComision.informes.length;
   }
 
   // ── INTEGRANTES ────────────────────────────────────────────
@@ -498,34 +560,59 @@
     `).join('');
   }
 
-  async function agregarIntegrante() {
-    const body = {
-      id_asambleista:           document.getElementById('f-int-asambleista').value,
-      id_rol_comision:          document.getElementById('f-int-rol').value,
-      fecha_ingreso_nombramiento: document.getElementById('f-int-fecha-inicio').value || null,
-      fecha_fin_nombramiento:   document.getElementById('f-int-fecha-fin').value || null
-    };
+  async function agregarIntegrantes() {
+    const seleccionados = tomSelectInstance ? tomSelectInstance.getValue() : [];
+    const idRol         = document.getElementById('f-int-rol').value;
+    const fechaInicio   = document.getElementById('f-int-fecha-inicio').value || null;
+    const fechaFin      = document.getElementById('f-int-fecha-fin').value || null;
 
-    if (!body.id_asambleista || !body.id_rol_comision) {
-      mostrarError('Seleccione asambleísta y rol'); return;
+    if (!seleccionados.length) {
+      mostrarError('Selecciona al menos un asambleísta'); return;
+    }
+    if (!idRol) {
+      mostrarError('Selecciona un rol para los integrantes'); return;
     }
 
-    const res  = await fetch(`/comisiones/${idComision}/integrantes`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+    const integrantes = seleccionados.map(id => ({
+      id_asambleista:  Number(id),
+      id_rol_comision: Number(idRol)
+    }));
+
+    const res  = await fetch(`/comisiones/${idComision}/integrantes/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        integrantes,
+        fecha_ingreso_nombramiento: fechaInicio,
+        fecha_fin_nombramiento:     fechaFin
+      })
     });
     const data = await res.json();
     if (!res.ok) { mostrarError(data.error); return; }
 
-    mostrarOk('Integrante agregado correctamente.');
+    // Limpiar formulario
+    tomSelectInstance.clear();
+    document.getElementById('f-int-rol').value         = '';
+    document.getElementById('f-int-fecha-inicio').value = '';
+    document.getElementById('f-int-fecha-fin').value    = '';
+
+    // Mostrar resultado
+    let msg = `${data.agregados} integrante(s) agregado(s) correctamente.`;
+    if (data.omitidos > 0) {
+      mostrarWarn(`${msg} ${data.omitidos} omitido(s) por ya ser integrantes activos.`);
+    } else {
+      mostrarOk(msg);
+    }
+
     await recargar();
   }
 
   async function removerIntegrante(id) {
     if (!confirm('¿Dar de baja a este integrante de la comisión?')) return;
-    const hoy  = new Date().toISOString().slice(0, 10);
-    const res  = await fetch(`/comisiones/${idComision}/integrantes/${id}`, {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    const hoy = new Date().toISOString().slice(0, 10);
+    const res = await fetch(`/comisiones/${idComision}/integrantes/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fecha_fin: hoy })
     });
     const data = await res.json();
@@ -551,13 +638,13 @@
           <td>${esc(s.descripcion ?? '—')}</td>
           <td><span class="badge badge-azul">${s.total_asistentes}</span></td>
           <td>${s.link_acta
-                ? `<a href="${esc(s.link_acta)}" target="_blank" class="btn btn-sm btn-secundario">
-                     Ver acta</a>`
+                ? `<a href="${esc(s.link_acta)}" target="_blank" class="btn btn-sm btn-secundario">Ver acta</a>`
                 : '—'}</td>
           <td>
             <div class="td-acciones">
               <button class="btn btn-sm btn-primario"
-                      onclick="abrirAsistencia(${s.id_sesion_comision}, '${esc(s.numero_sesion ?? s.id_sesion_comision)}')">
+                      onclick="abrirAsistencia(${s.id_sesion_comision},
+                               '${esc(s.numero_sesion ?? String(s.id_sesion_comision))}')">
                 Registrar asistencia
               </button>
             </div>
@@ -574,7 +661,6 @@
       descripcion:   document.getElementById('f-ses-descripcion').value.trim() || null,
       link_acta:     document.getElementById('f-ses-acta').value.trim() || null
     };
-
     if (!body.fecha_hora) { mostrarError('La fecha y hora son requeridas'); return; }
 
     const res  = await fetch(`/comisiones/${idComision}/sesiones`, {
@@ -590,24 +676,18 @@
     await recargar();
   }
 
-  // Panel de asistencia
   async function abrirAsistencia(sesionId, numeroSesion) {
     sesionActivaId = sesionId;
     const res  = await fetch(`/comisiones/sesiones/${sesionId}`);
     const data = await res.json();
     if (!res.ok) { mostrarError('Error al cargar la sesión'); return; }
 
-    document.getElementById('titulo-asistencia').textContent =
-      `Asistencia — ${numeroSesion}`;
+    document.getElementById('titulo-asistencia').textContent = `Asistencia — ${numeroSesion}`;
 
-    // Construir mapa de estado actual
     const mapaActual = {};
-    data.asistencia.forEach(a => {
-      mapaActual[a.asambleista_id] = a.id_estado_asistencia;
-    });
+    data.asistencia.forEach(a => { mapaActual[a.asambleista_id] = a.id_estado_asistencia; });
 
-    // Listar todos los integrantes ACTIVOS de la comisión
-    const integrantes = datoComision.integrantes.filter(i => i.estado === 'ACTIVO');
+    const integrantes   = datoComision.integrantes.filter(i => i.estado === 'ACTIVO');
     const opcionesEstado = catalogos.estados_asistencia.map(e =>
       `<option value="${e.id_estado_asistencia}">${esc(e.nombre)}</option>`
     ).join('');
@@ -619,8 +699,7 @@
               <strong>${esc(i.nombre_asambleista)}</strong>
               <span style="color:#888;font-size:.82rem"> · ${esc(i.cedula)}</span>
             </div>
-            <select data-id="${i.asambleista_id}"
-                    style="min-width:200px">
+            <select data-id="${i.asambleista_id}" style="min-width:200px">
               ${catalogos.estados_asistencia.map(e => `
                 <option value="${e.id_estado_asistencia}"
                   ${mapaActual[i.asambleista_id] == e.id_estado_asistencia ? 'selected' : ''}>
@@ -648,10 +727,7 @@
       asambleista_id:       Number(sel.dataset.id),
       id_estado_asistencia: Number(sel.value)
     }));
-
-    if (!registros.length) {
-      mostrarError('No hay integrantes para registrar'); return;
-    }
+    if (!registros.length) { mostrarError('No hay integrantes para registrar'); return; }
 
     const res  = await fetch(`/comisiones/sesiones/${sesionActivaId}/asistencia`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -677,7 +753,7 @@
       <tr>
         <td><strong>${esc(inf.titulo ?? '—')}</strong></td>
         <td>${inf.titulo_propuesta ? esc(inf.titulo_propuesta) : '—'}</td>
-        <td>${inf.sesion_plenaria ? esc(inf.sesion_plenaria) : '—'}</td>
+        <td>${inf.sesion_plenaria  ? esc(inf.sesion_plenaria)  : '—'}</td>
         <td>${inf.fecha_presentacion ?? '—'}</td>
         <td>
           <div class="td-acciones">
@@ -699,22 +775,16 @@
       fecha_presentacion: document.getElementById('f-inf-fecha').value || null,
       recomendacion:      document.getElementById('f-inf-recomendacion').value.trim() || null
     };
-
     if (!body.titulo) { mostrarError('El título del informe es requerido'); return; }
 
-    let res;
-    if (informeEditandoId) {
-      res = await fetch(`/comisiones/informes/${informeEditandoId}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-    } else {
-      res = await fetch(`/comisiones/${idComision}/informes`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-    }
+    const url = informeEditandoId
+      ? `/comisiones/informes/${informeEditandoId}`
+      : `/comisiones/${idComision}/informes`;
+    const metodo = informeEditandoId ? 'PUT' : 'POST';
 
+    const res  = await fetch(url, { method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) { mostrarError(data.error); return; }
 
@@ -727,17 +797,14 @@
     const inf = datoComision.informes.find(i => i.id_informe === id);
     if (!inf) return;
     informeEditandoId = id;
-
-    document.getElementById('f-inf-titulo').value          = inf.titulo ?? '';
-    document.getElementById('f-inf-propuesta').value       = inf.id_propuesta ?? '';
-    document.getElementById('f-inf-sesion').value          = inf.id_sesion ?? '';
-    document.getElementById('f-inf-fecha').value           = inf.fecha_presentacion ?? '';
-    document.getElementById('f-inf-recomendacion').value   = inf.recomendacion ?? '';
+    document.getElementById('f-inf-titulo').value        = inf.titulo ?? '';
+    document.getElementById('f-inf-propuesta').value     = inf.id_propuesta ?? '';
+    document.getElementById('f-inf-sesion').value        = inf.id_sesion ?? '';
+    document.getElementById('f-inf-fecha').value         = inf.fecha_presentacion ?? '';
+    document.getElementById('f-inf-recomendacion').value = inf.recomendacion ?? '';
     document.getElementById('btn-cancelar-informe').style.display = 'inline-flex';
-    document.querySelector('#panel-informes .form-acciones .btn-primario').textContent
-      = 'Actualizar informe';
-
-    document.querySelector('#panel-informes').scrollIntoView({ behavior: 'smooth' });
+    document.querySelector('#panel-informes .form-acciones .btn-primario').textContent = 'Actualizar informe';
+    document.getElementById('panel-informes').scrollIntoView({ behavior: 'smooth' });
   }
 
   function cancelarEditarInforme() {
@@ -745,31 +812,26 @@
     ['f-inf-titulo','f-inf-propuesta','f-inf-sesion','f-inf-fecha','f-inf-recomendacion']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('btn-cancelar-informe').style.display = 'none';
-    document.querySelector('#panel-informes .form-acciones .btn-primario').textContent
-      = '+ Registrar informe';
+    document.querySelector('#panel-informes .form-acciones .btn-primario').textContent = '+ Registrar informe';
   }
 
   // ── Recarga datos sin recargar página ─────────────────────
   async function recargar() {
-    const res  = await fetch(`/comisiones/${idComision}`);
+    const res = await fetch(`/comisiones/${idComision}`);
     datoComision = await res.json();
-
-    const intActivos = datoComision.integrantes.filter(i => i.estado === 'ACTIVO').length;
-    document.getElementById('stat-integrantes').textContent = intActivos;
-    document.getElementById('stat-sesiones').textContent    = datoComision.sesiones.length;
-    document.getElementById('stat-informes').textContent    = datoComision.informes.length;
-
+    actualizarStats();
     renderIntegrantes();
     renderSesiones();
     renderInformes();
+    // Reiniciar Tom Select con la lista actualizada (nuevos activos quedan deshabilitados)
+    iniciarTomSelect();
   }
 
   // ── Helpers ────────────────────────────────────────────────
   function poblarSelect(selectId, items, valKey, labelFn) {
     const sel = document.getElementById(selectId);
     items.forEach(i => sel.add(new Option(
-      typeof labelFn === 'function' ? labelFn(i) : i[labelFn],
-      i[valKey]
+      typeof labelFn === 'function' ? labelFn(i) : i[labelFn], i[valKey]
     )));
   }
 
@@ -794,6 +856,11 @@
     const el = document.getElementById('msg-ok');
     el.textContent = msg; el.style.display = 'block';
     setTimeout(() => el.style.display = 'none', 3000);
+  }
+  function mostrarWarn(msg) {
+    const el = document.getElementById('msg-warn');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 6000);
   }
 
   init();

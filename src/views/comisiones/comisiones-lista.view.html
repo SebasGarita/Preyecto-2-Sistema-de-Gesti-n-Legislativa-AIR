@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comisiones de Trabajo — AIR</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
   <style>
     :root {
       --color-primario   : #003366;
@@ -18,7 +19,6 @@
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
 
-    /* Navbar */
     .navbar {
       background: var(--color-primario); color: #fff;
       padding: 0 28px; display: flex; align-items: center;
@@ -28,7 +28,6 @@
     .navbar a { color: rgba(255,255,255,.85); text-decoration: none; transition: color .15s; }
     .navbar a:hover { color: #fff; }
 
-    /* Header */
     .page-header {
       background: var(--color-primario); color: #fff;
       padding: 28px 28px 24px; text-align: center;
@@ -40,16 +39,13 @@
       padding: 4px 14px; font-size: .8rem; display: inline-block; margin-top: 12px;
     }
 
-    /* Layout */
     .contenedor { max-width: 960px; margin: 28px auto; padding: 0 20px; }
 
-    /* Alertas */
     .alerta { padding: 12px 16px; border-radius: var(--radio); font-size: .9rem;
                font-weight: 500; margin-bottom: 20px; }
     .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border: 1px solid #f5c6cb; }
     .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
 
-    /* Toolbar */
     .toolbar {
       display: flex; justify-content: space-between; align-items: center;
       margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
@@ -64,7 +60,6 @@
       box-shadow: 0 0 0 3px rgba(0,95,163,.12);
     }
 
-    /* Botones */
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 10px 20px; border-radius: var(--radio); border: none;
@@ -75,9 +70,7 @@
     .btn-primario   { background: var(--color-acento);  color: #fff; }
     .btn-secundario { background: #e9ecef; color: #444; }
     .btn-sm { padding: 6px 14px; font-size: .82rem; }
-    .btn-peligro { background: var(--bg-peligro); color: var(--color-peligro); }
 
-    /* Tabla */
     .card-table {
       background: #fff; border-radius: var(--radio);
       box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05);
@@ -93,12 +86,10 @@
     tbody td { padding: 12px 16px; color: #333; vertical-align: middle; }
     .td-acciones { display: flex; gap: 8px; }
 
-    /* Badges */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
               font-size: .78rem; font-weight: 600; }
     .badge-azul  { background: #d0e8ff; color: #003f8a; }
     .badge-verde { background: var(--bg-exito); color: var(--color-exito); }
-    .badge-gris  { background: #e9ecef; color: #555; }
 
     /* Modal */
     .modal-overlay {
@@ -110,7 +101,8 @@
     .modal {
       background: #fff; border-radius: var(--radio);
       box-shadow: 0 8px 40px rgba(0,0,0,.25);
-      width: 100%; max-width: 480px; padding: 28px;
+      width: 100%; max-width: 520px; padding: 28px;
+      max-height: 90vh; overflow-y: auto;
     }
     .modal h2 { margin: 0 0 20px; font-size: 1.1rem; color: var(--color-primario); }
     .campo { margin-bottom: 16px; }
@@ -125,13 +117,10 @@
       border-color: var(--color-acento);
       box-shadow: 0 0 0 3px rgba(0,95,163,.12);
     }
+    .campo textarea { resize: vertical; min-height: 80px; }
     .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
 
-    /* Empty state */
     .empty { text-align: center; padding: 44px 20px; color: #888; font-size: .95rem; }
-    .empty svg { opacity: .3; margin-bottom: 12px; }
-
-    /* Footer */
     .footer { text-align: center; padding: 24px 0; color: #666;
                font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 44px; }
 
@@ -170,14 +159,15 @@
         <tr>
           <th>Comisión</th>
           <th>Tipo</th>
-          <th>Integrantes activos</th>
+          <th>Objeto</th>
+          <th>Integrantes</th>
           <th>Sesiones</th>
           <th>Informes</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody id="cuerpo-tabla">
-        <tr><td colspan="6" class="empty">Cargando...</td></tr>
+        <tr><td colspan="7" class="empty">Cargando...</td></tr>
       </tbody>
     </table>
   </div>
@@ -197,6 +187,11 @@
       <label for="m-nombre">Nombre de la comisión *</label>
       <input type="text" id="m-nombre" placeholder="ej: Comisión de Análisis de Reglamento X">
     </div>
+    <div class="campo">
+      <label for="m-objeto">Objeto según acta de creación</label>
+      <textarea id="m-objeto"
+                placeholder="Describa el objeto de la comisión conforme al acta oficial..."></textarea>
+    </div>
     <div class="modal-acciones">
       <button class="btn btn-secundario" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primario"   onclick="guardarComision()">Guardar</button>
@@ -213,16 +208,19 @@
   async function init() {
     try {
       const res = await fetch('/comisiones/catalogos');
+      if (!res.ok) throw new Error('Error al cargar catálogos');
       catalogos = await res.json();
       poblarSelect('m-tipo', catalogos.tipos_comision, 'id_tipo_comision', 'nombre');
       await cargarLista();
     } catch (e) {
-      mostrarError('Error al cargar los datos iniciales');
+      mostrarError('Error al cargar los datos iniciales: ' + e.message);
     }
   }
 
   async function cargarLista(busqueda = '') {
-    const url = busqueda ? `/comisiones?busqueda=${encodeURIComponent(busqueda)}` : '/comisiones';
+    const url = busqueda
+      ? `/comisiones?busqueda=${encodeURIComponent(busqueda)}`
+      : '/comisiones';
     const res  = await fetch(url);
     const data = await res.json();
     renderTabla(data);
@@ -231,22 +229,29 @@
   function renderTabla(lista) {
     const tbody = document.getElementById('cuerpo-tabla');
     if (!lista.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="empty">No hay comisiones registradas.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">No hay comisiones registradas.</td></tr>`;
       return;
     }
     tbody.innerHTML = lista.map(c => `
       <tr>
         <td><strong>${esc(c.nombre_comision)}</strong></td>
         <td><span class="badge badge-azul">${esc(c.tipo_comision)}</span></td>
+        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+            title="${esc(c.objeto_acta ?? '')}">
+          ${c.objeto_acta ? esc(c.objeto_acta.slice(0, 60)) + (c.objeto_acta.length > 60 ? '…' : '') : '—'}
+        </td>
         <td>${c.total_integrantes}</td>
         <td>${c.total_sesiones}</td>
         <td>${c.total_informes}</td>
         <td>
           <div class="td-acciones">
             <a class="btn btn-sm btn-primario"
-               href="/comisiones/comision-detalle.view.html?id=${c.id_comision}">Ver detalle</a>
+               href="/comisiones/comision-detalle.view.html?id=${c.id_comision}">
+               Ver detalle
+            </a>
             <button class="btn btn-sm btn-secundario"
-                    onclick="abrirModalEditar(${c.id_comision}, '${esc(c.nombre_comision)}', ${c.id_tipo_comision})">
+                    onclick="abrirModalEditar(${c.id_comision}, '${esc(c.nombre_comision)}',
+                             ${c.id_tipo_comision}, ${JSON.stringify(c.objeto_acta ?? '')})">
               Editar
             </button>
           </div>
@@ -265,16 +270,18 @@
   function abrirModalCrear() {
     editandoId = null;
     document.getElementById('modal-titulo').textContent = 'Nueva comisión';
-    document.getElementById('m-tipo').value = '';
+    document.getElementById('m-tipo').value   = '';
     document.getElementById('m-nombre').value = '';
+    document.getElementById('m-objeto').value = '';
     document.getElementById('modal-comision').classList.add('abierto');
   }
 
-  function abrirModalEditar(id, nombre, tipoId) {
+  function abrirModalEditar(id, nombre, tipoId, objeto) {
     editandoId = id;
     document.getElementById('modal-titulo').textContent = 'Editar comisión';
     document.getElementById('m-tipo').value   = tipoId;
     document.getElementById('m-nombre').value = nombre;
+    document.getElementById('m-objeto').value = objeto ?? '';
     document.getElementById('modal-comision').classList.add('abierto');
   }
 
@@ -286,7 +293,8 @@
   async function guardarComision() {
     const body = {
       id_tipo_comision: document.getElementById('m-tipo').value,
-      nombre_comision:  document.getElementById('m-nombre').value.trim()
+      nombre_comision:  document.getElementById('m-nombre').value.trim(),
+      objeto_acta:      document.getElementById('m-objeto').value.trim() || null
     };
 
     if (!body.id_tipo_comision || !body.nombre_comision) {
@@ -311,18 +319,22 @@
     await cargarLista();
   }
 
-  // ── Helpers ─────────────────────────────────────────────────
   function poblarSelect(selectId, items, valKey, labelKey) {
     const sel = document.getElementById(selectId);
     items.forEach(i => sel.add(new Option(i[labelKey], i[valKey])));
   }
-  function esc(str) { return String(str ?? '').replace(/[&<>"']/g, c =>
-    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
   function mostrarError(msg) {
     const el = document.getElementById('msg-error');
     el.textContent = msg; el.style.display = 'block';
     setTimeout(() => el.style.display = 'none', 5000);
   }
+
   function mostrarOk(msg) {
     const el = document.getElementById('msg-ok');
     el.textContent = msg; el.style.display = 'block';
