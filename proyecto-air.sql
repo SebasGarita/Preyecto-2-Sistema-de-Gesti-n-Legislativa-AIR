@@ -427,6 +427,14 @@ WHERE r.nombre_rol = 'ADMINISTRADOR'
   AND p.nombre_permiso = 'GESTIONAR_COMISIONES'
 ON CONFLICT DO NOTHING;
 
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol = 'SECRETARIA_AIR'
+  AND p.nombre_permiso = 'GESTIONAR_COMISIONES'
+ON CONFLICT DO NOTHING;
+
+
 
 -- ── Seeds: sectores disponibles ────────────────────────────────────────────
 INSERT INTO catalogo_sector (nombre) VALUES
@@ -1087,3 +1095,6 @@ JOIN comision               c  ON c.id_comision       = ic.id_comision
 JOIN catalogo_tipo_comision tc ON tc.id_tipo_comision  = c.id_tipo_comision
 JOIN asambleista            a  ON a.asambleista_id     = ic.id_asambleista
 JOIN catalogo_rol_comision  rc ON rc.id_rol_comision   = ic.id_rol_comision;
+
+ALTER TABLE comision
+  ADD COLUMN IF NOT EXISTS objeto_acta TEXT;
