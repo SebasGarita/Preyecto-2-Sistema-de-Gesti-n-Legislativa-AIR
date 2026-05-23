@@ -350,35 +350,33 @@ const Asistencia = {
   // CATÁLOGOS
   // ────────────────────────────────────────────────────────────
 
-  async getCatalogos() {
-    const [sesiones, estados, tiposMayoria] = await Promise.all([
-      db.query(`
-        SELECT
-          s.id_sesion,
-          s.numero_sesion,
-          s.fecha,
-          s.quorum_requerido,
-          ts.nombre AS tipo_sesion,
-          tm.nombre AS tipo_modalidad
-        FROM sesiones s
-        JOIN catalogo_tipo_sesion    ts ON ts.id_tipo_sesion    = s.id_tipo_sesion
-        JOIN catalogo_tipo_modalidad tm ON tm.id_tipo_modalidad = s.id_tipo_modalidad
-        ORDER BY s.fecha DESC
-        LIMIT 60
-      `),
-      db.query(
-        'SELECT id_estado_asistencia, nombre FROM catalogo_asistencia_sesion_comision ORDER BY nombre'
-      ),
-      db.query(
-        'SELECT DISTINCT tipo_mayoria_requerida FROM catalogo_tipo_mayoria_requerida ORDER BY 1'
-      )
-    ]);
-    return {
-      sesiones:           sesiones.rows,
-      estados_asistencia: estados.rows,
-      tipos_mayoria:      ['Simple', 'Calificada']
-    };
-  }
+    async getCatalogos() {
+        const [sesiones, estados] = await Promise.all([
+            db.query(`
+            SELECT
+                s.id_sesion,
+                s.numero_sesion,
+                s.fecha,
+                s.quorum_requerido,
+                ts.nombre AS tipo_sesion,
+                tm.nombre AS tipo_modalidad
+            FROM sesiones s
+            JOIN catalogo_tipo_sesion    ts ON ts.id_tipo_sesion    = s.id_tipo_sesion
+            JOIN catalogo_tipo_modalidad tm ON tm.id_tipo_modalidad = s.id_tipo_modalidad
+            ORDER BY s.fecha DESC
+            LIMIT 60
+            `),
+            db.query(
+            'SELECT id_estado_asistencia, nombre FROM catalogo_asistencia_sesion_comision ORDER BY nombre'
+            )
+        ]);
+
+        return {
+            sesiones:           sesiones.rows,
+            estados_asistencia: estados.rows,
+            tipos_mayoria:      ['Simple', 'Calificada']
+        };
+    }
 };
 
 module.exports = Asistencia;

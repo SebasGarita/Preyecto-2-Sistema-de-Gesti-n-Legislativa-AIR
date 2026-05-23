@@ -520,7 +520,7 @@ async function init() {
 
     // Mapa de estados para marcar botones
     catalogos.estados_asistencia.forEach(e => {
-      estadoNombres[e.id_estado_asistencia] = e.nombre;
+        estadoNombres[String(e.id_estado_asistencia)] = e.nombre;
     });
 
     // Fechas por defecto: año actual
@@ -597,15 +597,15 @@ function renderHoja() {
     return;
   }
 
-  const estadoPresId   = idEstadoPorNombre('Presente');
-  const estadoAusId    = idEstadoPorNombre('Ausente sin justificación');
-  const estadoJustId   = idEstadoPorNombre('Ausente justificado');
+  const estadoPresId  = idEstadoPorNombre('Presente');
+  const estadoAusId   = idEstadoPorNombre('Ausente sin justificación');
+  const estadoJustId  = idEstadoPorNombre('Ausente justificado');
 
   lista.innerHTML = hojaActual.asambleistas.map(a => {
-    const estActual = estadoHoja[a.asambleista_id];
-    const clsP  = estActual == estadoPresId  ? 'activo-presente'   : '';
-    const clsA  = estActual == estadoAusId   ? 'activo-ausente'    : '';
-    const clsJ  = estActual == estadoJustId  ? 'activo-justificado': '';
+    const estActual = estadoHoja[String(a.asambleista_id)];
+    const clsP = estActual === estadoPresId  ? 'activo-presente'    : '';
+    const clsA = estActual === estadoAusId   ? 'activo-ausente'     : '';
+    const clsJ = estActual === estadoJustId  ? 'activo-justificado' : '';
 
     return `
       <div class="hoja-item" data-nombre="${esc(a.nombre).toLowerCase()}" data-id="${a.asambleista_id}">
@@ -615,15 +615,15 @@ function renderHoja() {
         </div>
         <div class="btns-estado">
           <button class="btn-estado ${clsP}"
-                  onclick="setEstado(${a.asambleista_id}, ${estadoPresId}, this, 'presente')">
+                  onclick="setEstado('${a.asambleista_id}', '${estadoPresId}', this, 'presente')">
             ✓ Presente
           </button>
           <button class="btn-estado ${clsA}"
-                  onclick="setEstado(${a.asambleista_id}, ${estadoAusId}, this, 'ausente')">
+                  onclick="setEstado('${a.asambleista_id}', '${estadoAusId}', this, 'ausente')">
             ✗ Ausente
           </button>
           <button class="btn-estado ${clsJ}"
-                  onclick="setEstado(${a.asambleista_id}, ${estadoJustId}, this, 'justificado')">
+                  onclick="setEstado('${a.asambleista_id}', '${estadoJustId}', this, 'justificado')">
             J Justificado
           </button>
         </div>
@@ -633,7 +633,7 @@ function renderHoja() {
 }
 
 function setEstado(asambleistaId, idEstado, btnClicado, tipo) {
-  estadoHoja[asambleistaId] = idEstado;
+   estadoHoja[String(asambleistaId)] = String(idEstado); // ← forzar string
 
   // Actualizar clases del grupo de botones
   const item  = btnClicado.closest('.hoja-item');
@@ -655,7 +655,7 @@ function marcarTodos(tipo) {
   const pos   = tipo === 'presente' ? 0 : 1;   // índice del botón
 
   document.querySelectorAll('.hoja-item:not(.oculto)').forEach(item => {
-    const id = Number(item.dataset.id);
+    const id = item.dataset.id;
     estadoHoja[id] = idEstado;
     item.querySelectorAll('.btn-estado').forEach((b, i) => {
       b.className = 'btn-estado' + (i === pos ? ` ${clase}` : '');
@@ -694,9 +694,12 @@ async function guardarHoja() {
   if (!hojaActual) return;
 
   const registros = Object.entries(estadoHoja).map(([id, estId]) => ({
-    asambleista_id:       Number(id),
-    id_estado_asistencia: Number(estId)
+    asambleista_id:       id,
+    id_estado_asistencia: estId
   }));
+
+   console.log('Registros a enviar:', registros); // ← agrega esta línea
+    console.log('Catálogo estados:', catalogos.estados_asistencia); // ← y esta
 
   if (!registros.length) {
     mostrarAdvertencia('Marque al menos un estado antes de guardar.');
@@ -920,7 +923,7 @@ function cambiarTab(nombre, btn) {
 
 function idEstadoPorNombre(nombre) {
   const e = (catalogos.estados_asistencia || []).find(e => e.nombre === nombre);
-  return e?.id_estado_asistencia ?? null;
+  return e ? String(e.id_estado_asistencia) : null;
 }
 
 function colorPct(pct) {

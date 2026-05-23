@@ -81,6 +81,7 @@ const AsistenciaController = {
       });
 
     } catch (err) {
+        console.error('ERROR registrarHoja:', err); // ← agrega esta línea
       return res.status(500).json({ error: err.message });
     }
   },
