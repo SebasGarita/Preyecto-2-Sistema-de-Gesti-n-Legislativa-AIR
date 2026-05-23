@@ -415,6 +415,19 @@ SELECT r.id_rol, p.id_permiso FROM sys_rol r, sys_permiso p
 WHERE r.nombre_rol IN ('ADMINISTRADOR','SECRETARIA_AIR')
   AND p.nombre_permiso = 'GESTIONAR_PROPUESTAS';
 
+INSERT INTO sys_permiso (nombre_permiso, descripcion) VALUES
+  ('GESTIONAR_COMISIONES', 'Puede crear y gestionar comisiones de trabajo')
+ON CONFLICT (nombre_permiso) DO NOTHING;
+
+
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol = 'ADMINISTRADOR'
+  AND p.nombre_permiso = 'GESTIONAR_COMISIONES'
+ON CONFLICT DO NOTHING;
+
+
 -- ── Seeds: sectores disponibles ────────────────────────────────────────────
 INSERT INTO catalogo_sector (nombre) VALUES
   ('Docente'),
