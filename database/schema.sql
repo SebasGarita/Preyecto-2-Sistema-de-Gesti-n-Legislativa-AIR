@@ -365,10 +365,10 @@ DECLARE
     v_fecha_fin DATE;
 BEGIN
     -- Asignamos los valores de NEW a nuestras variables de CockroachDB
-    v_asambleista_id := NEW.asambleista_id;
-    v_id_nombramiento := NEW.id_nombramiento;
-    v_fecha_inicio := NEW.fecha_inicio;
-    v_fecha_fin := NEW.fecha_fin;
+    v_asambleista_id := (NEW).asambleista_id;
+    v_id_nombramiento := (NEW).id_nombramiento;
+    v_fecha_inicio := (NEW).fecha_inicio;
+    v_fecha_fin := (NEW).fecha_fin;
 
     IF EXISTS (
         SELECT 1 FROM nombramiento
@@ -385,6 +385,11 @@ BEGIN
         RAISE EXCEPTION 'TRASLAPE_NOMBRAMIENTO: El asambleísta ya tiene un nombramiento vigente en ese período';
     END IF;
     
-    RETURN NEW;
+    RETURN (NEW);
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tg_traslape_sector
+BEFORE INSERT ON nombramiento
+FOR EACH ROW
+EXECUTE FUNCTION fn_validar_traslape_nombramiento();

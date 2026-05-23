@@ -6,6 +6,21 @@ ALTER TABLE public.certificacion_emitida
     ADD COLUMN IF NOT EXISTS estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
     ADD COLUMN IF NOT EXISTS folio_sustituido_por VARCHAR(50) NULL;
 
+ALTER TABLE certificacion_emitida ADD COLUMN contenido TEXT;
+
+--cambiar a FK entera (requiere migración de datos)
+ALTER TABLE certificacion_emitida
+  ADD COLUMN id_usuario_secretaria INT REFERENCES sys_usuario(id_usuario);
+
+-- Migrar datos existentes:
+UPDATE certificacion_emitida ce
+SET id_usuario_secretaria = u.id_usuario::INT
+FROM sys_usuario u
+WHERE ce.usuario_secretaria = u.id_usuario::TEXT;
+
+-- Luego eliminar la columna vieja:
+ALTER TABLE certificacion_emitida DROP COLUMN usuario_secretaria;
+
 -- folio_sustituido_por: si esta cert fue reemplazada, apunta al folio nuevo
 
 
@@ -40,7 +55,7 @@ BEGIN
     IF (OLD).folio_unico        <> (NEW).folio_unico        OR
        (OLD).hash_seguridad     <> (NEW).hash_seguridad     OR
        (OLD).id_asambleista     <> (NEW).id_asambleista     OR
-       (OLD).usuario_secretaria <> (NEW).usuario_secretaria THEN
+       (OLD).id_usuario_secretaria <> (NEW).id_usuario_secretaria THEN
         RAISE EXCEPTION
             'La certificación con folio % es un documento de fe pública y sus campos de identidad no pueden modificarse.',
             (OLD).folio_unico;
@@ -103,5 +118,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
+
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+
+CREATE TRIGGER tg_no_repudio_cert_upd
+  BEFORE UPDATE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+CREATE TRIGGER tg_no_repudio_cert_del
+  BEFORE DELETE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
 -- Ejemplo de uso:
 SELECT anular_certificacion(123, 'Error en el periodo reportado', 'DAIR-010-2026');

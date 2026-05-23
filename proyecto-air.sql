@@ -405,6 +405,16 @@ SELECT u.id_usuario, r.id_rol
 FROM sys_usuario u, sys_rol r
 WHERE u.username = 'admin' AND r.nombre_rol = 'ADMINISTRADOR';
 
+
+INSERT INTO sys_permiso (nombre_permiso, descripcion)
+VALUES ('GESTIONAR_PROPUESTAS', 'Puede crear y gestionar propuestas normativas');
+
+-- Asignar a roles correspondientes:
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol IN ('ADMINISTRADOR','SECRETARIA_AIR')
+  AND p.nombre_permiso = 'GESTIONAR_PROPUESTAS';
+
 -- ── Seeds: sectores disponibles ────────────────────────────────────────────
 INSERT INTO catalogo_sector (nombre) VALUES
   ('Docente'),
@@ -562,6 +572,8 @@ ALTER TABLE public.certificacion_emitida
     ADD COLUMN IF NOT EXISTS estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
     ADD COLUMN IF NOT EXISTS folio_sustituido_por VARCHAR(50) NULL;
 
+ALTER TABLE certificacion_emitida ADD COLUMN contenido TEXT;
+
 -- folio_sustituido_por: si esta cert fue reemplazada, apunta al folio nuevo
 
 
@@ -661,11 +673,84 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
--- Ejemplo de uso:
-SELECT anular_certificacion(123, 'Error en el periodo reportado', 'DAIR-010-2026');
 
-ROLLBACK;
-BEGIN;
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+
+CREATE TRIGGER tg_no_repudio_cert_upd
+  BEFORE UPDATE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+CREATE TRIGGER tg_no_repudio_cert_del
+  BEFORE DELETE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+-- ── Función: validar quórum legal ─────────────────────────────
+CREATE OR REPLACE FUNCTION validar_quorum_legal(p_id_sesion INT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_presentes  INT;
+  v_quorum_req INT;
+BEGIN
+  SELECT COUNT(*) INTO v_presentes
+  FROM asistencia_sesion_plenaria
+  WHERE id_sesion = p_id_sesion;
+
+  SELECT quorum_requerido INTO v_quorum_req
+  FROM sesiones
+  WHERE id_sesion = p_id_sesion;
+
+  RETURN v_presentes >= COALESCE(v_quorum_req, 29);
+END;
+$$ LANGUAGE plpgsql;
+
+-- ── Función: calcular resultado de votación ───────────────────
+CREATE OR REPLACE FUNCTION calcular_resultado_votacion(
+  p_favor  INT,
+  p_contra INT,
+  p_tipo   VARCHAR
+)
+RETURNS VARCHAR AS $$
+DECLARE
+  v_total  FLOAT;
+  v_umbral FLOAT;
+BEGIN
+  v_total  := (p_favor + p_contra)::FLOAT;
+  v_umbral := CASE p_tipo
+                WHEN 'Calificada' THEN 0.66
+                ELSE 0.50
+              END;
+
+  RETURN CASE
+    WHEN v_total = 0 THEN 'SIN_VOTOS'
+    WHEN (p_favor::FLOAT / v_total) > v_umbral THEN 'APROBADA'
+    ELSE 'RECHAZADA'
+  END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ── Vista: participación activa ───────────────────────────────
+CREATE OR REPLACE VIEW v_participacion_activa AS
+SELECT
+  a.asambleista_id,
+  a.nombre,
+  COUNT(asp.id_sesion)                              AS sesiones_asistidas,
+  (SELECT COUNT(*) FROM sesiones)                   AS total_sesiones,
+  ROUND(
+    COUNT(asp.id_sesion)::DECIMAL /
+    NULLIF((SELECT COUNT(*) FROM sesiones), 0) * 100
+  , 2)                                              AS indice_participacion_pct
+FROM asambleista a
+LEFT JOIN asistencia_sesion_plenaria asp
+  ON a.asambleista_id = asp.id_asambleista
+GROUP BY a.asambleista_id, a.nombre;
+
+-- ── UNIQUE para ON CONFLICT en asistencia ─────────────────────
+ALTER TABLE asistencia_sesion_plenaria
+  ADD CONSTRAINT uq_asistencia
+  UNIQUE (id_asambleista, id_sesion);
 
 -- 1. Insertar Niveles de Reglamento controlando conflictos por el campo UNIQUE 'nombre'
 INSERT INTO catalogo_nivel_reglamento (id_nivel_reglamento, nombre) 
@@ -800,6 +885,46 @@ INSERT INTO elemento_normativo (
 
 (72, 1, 64, 3, 'ARTICULO 15', 'Los miembros del Consejo Institucional deberán cumplir las siguientes condiciones: a. Ser costarricenses...', 72, '1998-09-30', 1);
 
+-- ==========================================
+-- RESET SECUENCIAS (CockroachDB/PostgreSQL)
+-- ==========================================
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'catalogo_nivel_reglamento',
+    'id_nivel_reglamento'
+  ),
+  (SELECT MAX(id_nivel_reglamento)
+   FROM catalogo_nivel_reglamento)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'catalogo_estado_vigencia',
+    'id_estado_vigencia'
+  ),
+  (SELECT MAX(id_estado_vigencia)
+   FROM catalogo_estado_vigencia)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'reglamento',
+    'id_reglamento'
+  ),
+  (SELECT MAX(id_reglamento)
+   FROM reglamento)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'elemento_normativo',
+    'id_elemento'
+  ),
+  (SELECT MAX(id_elemento)
+   FROM elemento_normativo)
+);
+
 COMMIT;
 
 -- Función para validar traslape de nombramientos
@@ -813,10 +938,10 @@ DECLARE
     v_fecha_fin DATE;
 BEGIN
     -- Asignamos los valores de NEW a nuestras variables de CockroachDB
-    v_asambleista_id := NEW.asambleista_id;
-    v_id_nombramiento := NEW.id_nombramiento;
-    v_fecha_inicio := NEW.fecha_inicio;
-    v_fecha_fin := NEW.fecha_fin;
+    v_asambleista_id := (NEW).asambleista_id;
+    v_id_nombramiento := (NEW).id_nombramiento;
+    v_fecha_inicio := (NEW).fecha_inicio;
+    v_fecha_fin := (NEW).fecha_fin;
 
     IF EXISTS (
         SELECT 1 FROM nombramiento
@@ -833,9 +958,14 @@ BEGIN
         RAISE EXCEPTION 'TRASLAPE_NOMBRAMIENTO: El asambleísta ya tiene un nombramiento vigente en ese período';
     END IF;
     
-    RETURN NEW;
+    RETURN (NEW);
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tg_traslape_sector
+BEFORE INSERT ON nombramiento
+FOR EACH ROW
+EXECUTE FUNCTION fn_validar_traslape_nombramiento();
 
 -- Issue 6
 -- Issue 6

@@ -400,6 +400,15 @@
           </div>
         </fieldset>
 
+        <div class="campo"
+            id="campo-razon-cambio"
+            style="display:none">
+          <label for="razon-cambio">Razón del cambio</label>
+          <input type="text"
+                id="razon-cambio"
+                placeholder="Razón del cambio...">
+        </div>
+
         <div class="acciones-formulario">
           <a href="/asambleistas" class="btn btn-secundario">Cancelar</a>
           <button type="submit" class="btn btn-primario">Guardar asambleísta</button>
@@ -473,15 +482,32 @@
         e.preventDefault();
         ocultarMensajes();
 
-        const body = {
-            cedula:               document.getElementById('cedula').value,
-            nombre:               document.getElementById('nombre').value,
-            correo_institucional: document.getElementById('correo').value,
-            sector_id:            document.getElementById('sector').value,
-            id_puesto:            document.getElementById('puesto').value,
-            fecha_inicio:         document.getElementById('fecha-inicio').value,
-            fecha_fin:            document.getElementById('fecha-fin').value || null,
-            resolucion_id:        null
+        const body = esEdicion
+      ? {
+          cedula: document.getElementById("cedula").value,
+          nombre: document.getElementById("nombre").value,
+          correo_institucional:
+            document.getElementById("correo").value,
+          razon_cambio:
+            document.getElementById("razon-cambio")?.value
+            || "Actualización",
+        }
+      : {
+          cedula:
+            document.getElementById("cedula").value,
+          nombre:
+            document.getElementById("nombre").value,
+          correo_institucional:
+            document.getElementById("correo").value,
+          sector_id:
+            document.getElementById("sector").value,
+          id_puesto:
+            document.getElementById("puesto").value,
+          fecha_inicio:
+            document.getElementById("fecha-inicio").value,
+          fecha_fin:
+            document.getElementById("fecha-fin").value || null,
+          resolucion_id: null
         };
 
         const url    = esEdicion ? `/asambleistas/${idEnUrl}` : '/asambleistas';
@@ -518,6 +544,15 @@
     function ocultarMensajes() {
         document.getElementById('mensaje-error').style.display = 'none';
         document.getElementById('mensaje-ok').style.display = 'none';
+    }
+    function mostrarFormNombramiento() {
+      window.location.href =
+      `/asambleistas/${idEnUrl}/nombramientos/nuevo`;
+    }
+
+    if (esEdicion) {
+      document.getElementById("campo-razon-cambio")
+        .style.display = "block";
     }
 
     cargarCatalogos();

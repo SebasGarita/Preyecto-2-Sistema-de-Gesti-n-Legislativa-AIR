@@ -37,10 +37,10 @@ class CertificadoModel {
 
             if (lockRes.rows.length === 0) {
                 // Primera emisión del año: crear registro de control
-                const insCtrl = await client.query(
-                    `INSERT INTO public.control_folio (anio, ultimo_numero, fecha_actualizacion)
-                     VALUES ($1, 0, now())
-                     RETURNING id_control, ultimo_numero`,
+               const insCtrl = await client.query(
+                    `INSERT INTO public.control_folio (anio, ultimo_numero, prefijo, fecha_actualizacion)
+                    VALUES ($1, 0, 'DAIR', now())
+                    RETURNING id_control, ultimo_numero`,
                     [anio]
                 );
                 idControl    = insCtrl.rows[0].id_control;
@@ -76,11 +76,15 @@ class CertificadoModel {
 
             // 4. Insertar la certificación
             const insRes = await client.query(
-                `INSERT INTO public.certificacion_emitida
-                    (id_asambleista, folio_unico, hash_seguridad, fecha_emision, usuario_secretaria, estado)
-                 VALUES ($1, $2, $3, now(), $4, 'Activo')
-                 RETURNING id_certificacion, fecha_emision`,
-                [asambleistaId, folio, hashSeguridad, usuarioId]
+                `INSERT INTO certificacion_emitida
+                    (id_asambleista, folio_unico, hash_seguridad,
+                    fecha_emision, id_usuario_secretaria, estado, contenido)
+                VALUES ($1, $2, $3, now(), $4, 'Activo', $5)
+                RETURNING id_certificacion, fecha_emision`,
+                [asambleistaId, folio, hashSeguridad, usuarioId,
+                typeof contenidoCertificado === 'string'
+                    ? contenidoCertificado
+                    : JSON.stringify(contenidoCertificado)]
             );
 
             // 5. Actualizar el control de folio
@@ -125,9 +129,10 @@ class CertificadoModel {
                 ce.folio_unico,
                 ce.hash_seguridad,
                 ce.fecha_emision,
-                ce.usuario_secretaria,
+                ce.id_usuario_secretaria,
                 ce.estado,
                 ce.folio_sustituido_por,
+                ce.contenido,
                 a.nombre          AS nombre_asambleista,
                 a.cedula          AS cedula_asambleista,
                 ac.motivo         AS motivo_anulacion,
@@ -207,7 +212,7 @@ class CertificadoModel {
              JOIN public.asambleista a
                ON a.asambleista_id = ce.id_asambleista
              LEFT JOIN public.sys_usuario u
-  ON ce.usuario_secretaria = u.id_usuario::text
+            ON ce.id_usuario_secretaria = u.id_usuario
              ${where}
              ORDER BY ce.fecha_emision DESC
              LIMIT $${idx} OFFSET $${idx + 1}`,
