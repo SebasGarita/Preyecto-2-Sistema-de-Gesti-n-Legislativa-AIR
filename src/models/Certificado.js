@@ -124,8 +124,8 @@ class CertificadoModel {
     async obtenerPorFolio(folioUnico) {
         const res = await pool.query(
             `SELECT
-                ce.id_certificacion,
-                ce.id_asambleista,
+                ce.id_certificacion::TEXT AS id_certificacion,
+                ce.id_asambleista::TEXT   AS id_asambleista,
                 ce.folio_unico,
                 ce.hash_seguridad,
                 ce.fecha_emision,
@@ -198,7 +198,7 @@ class CertificadoModel {
 
         const res = await pool.query(
             `SELECT
-                ce.id_certificacion,
+                ce.id_certificacion::TEXT AS id_certificacion,
                 ce.id_asambleista,
                 ce.folio_unico,
                 ce.fecha_emision,
