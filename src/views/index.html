@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menú Principal — AIR</title>
     <style>
-        /* ── Variables ── */
         :root {
             --color-primario   : #003366;
             --color-acento     : #005fa3;
@@ -26,7 +25,6 @@
             margin: 0; 
         }
 
-        /* ── Layout ── */
         .page-header {
             background: var(--color-primario); 
             color: #fff;
@@ -59,7 +57,6 @@
             padding: 0 20px; 
         }
 
-        /* ── Grid de Cards ── */
         .grid-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -114,7 +111,6 @@
             color: #fff; 
         }
 
-        /* ── Footer ── */
         .footer {
             text-align: center;
             padding: 24px 0;
@@ -124,12 +120,8 @@
             margin-top: 44px;
         }
 
-        /* ── Responsive ── */
         @media (max-width: 768px) {
-            .grid-cards {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
+            .grid-cards { grid-template-columns: 1fr; gap: 16px; }
             .contenedor { padding: 0 16px; }
             .page-header { padding: 24px 20px 20px; }
             .page-header h1 { font-size: 1.5rem; }
@@ -139,7 +131,6 @@
 </head>
 <body>
 
-<!-- ── Encabezado ── -->
 <header class="page-header">
     <h1>Bienvenido al sistema</h1>
     <p class="subtitulo">Navega rápidamente por las secciones principales de la aplicación legislativa</p>
@@ -148,6 +139,7 @@
 
 <main class="contenedor">
     <section class="grid-cards">
+
         <article class="card">
             <h2>Certificaciones</h2>
             <p>Gestión completa de certificaciones emitidas, anulaciones y documentos oficiales.</p>
@@ -189,15 +181,12 @@
         </article>
 
         <article class="card">
-        <h2>Certificaciones</h2>
-        <p>
-            Emita y gestione atestados institucionales con folio consecutivo legal (DAIR).
-            Incluye verificación de autenticidad y descarga de PDF.
-        </p>
-        <a href="certificaciones/atestados-solicitud.view.html" class="btn btn-primario">
-            Ir a certificaciones
-        </a>
-    </article>
+            <h2>Atestados</h2>
+            <p>Emita y gestione atestados institucionales con folio consecutivo legal (DAIR). Incluye verificación de autenticidad y descarga de PDF.</p>
+            <a href="/certificaciones/atestados-solicitud.view.html" class="btn btn-primario">
+                Ir a atestados
+            </a>
+        </article>
 
         <article class="card">
             <h2>Usuarios</h2>
@@ -223,24 +212,29 @@
             </a>
         </article>
 
-    <article class="card">
-        <h2>Atestados</h2>
-        <p>
-            Emita y gestione atestados institucionales con folio consecutivo legal (DAIR).
-            Incluye verificación de autenticidad y descarga de PDF.
-        </p>
-        <a href="/certificaciones/atestados-solicitud.view.html" class="btn btn-primario">
-            Ir a atestados
-        </a>
-    </article>
+        <article class="card">
+            <h2>Comisiones</h2>
+            <p>Listado de comisiones de análisis, sus integrantes y tipos registrados en el sistema.</p>
+            <a href="/comisiones/comisiones-lista.view.html" class="btn btn-primario">
+                Ver comisiones
+            </a>
+        </article>
+
+        <article class="card">
+            <h2>Detalle de Comisión</h2>
+            <p>Consulta sesiones, asistencia de integrantes e informes entregados al Directorio por comisión.</p>
+            <a href="/comisiones/comision-detalle.view.html" class="btn btn-primario">
+                Ver detalle
+            </a>
+        </article>
+
     </section>
 
     <div class="footer">
         Página principal de navegación del sistema administrativo
     </div>
 </main>
-<script src="/shared/auth.js"></script>
 
+<script src="/shared/auth.js"></script>
 </body>
 </html>
-```
