@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoja de Asistencia — AIR</title>
+  <style>
+    :root {
+      --primario    : #003366;
+      --acento      : #005fa3;
+      --exito       : #1e7e34;
+      --bg-exito    : #d4edda;
+      --peligro     : #c0392b;
+      --bg-peligro  : #f8d7da;
+      --advertencia : #856404;
+      --bg-adv      : #fff3cd;
+      --radio       : 6px;
+      --sombra      : 0 2px 12px rgba(0,0,0,.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--primario); color: #fff; height: 48px;
+      padding: 0 28px; display: flex; align-items: center;
+      justify-content: space-between; font-size: .88rem;
+    }
+    .navbar a { color: rgba(255,255,255,.85); text-decoration: none; }
+
+    /* ── Header ── */
+    .page-header {
+      background: var(--primario); color: #fff;
+      padding: 24px 28px 20px; text-align: center;
+    }
+    .page-header h1 { font-size: 1.7rem; font-weight: 600; margin-bottom: 6px; }
+    .page-header p  { font-size: .9rem; opacity: .9; }
+    .badge-modulo {
+      background: rgba(255,255,255,.18); border-radius: 20px;
+      padding: 4px 14px; font-size: .78rem; display: inline-block; margin-top: 10px;
+    }
+
+    /* ── Layout ── */
+    .contenedor { max-width: 1000px; margin: 24px auto; padding: 0 20px; }
+
+    /* ── Alertas ── */
+    .alerta {
+      padding: 12px 16px; border-radius: var(--radio);
+      font-size: .9rem; font-weight: 500; margin-bottom: 16px;
+    }
+    .alerta-error { background: var(--bg-peligro); color: var(--peligro); border: 1px solid #f5c6cb; }
+    .alerta-ok    { background: var(--bg-exito);   color: var(--exito);   border: 1px solid #c3e6cb; }
+    .alerta-adv   { background: var(--bg-adv);     color: var(--advertencia); border: 1px solid #ffc107; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; border-bottom: 2px solid #d0d7de; margin-bottom: 0; }
+    .tab {
+      padding: 12px 24px; cursor: pointer; font-size: .9rem; font-weight: 600;
+      color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px;
+      background: none; border-top: none; border-left: none; border-right: none;
+      font-family: inherit; transition: all .15s;
+    }
+    .tab.activo { color: var(--acento); border-bottom-color: var(--acento); }
+    .tab-panel  { display: none; padding-top: 20px; }
+    .tab-panel.activo { display: block; }
+
+    /* ── Selector de sesión ── */
+    .selector-sesion {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      padding: 20px 24px; margin-bottom: 20px;
+      display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+    }
+    .selector-sesion .campo { flex: 1; min-width: 240px; }
+    .campo label {
+      display: block; font-size: .85rem; font-weight: 600;
+      color: #444; margin-bottom: 6px;
+    }
+    .campo select, .campo input {
+      width: 100%; padding: 10px 12px; border: 1px solid #d0d7de;
+      border-radius: var(--radio); font-size: .9rem; font-family: inherit;
+      background: #fff; outline: none; transition: border-color .15s;
+    }
+    .campo select:focus, .campo input:focus {
+      border-color: var(--acento); box-shadow: 0 0 0 3px rgba(0,95,163,.12);
+    }
+
+    /* ── Info de sesión ── */
+    .info-sesion {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .info-card {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      padding: 14px 16px; text-align: center;
+    }
+    .info-card .val { font-size: 1.6rem; font-weight: 700; color: var(--acento); }
+    .info-card .lbl { font-size: .78rem; color: #666; margin-top: 3px; }
+    .info-card.quorum-ok   .val { color: var(--exito); }
+    .info-card.quorum-fail .val { color: var(--peligro); }
+
+    /* ── Barra de acciones rápidas ── */
+    .barra-rapida {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      align-items: center; margin-bottom: 16px;
+    }
+    .buscador-hoja {
+      flex: 1; min-width: 200px; padding: 9px 14px;
+      border: 1px solid #d0d7de; border-radius: var(--radio);
+      font-size: .88rem; font-family: inherit; outline: none;
+    }
+    .buscador-hoja:focus { border-color: var(--acento); }
+
+    /* ── Lista de asistencia ── */
+    .hoja-lista {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .hoja-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid #eef0f3;
+      transition: background .1s;
+    }
+    .hoja-item:last-child { border-bottom: none; }
+    .hoja-item:hover { background: #f8f9fc; }
+    .hoja-item.oculto { display: none; }
+
+    .persona-info { min-width: 0; }
+    .persona-info .nombre {
+      font-weight: 600; font-size: .92rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .persona-info .meta { font-size: .78rem; color: #777; margin-top: 2px; }
+
+    /* Botones de estado — grandes para marcar rápido */
+    .btns-estado { display: flex; gap: 6px; }
+    .btn-estado {
+      padding: 7px 14px; border-radius: var(--radio); border: 2px solid transparent;
+      cursor: pointer; font-size: .8rem; font-weight: 600; font-family: inherit;
+      transition: all .12s; background: #e9ecef; color: #555;
+    }
+    .btn-estado:hover { opacity: .85; }
+    .btn-estado.activo-presente  { background: var(--bg-exito); color: var(--exito); border-color: var(--exito); }
+    .btn-estado.activo-ausente   { background: var(--bg-peligro); color: var(--peligro); border-color: var(--peligro); }
+    .btn-estado.activo-justificado { background: var(--bg-adv); color: var(--advertencia); border-color: #ffc107; }
+
+    /* ── Botones generales ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 20px; border-radius: var(--radio); border: none;
+      cursor: pointer; font-size: .9rem; font-weight: 600;
+      font-family: inherit; transition: all .15s; text-decoration: none;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primario   { background: var(--acento);  color: #fff; }
+    .btn-secundario { background: #e9ecef; color: #444; }
+    .btn-exito      { background: var(--exito);   color: #fff; }
+    .btn-sm { padding: 6px 14px; font-size: .82rem; }
+
+    /* ── Sticky footer de guardado ── */
+    .sticky-footer {
+      position: sticky; bottom: 0; background: #fff;
+      border-top: 2px solid #eef0f3; padding: 14px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 -4px 12px rgba(0,0,0,.08); z-index: 10;
+    }
+    .sticky-footer .counter { font-size: .9rem; font-weight: 600; }
+
+    /* ── Tabla reporte ── */
+    .card-table {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      overflow: hidden; margin-bottom: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    thead { background: var(--primario); color: #fff; }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 600; font-size: .83rem; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #eef0f3; transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f4f9; }
+    tbody td { padding: 10px 14px; color: #333; vertical-align: middle; }
+
+    /* Barra de porcentaje */
+    .barra-pct { background: #e9ecef; border-radius: 20px; height: 8px; min-width: 80px; overflow: hidden; }
+    .barra-fill { height: 100%; border-radius: 20px; background: var(--acento); transition: width .3s; }
+    .barra-fill.alta  { background: var(--exito); }
+    .barra-fill.media { background: #f0a500; }
+    .barra-fill.baja  { background: var(--peligro); }
+
+    /* Badge */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 600; }
+    .badge-ok  { background: var(--bg-exito);   color: var(--exito); }
+    .badge-fail { background: var(--bg-peligro); color: var(--peligro); }
+    .badge-adv { background: var(--bg-adv);     color: var(--advertencia); }
+
+    /* ── Período selector ── */
+    .periodo-row {
+      display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      padding: 18px 24px; margin-bottom: 20px;
+    }
+    .periodo-row .campo { min-width: 160px; }
+    .periodo-row .campo-label { font-size: .82rem; font-weight: 600; color: #444; margin-bottom: 5px; }
+
+    /* ── Votación form ── */
+    .votacion-card {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      padding: 24px; margin-bottom: 20px;
+    }
+    .votacion-card h3 { font-size: 1rem; color: var(--primario); margin-bottom: 16px; }
+    .votos-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+      margin-bottom: 16px;
+    }
+    .voto-campo input[type=number] {
+      width: 100%; padding: 10px; text-align: center;
+      font-size: 1.3rem; font-weight: 700; border: 2px solid #d0d7de;
+      border-radius: var(--radio); font-family: inherit; outline: none;
+    }
+    .voto-campo.favor  input { border-color: #28a745; color: #28a745; }
+    .voto-campo.contra input { border-color: var(--peligro); color: var(--peligro); }
+    .voto-campo.abst   input { border-color: #888; color: #888; }
+    .voto-campo label  { display: block; text-align: center; font-size: .8rem; font-weight: 600; color: #444; margin-bottom: 6px; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 44px; color: #888; }
+
+    /* Footer */
+    .footer { text-align: center; padding: 24px 0; color: #666; font-size: .88rem;
+               border-top: 1px solid #e9ecef; margin-top: 40px; }
+
+    @media (max-width: 600px) {
+      .contenedor { padding: 0 12px; }
+      .selector-sesion { flex-direction: column; }
+      .btns-estado { flex-wrap: wrap; }
+      .votos-grid { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/">← Inicio</a>
+  <span>AIR – Sistema de Gestión Normativa</span>
+</nav>
+
+<header class="page-header">
+  <h1>Control de Asistencias</h1>
+  <p>Hoja de asistencia digital · Participación por período · Votaciones</p>
+  <span class="badge-modulo">Sesiones Plenarias</span>
+</header>
+
+<main class="contenedor">
+  <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
+  <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
+  <div id="msg-adv"   class="alerta alerta-adv"   style="display:none"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab activo" onclick="cambiarTab('hoja',this)">📋 Hoja de asistencia</button>
+    <button class="tab"        onclick="cambiarTab('reporte',this)">📊 Participación por período</button>
+    <button class="tab"        onclick="cambiarTab('votacion',this)">🗳️ Registrar votación</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 1 — HOJA DE ASISTENCIA
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel activo" id="panel-hoja">
+
+    <!-- Selector de sesión -->
+    <div class="selector-sesion">
+      <div class="campo">
+        <label for="sel-sesion">Sesión plenaria</label>
+        <select id="sel-sesion" onchange="cargarHoja()">
+          <option value="">Seleccione una sesión...</option>
+        </select>
+      </div>
+      <button class="btn btn-secundario btn-sm" onclick="cargarHoja()" style="white-space:nowrap">
+        ↺ Recargar
+      </button>
+    </div>
+
+    <!-- Info de sesión -->
+    <div class="info-sesion" id="info-sesion" style="display:none">
+      <div class="info-card">
+        <div class="val" id="inf-numero">—</div>
+        <div class="lbl">N° de sesión</div>
+      </div>
+      <div class="info-card">
+        <div class="val" id="inf-tipo">—</div>
+        <div class="lbl">Tipo</div>
+      </div>
+      <div class="info-card">
+        <div class="val" id="inf-fecha">—</div>
+        <div class="lbl">Fecha</div>
+      </div>
+      <div class="info-card" id="card-quorum">
+        <div class="val" id="inf-presentes">0</div>
+        <div class="lbl">Presentes / <span id="inf-quorum">29</span> requeridos</div>
+      </div>
+    </div>
+
+    <!-- Controles rápidos -->
+    <div class="barra-rapida" id="barra-rapida" style="display:none">
+      <input type="search" class="buscador-hoja" id="buscador-hoja"
+             placeholder="Buscar asambleísta..." oninput="filtrarHoja()">
+      <button class="btn btn-secundario btn-sm" onclick="marcarTodos('presente')">
+        ✓ Todos presentes
+      </button>
+      <button class="btn btn-secundario btn-sm" onclick="marcarTodos('ausente')">
+        ✗ Todos ausentes
+      </button>
+    </div>
+
+    <!-- Lista de asambleístas -->
+    <div class="hoja-lista" id="hoja-lista">
+      <div class="empty">Seleccione una sesión para cargar la hoja de asistencia.</div>
+    </div>
+
+    <!-- Sticky footer con guardado -->
+    <div class="sticky-footer" id="sticky-footer" style="display:none">
+      <span class="counter" id="counter-resumen">0 presentes · 0 ausentes</span>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secundario" onclick="resetHoja()">Limpiar</button>
+        <button class="btn btn-exito" onclick="guardarHoja()" id="btn-guardar">
+          💾 Guardar hoja de asistencia
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 2 — REPORTE DE PARTICIPACIÓN POR PERÍODO
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-reporte">
+
+    <div class="periodo-row">
+      <div class="campo">
+        <div class="campo-label">Fecha inicio *</div>
+        <input type="date" id="r-fecha-inicio">
+      </div>
+      <div class="campo">
+        <div class="campo-label">Fecha fin *</div>
+        <input type="date" id="r-fecha-fin">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secundario btn-sm" onclick="presetPeriodo(2025)">
+          Labor 2025
+        </button>
+        <button class="btn btn-secundario btn-sm" onclick="presetPeriodo(2024)">
+          Labor 2024
+        </button>
+        <button class="btn btn-primario" onclick="cargarReporte()">
+          Generar reporte
+        </button>
+      </div>
+    </div>
+
+    <!-- Resumen global -->
+    <div class="info-sesion" id="resumen-global" style="display:none">
+      <div class="info-card">
+        <div class="val" id="rg-total">—</div>
+        <div class="lbl">Asambleístas en el período</div>
+      </div>
+      <div class="info-card">
+        <div class="val" id="rg-plenarias">—</div>
+        <div class="lbl">Sesiones plenarias</div>
+      </div>
+      <div class="info-card">
+        <div class="val" id="rg-pct-prom">—</div>
+        <div class="lbl">% asistencia plenaria promedio</div>
+      </div>
+    </div>
+
+    <div class="card-table" id="tabla-reporte-wrapper" style="display:none">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Asambleísta</th>
+            <th>Cédula</th>
+            <th>Plenarias</th>
+            <th>% Plenaria</th>
+            <th>Comisión</th>
+            <th>% Comisión</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-reporte"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TAB 3 — REGISTRAR VOTACIÓN
+  ══════════════════════════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-votacion">
+
+    <div class="votacion-card">
+      <h3>Registrar resultado de votación</h3>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="campo">
+          <label>Sesión plenaria *</label>
+          <select id="v-sesion"><option value="">Seleccione...</option></select>
+        </div>
+        <div class="campo">
+          <label>Tipo de mayoría *</label>
+          <select id="v-mayoria">
+            <option value="">Seleccione...</option>
+            <option value="Simple">Simple (50%+1)</option>
+            <option value="Calificada">Calificada (66%)</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Propuesta asociada (opcional)</label>
+          <select id="v-propuesta"><option value="">— Sin propuesta —</option></select>
+        </div>
+        <div class="campo">
+          <label>Punto de agenda (opcional)</label>
+          <input type="number" id="v-punto" placeholder="ID del punto de agenda">
+        </div>
+      </div>
+
+      <div class="votos-grid">
+        <div class="voto-campo favor">
+          <label>✓ Votos a favor</label>
+          <input type="number" id="v-favor" min="0" value="0" oninput="actualizarPreview()">
+        </div>
+        <div class="voto-campo contra">
+          <label>✗ Votos en contra</label>
+          <input type="number" id="v-contra" min="0" value="0" oninput="actualizarPreview()">
+        </div>
+        <div class="voto-campo abst">
+          <label>○ Abstenciones</label>
+          <input type="number" id="v-abst" min="0" value="0" oninput="actualizarPreview()">
+        </div>
+      </div>
+
+      <!-- Preview del resultado -->
+      <div id="preview-votacion"
+           style="background:#f8f9fa;border-radius:var(--radio);padding:14px 18px;
+                  margin-bottom:16px;display:flex;align-items:center;gap:14px">
+        <span style="font-size:.88rem;color:#666">Total de votos: <strong id="pv-total">0</strong></span>
+        <span style="font-size:.88rem;color:#666">Resultado estimado:
+          <strong id="pv-resultado" style="color:var(--acento)">—</strong>
+        </span>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-primario" onclick="registrarVotacion()">
+          🗳️ Registrar votación
+        </button>
+      </div>
+    </div>
+
+    <!-- Historial de votaciones de la sesión seleccionada -->
+    <div id="historial-votaciones" style="display:none">
+      <h3 style="color:var(--primario);font-size:1rem;margin-bottom:12px">
+        Votaciones registradas en esta sesión
+      </h3>
+      <div class="card-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Propuesta / Punto</th>
+              <th>Favor</th>
+              <th>Contra</th>
+              <th>Abst.</th>
+              <th>Mayoría</th>
+              <th>Resultado</th>
+              <th>Quórum</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-votaciones"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">Control de Asistencias — AIR ITCR</div>
+</main>
+
+<script src="/shared/auth.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════════
+let catalogos     = {};
+let hojaActual    = null;   // { sesion, asambleistas, quorum_requerido }
+let estadoHoja    = {};     // { asambleista_id: id_estado_asistencia }
+let estadoNombres = {};     // { id_estado_asistencia: nombre }
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function init() {
+  try {
+    const res = await fetch('/asistencia/catalogos');
+    catalogos = await res.json();
+
+    // Poblar selectores de sesión
+    poblarSelect('sel-sesion', catalogos.sesiones,
+      'id_sesion', s => `${s.numero_sesion} — ${s.fecha} (${s.tipo_sesion})`);
+    poblarSelect('v-sesion', catalogos.sesiones,
+      'id_sesion', s => `${s.numero_sesion} — ${s.fecha}`);
+
+    // Propuestas para votación (cargar aparte)
+    const prRes = await fetch('/propuestas');
+    if (prRes.ok) {
+      const propuestas = await prRes.json();
+      poblarSelect('v-propuesta', propuestas,
+        'id_propuesta', p => `${p.codigo_air ? p.codigo_air+' — ' : ''}${p.titulo}`);
+    }
+
+    // Mapa de estados para marcar botones
+    catalogos.estados_asistencia.forEach(e => {
+        estadoNombres[String(e.id_estado_asistencia)] = e.nombre;
+    });
+
+    // Fechas por defecto: año actual
+    const hoy = new Date();
+    document.getElementById('r-fecha-inicio').value = `${hoy.getFullYear()}-01-01`;
+    document.getElementById('r-fecha-fin').value    = hoy.toISOString().slice(0,10);
+
+  } catch (e) {
+    mostrarError('Error al cargar los datos iniciales. Revise la consola.');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 1 — HOJA DE ASISTENCIA
+// ═══════════════════════════════════════════════════════════════
+
+async function cargarHoja() {
+  const idSesion = document.getElementById('sel-sesion').value;
+  if (!idSesion) return;
+
+  try {
+    const res  = await fetch(`/asistencia/hoja/${idSesion}`);
+    if (!res.ok) { mostrarError('No se pudo cargar la hoja'); return; }
+    hojaActual = await res.json();
+
+    // Inicializar estado desde lo que ya hay guardado
+    estadoHoja = {};
+    hojaActual.asambleistas.forEach(a => {
+      if (a.id_estado_asistencia) {
+        estadoHoja[a.asambleista_id] = a.id_estado_asistencia;
+      }
+    });
+
+    renderInfoSesion();
+    renderHoja();
+    actualizarCounter();
+
+    document.getElementById('info-sesion').style.display  = 'grid';
+    document.getElementById('barra-rapida').style.display = 'flex';
+    document.getElementById('sticky-footer').style.display = 'flex';
+
+  } catch (e) {
+    mostrarError('Error de red al cargar la hoja.');
+    console.error(e);
+  }
+}
+
+function renderInfoSesion() {
+  const s = hojaActual.sesion;
+  document.getElementById('inf-numero').textContent = s.numero_sesion;
+  document.getElementById('inf-tipo').textContent   = `${s.tipo_sesion} / ${s.tipo_modalidad ?? ''}`;
+  document.getElementById('inf-fecha').textContent  = s.fecha;
+  document.getElementById('inf-quorum').textContent = hojaActual.quorum_requerido;
+  actualizarContadorQuorum();
+}
+
+function actualizarContadorQuorum() {
+  const presentes = Object.values(estadoHoja).filter(idE => {
+    return estadoNombres[idE] === 'Presente';
+  }).length;
+
+  document.getElementById('inf-presentes').textContent = presentes;
+
+  const card = document.getElementById('card-quorum');
+  card.className = 'info-card ' +
+    (presentes >= hojaActual.quorum_requerido ? 'quorum-ok' : 'quorum-fail');
+}
+
+function renderHoja() {
+  const lista = document.getElementById('hoja-lista');
+  if (!hojaActual?.asambleistas?.length) {
+    lista.innerHTML = '<div class="empty">No hay asambleístas con nombramiento vigente.</div>';
+    return;
+  }
+
+  const estadoPresId  = idEstadoPorNombre('Presente');
+  const estadoAusId   = idEstadoPorNombre('Ausente sin justificación');
+  const estadoJustId  = idEstadoPorNombre('Ausente justificado');
+
+  lista.innerHTML = hojaActual.asambleistas.map(a => {
+    const estActual = estadoHoja[String(a.asambleista_id)];
+    const clsP = estActual === estadoPresId  ? 'activo-presente'    : '';
+    const clsA = estActual === estadoAusId   ? 'activo-ausente'     : '';
+    const clsJ = estActual === estadoJustId  ? 'activo-justificado' : '';
+
+    return `
+      <div class="hoja-item" data-nombre="${esc(a.nombre).toLowerCase()}" data-id="${a.asambleista_id}">
+        <div class="persona-info">
+          <div class="nombre">${esc(a.nombre)}</div>
+          <div class="meta">${esc(a.cedula)} · ${esc(a.sector ?? '')} · ${esc(a.puesto ?? '')}</div>
+        </div>
+        <div class="btns-estado">
+          <button class="btn-estado ${clsP}"
+                  onclick="setEstado('${a.asambleista_id}', '${estadoPresId}', this, 'presente')">
+            ✓ Presente
+          </button>
+          <button class="btn-estado ${clsA}"
+                  onclick="setEstado('${a.asambleista_id}', '${estadoAusId}', this, 'ausente')">
+            ✗ Ausente
+          </button>
+          <button class="btn-estado ${clsJ}"
+                  onclick="setEstado('${a.asambleista_id}', '${estadoJustId}', this, 'justificado')">
+            J Justificado
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function setEstado(asambleistaId, idEstado, btnClicado, tipo) {
+   estadoHoja[String(asambleistaId)] = String(idEstado); // ← forzar string
+
+  // Actualizar clases del grupo de botones
+  const item  = btnClicado.closest('.hoja-item');
+  item.querySelectorAll('.btn-estado').forEach(b => {
+    b.className = 'btn-estado';
+  });
+  btnClicado.classList.add(`activo-${tipo}`);
+
+  actualizarCounter();
+  actualizarContadorQuorum();
+}
+
+function marcarTodos(tipo) {
+  const idEstado = tipo === 'presente'
+    ? idEstadoPorNombre('Presente')
+    : idEstadoPorNombre('Ausente sin justificación');
+
+  const clase = tipo === 'presente' ? 'activo-presente' : 'activo-ausente';
+  const pos   = tipo === 'presente' ? 0 : 1;   // índice del botón
+
+  document.querySelectorAll('.hoja-item:not(.oculto)').forEach(item => {
+    const id = item.dataset.id;
+    estadoHoja[id] = idEstado;
+    item.querySelectorAll('.btn-estado').forEach((b, i) => {
+      b.className = 'btn-estado' + (i === pos ? ` ${clase}` : '');
+    });
+  });
+
+  actualizarCounter();
+  actualizarContadorQuorum();
+}
+
+function resetHoja() {
+  estadoHoja = {};
+  document.querySelectorAll('.btn-estado').forEach(b => b.className = 'btn-estado');
+  actualizarCounter();
+  actualizarContadorQuorum();
+}
+
+function filtrarHoja() {
+  const q = document.getElementById('buscador-hoja').value.toLowerCase();
+  document.querySelectorAll('.hoja-item').forEach(item => {
+    const nombre = item.dataset.nombre || '';
+    item.classList.toggle('oculto', q.length > 0 && !nombre.includes(q));
+  });
+}
+
+function actualizarCounter() {
+  const ids     = Object.keys(estadoHoja).map(Number);
+  const presId  = idEstadoPorNombre('Presente');
+  const presentes = ids.filter(id => estadoHoja[id] == presId).length;
+  const ausentes  = ids.filter(id => estadoHoja[id] != presId).length;
+  document.getElementById('counter-resumen').textContent =
+    `${presentes} presentes · ${ausentes} ausentes / justificados`;
+}
+
+async function guardarHoja() {
+  if (!hojaActual) return;
+
+  const registros = Object.entries(estadoHoja).map(([id, estId]) => ({
+    asambleista_id:       id,
+    id_estado_asistencia: estId
+  }));
+
+   console.log('Registros a enviar:', registros); // ← agrega esta línea
+    console.log('Catálogo estados:', catalogos.estados_asistencia); // ← y esta
+
+  if (!registros.length) {
+    mostrarAdvertencia('Marque al menos un estado antes de guardar.');
+    return;
+  }
+
+  const btn = document.getElementById('btn-guardar');
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+
+  try {
+    const res  = await fetch(`/asistencia/hoja/${hojaActual.sesion.id_sesion}`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ registros })
+    });
+    const data = await res.json();
+
+    if (!res.ok) { mostrarError(data.error); return; }
+
+    mostrarOk(
+      `✓ Hoja guardada: ${data.presentes} presentes. ` +
+      (data.hay_quorum ? 'Quórum ✓' : `Sin quórum (necesita ${data.quorum_requerido})`)
+    );
+
+    // Actualizar contador
+    document.getElementById('inf-presentes').textContent = data.presentes;
+    const card = document.getElementById('card-quorum');
+    card.className = 'info-card ' + (data.hay_quorum ? 'quorum-ok' : 'quorum-fail');
+
+  } catch (e) {
+    mostrarError('Error de red al guardar la hoja.');
+  } finally {
+    btn.textContent = '💾 Guardar hoja de asistencia'; btn.disabled = false;
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 2 — REPORTE DE PARTICIPACIÓN
+// ═══════════════════════════════════════════════════════════════
+
+function presetPeriodo(anio) {
+  document.getElementById('r-fecha-inicio').value = `${anio}-01-01`;
+  document.getElementById('r-fecha-fin').value    = `${anio}-12-31`;
+}
+
+async function cargarReporte() {
+  const fi = document.getElementById('r-fecha-inicio').value;
+  const ff = document.getElementById('r-fecha-fin').value;
+  if (!fi || !ff) { mostrarError('Seleccione fecha inicio y fecha fin'); return; }
+  if (fi > ff)    { mostrarError('La fecha inicio no puede ser posterior al fin'); return; }
+
+  try {
+    const res  = await fetch(`/asistencia/reporte?fechaInicio=${fi}&fechaFin=${ff}`);
+    const data = await res.json();
+    if (!res.ok) { mostrarError(data.error); return; }
+    renderReporte(data, fi, ff);
+  } catch (e) {
+    mostrarError('Error al cargar el reporte.');
+  }
+}
+
+function renderReporte(lista, fi, ff) {
+  if (!lista.length) {
+    document.getElementById('resumen-global').style.display = 'none';
+    document.getElementById('tabla-reporte-wrapper').style.display = 'none';
+    mostrarAdvertencia('No hay datos para el período seleccionado.');
+    return;
+  }
+
+  // Calcular resumen
+  const totalPlenarias = lista[0]?.plenarias_convocadas ?? 0;
+  const pctProm = lista.length
+    ? (lista.reduce((s, r) => s + (r.pct_plenaria || 0), 0) / lista.length).toFixed(1)
+    : 0;
+
+  document.getElementById('rg-total').textContent     = lista.length;
+  document.getElementById('rg-plenarias').textContent = totalPlenarias;
+  document.getElementById('rg-pct-prom').textContent  = `${pctProm}%`;
+  document.getElementById('resumen-global').style.display = 'grid';
+
+  const tbody = document.getElementById('cuerpo-reporte');
+  tbody.innerHTML = lista.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(r.nombre)}</strong></td>
+      <td>${esc(r.cedula)}</td>
+      <td>${r.plenarias_asistidas} / ${r.plenarias_convocadas}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="barra-pct" style="flex:1">
+            <div class="barra-fill ${colorPct(r.pct_plenaria)}"
+                 style="width:${r.pct_plenaria}%"></div>
+          </div>
+          <span style="min-width:42px;font-weight:600">${r.pct_plenaria}%</span>
+        </div>
+      </td>
+      <td>${r.comision_asistidas} / ${r.comision_convocadas}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="barra-pct" style="flex:1">
+            <div class="barra-fill ${colorPct(r.pct_comision)}"
+                 style="width:${r.pct_comision}%"></div>
+          </div>
+          <span style="min-width:42px;font-weight:600">${r.pct_comision}%</span>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('tabla-reporte-wrapper').style.display = 'block';
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 3 — VOTACIONES
+// ═══════════════════════════════════════════════════════════════
+
+function actualizarPreview() {
+  const f = parseInt(document.getElementById('v-favor').value)  || 0;
+  const c = parseInt(document.getElementById('v-contra').value) || 0;
+  const a = parseInt(document.getElementById('v-abst').value)   || 0;
+  const mayoria = document.getElementById('v-mayoria').value;
+
+  document.getElementById('pv-total').textContent = f + c + a;
+
+  let resultado = '—';
+  const total = f + c;
+  if (total > 0 && mayoria) {
+    const umbral = mayoria === 'Calificada' ? 0.66 : 0.50;
+    resultado = (f / total) > umbral ? '✓ APROBADA' : '✗ RECHAZADA';
+  }
+  const el = document.getElementById('pv-resultado');
+  el.textContent = resultado;
+  el.style.color = resultado.includes('APROBADA') ? 'var(--exito)' : 'var(--peligro)';
+}
+
+async function registrarVotacion() {
+  const body = {
+    id_sesion:       document.getElementById('v-sesion').value,
+    tipo_mayoria:    document.getElementById('v-mayoria').value,
+    id_propuesta:    document.getElementById('v-propuesta').value || null,
+    id_punto_agenda: document.getElementById('v-punto').value    || null,
+    votos_favor:     parseInt(document.getElementById('v-favor').value)  || 0,
+    votos_contra:    parseInt(document.getElementById('v-contra').value) || 0,
+    votos_abstencion:parseInt(document.getElementById('v-abst').value)   || 0
+  };
+
+  if (!body.id_sesion || !body.tipo_mayoria) {
+    mostrarError('Sesión y tipo de mayoría son requeridos.');
+    return;
+  }
+
+  const res  = await fetch('/asistencia/votacion', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body)
+  });
+  const data = await res.json();
+
+  if (!res.ok)         { mostrarError(data.error); return; }
+  if (data.advertencia){ mostrarAdvertencia(data.advertencia); }
+
+  mostrarOk(`Votación registrada: ${data.resultado} | ` +
+            `Favor: ${body.votos_favor} · Contra: ${body.votos_contra}`);
+
+  // Recargar historial
+  await cargarHistorialVotaciones(body.id_sesion);
+}
+
+async function cargarHistorialVotaciones(idSesion) {
+  if (!idSesion) return;
+  const res  = await fetch(`/asistencia/votacion/${idSesion}`);
+  const data = await res.json();
+  if (!res.ok || !data.length) {
+    document.getElementById('historial-votaciones').style.display = 'none';
+    return;
+  }
+
+  const tbody = document.getElementById('cuerpo-votaciones');
+  tbody.innerHTML = data.map(v => `
+    <tr>
+      <td>${esc(v.titulo_propuesta ?? v.descripcion_punto ?? '—')}</td>
+      <td style="color:var(--exito);font-weight:600">${v.votos_favor}</td>
+      <td style="color:var(--peligro);font-weight:600">${v.votos_contra}</td>
+      <td>${v.votos_abstencion}</td>
+      <td>${esc(v.tipo_mayoria)}</td>
+      <td>
+        <span class="badge ${v.resultado === 'APROBADA' ? 'badge-ok' : 'badge-fail'}">
+          ${v.resultado}
+        </span>
+      </td>
+      <td>
+        <span class="badge ${v.quorum_valido ? 'badge-ok' : 'badge-adv'}">
+          ${v.quorum_valido ? 'Sí' : 'Sin quórum'}
+        </span>
+      </td>
+      <td style="font-size:.8rem">${new Date(v.fecha_registro).toLocaleString('es-CR')}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('historial-votaciones').style.display = 'block';
+}
+
+// Cargar historial cuando cambia la sesión en votación
+document.getElementById('v-sesion')?.addEventListener('change', function() {
+  cargarHistorialVotaciones(this.value);
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function cambiarTab(nombre, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('activo'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+  btn.classList.add('activo');
+  document.getElementById(`panel-${nombre}`).classList.add('activo');
+}
+
+function idEstadoPorNombre(nombre) {
+  const e = (catalogos.estados_asistencia || []).find(e => e.nombre === nombre);
+  return e ? String(e.id_estado_asistencia) : null;
+}
+
+function colorPct(pct) {
+  if (pct >= 75) return 'alta';
+  if (pct >= 50) return 'media';
+  return 'baja';
+}
+
+function poblarSelect(selectId, items, valKey, labelFn) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  items.forEach(i => sel.add(new Option(
+    typeof labelFn === 'function' ? labelFn(i) : i[labelFn],
+    i[valKey]
+  )));
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function mostrarError(msg) {
+  const el = document.getElementById('msg-error');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 6000);
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function mostrarOk(msg) {
+  const el = document.getElementById('msg-ok');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+function mostrarAdvertencia(msg) {
+  const el = document.getElementById('msg-adv');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 8000);
+}
+
+init();
+</script>
+</body>
+</html>

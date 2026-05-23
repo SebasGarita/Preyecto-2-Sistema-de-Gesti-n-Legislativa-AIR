@@ -5,59 +5,68 @@ const { verificarToken, requierePermiso, auditarEscritura } = require('../middle
 
 // Todas las rutas requieren token válido
 router.use(verificarToken);
-router.use(auditarEscritura);
 
-// ── Catálogos (selectores del formulario) ─────────────────────
+// ── Catálogos ─────────────────────────────────────────────────
+// IMPORTANTE: rutas literales ANTES que /:id para evitar conflictos
 router.get('/catalogos',          ctrl.catalogos);
 router.get('/sesiones/:sesionId', ctrl.obtenerSesion);
-router.get('/',                   ctrl.listar);
-router.get('/:id',                ctrl.obtener);
 
 // ── Listado y detalle ─────────────────────────────────────────
-// Secretaría y Consulta pueden ver
-
+router.get('/',    ctrl.listar);
+router.get('/:id', ctrl.obtener);
 
 // ── Crear / editar comisión ───────────────────────────────────
 router.post('/',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.crear
 );
 router.put('/:id',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.actualizar
 );
 
-// ── Integrantes (N:M asambleista <-> comision) ────────────────
+// ── Integrantes ───────────────────────────────────────────────
+// Individual
 router.post('/:id/integrantes',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.agregarIntegrante
+);
+// Bulk (debe ir ANTES de /:id/integrantes/:integranteId)
+router.post('/:id/integrantes/bulk',
+  requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
+  ctrl.agregarIntegrantesMasivo
 );
 router.delete('/:id/integrantes/:integranteId',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.removerIntegrante
 );
 
 // ── Sesiones de comisión ──────────────────────────────────────
 router.post('/:id/sesiones',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.crearSesion
 );
-
-// Detalle de sesión y registro de asistencia viven bajo /sesiones/:id
-// (sin prefijo de comisión, el sesionId ya identifica todo)
-
 router.post('/sesiones/:sesionId/asistencia',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.registrarAsistencia
 );
 
 // ── Informes del Directorio ───────────────────────────────────
 router.post('/:id/informes',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.crearInforme
 );
 router.put('/informes/:informeId',
   requierePermiso('GESTIONAR_COMISIONES'),
+  auditarEscritura,
   ctrl.actualizarInforme
 );
 

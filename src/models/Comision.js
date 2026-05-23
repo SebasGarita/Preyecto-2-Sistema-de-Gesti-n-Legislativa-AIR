@@ -6,7 +6,7 @@ const Comision = {
   // COMISIONES
   // ──────────────────────────────────────────────────────────
 
-  /** Lista todas las comisiones con conteo de integrantes e informes */
+  /** Lista todas las comisiones con conteo de integrantes, sesiones e informes */
   async findAll({ busqueda } = {}) {
     const filtro = busqueda ? `WHERE c.nombre_comision ILIKE $1` : '';
     const params = busqueda ? [`%${busqueda}%`] : [];
@@ -15,6 +15,8 @@ const Comision = {
       SELECT
         c.id_comision,
         c.nombre_comision,
+        c.objeto_acta,
+        tc.id_tipo_comision,
         tc.nombre                                   AS tipo_comision,
         COUNT(DISTINCT ic.id_integrante_comision)   AS total_integrantes,
         COUNT(DISTINCT sc.id_sesion_comision)        AS total_sesiones,
@@ -28,7 +30,8 @@ const Comision = {
       LEFT JOIN informe_directorio id2
         ON id2.id_comision = c.id_comision
       ${filtro}
-      GROUP BY c.id_comision, c.nombre_comision, tc.nombre
+      GROUP BY c.id_comision, c.nombre_comision, c.objeto_acta,
+               tc.id_tipo_comision, tc.nombre
       ORDER BY c.nombre_comision ASC
     `, params);
 
@@ -41,6 +44,7 @@ const Comision = {
       SELECT
         c.id_comision,
         c.nombre_comision,
+        c.objeto_acta,
         tc.id_tipo_comision,
         tc.nombre AS tipo_comision
       FROM comision c
@@ -62,8 +66,8 @@ const Comision = {
         ic.fecha_fin_nombramiento,
         ic.estado
       FROM integrante_comision ic
-      JOIN asambleista        a  ON a.asambleista_id   = ic.id_asambleista
-      JOIN catalogo_rol_comision rc ON rc.id_rol_comision = ic.id_rol_comision
+      JOIN asambleista           a  ON a.asambleista_id    = ic.id_asambleista
+      JOIN catalogo_rol_comision rc ON rc.id_rol_comision  = ic.id_rol_comision
       WHERE ic.id_comision = $1
       ORDER BY ic.estado DESC, a.nombre ASC
     `, [id]);
@@ -110,23 +114,25 @@ const Comision = {
   },
 
   /** Crea una comisión nueva */
-  async create({ id_tipo_comision, nombre_comision }) {
+  async create({ id_tipo_comision, nombre_comision, objeto_acta }) {
     const result = await db.query(`
-      INSERT INTO comision (id_tipo_comision, nombre_comision)
-      VALUES ($1, $2)
-      RETURNING id_comision, id_tipo_comision, nombre_comision
-    `, [id_tipo_comision, nombre_comision]);
+      INSERT INTO comision (id_tipo_comision, nombre_comision, objeto_acta)
+      VALUES ($1, $2, $3)
+      RETURNING id_comision, id_tipo_comision, nombre_comision, objeto_acta
+    `, [id_tipo_comision, nombre_comision, objeto_acta || null]);
     return result.rows[0];
   },
 
   /** Actualiza datos de una comisión */
-  async update(id, { id_tipo_comision, nombre_comision }) {
+  async update(id, { id_tipo_comision, nombre_comision, objeto_acta }) {
     const result = await db.query(`
       UPDATE comision
-      SET id_tipo_comision = $1, nombre_comision = $2
-      WHERE id_comision = $3
-      RETURNING id_comision, id_tipo_comision, nombre_comision
-    `, [id_tipo_comision, nombre_comision, id]);
+      SET id_tipo_comision = $1,
+          nombre_comision  = $2,
+          objeto_acta      = $3
+      WHERE id_comision = $4
+      RETURNING id_comision, id_tipo_comision, nombre_comision, objeto_acta
+    `, [id_tipo_comision, nombre_comision, objeto_acta || null, id]);
     return result.rows[0] || null;
   },
 
@@ -149,9 +155,50 @@ const Comision = {
     return result.rows[0];
   },
 
+  /**
+   * Bulk insert de integrantes.
+   * Recibe un array de { id_asambleista, id_rol_comision,
+   *                      fecha_ingreso_nombramiento?, fecha_fin_nombramiento? }
+   * Procesa fila por fila para capturar errores individuales
+   * (duplicados por constraint uq_integrante_comision_activo)
+   * y devuelve { agregados, omitidos, detalle }
+   */
+  async addIntegrantesMasivo(id_comision, integrantes, { fecha_ingreso, fecha_fin } = {}) {
+    const agregados = [];
+    const omitidos  = [];
+
+    for (const item of integrantes) {
+      try {
+        const fila = await db.query(`
+          INSERT INTO integrante_comision
+            (id_comision, id_asambleista, id_rol_comision,
+             fecha_ingreso_nombramiento, fecha_fin_nombramiento, estado)
+          VALUES ($1, $2, $3, $4, $5, 'ACTIVO')
+          RETURNING *
+        `, [
+          id_comision,
+          item.id_asambleista,
+          item.id_rol_comision,
+          fecha_ingreso || null,
+          fecha_fin     || null
+        ]);
+        agregados.push(fila.rows[0]);
+      } catch (err) {
+        // 23505 = unique_violation (ya es integrante activo)
+        omitidos.push({
+          id_asambleista: item.id_asambleista,
+          razon: err.code === '23505'
+            ? 'Ya es integrante activo de esta comisión'
+            : err.message
+        });
+      }
+    }
+
+    return { agregados, omitidos };
+  },
+
   /** Finaliza la membresía de un integrante (soft-delete + bitácora) */
   async removeIntegrante(id_integrante_comision, fecha_fin) {
-    // Guardar en bitácora antes de cambiar estado
     const actual = await db.query(`
       SELECT * FROM integrante_comision WHERE id_integrante_comision = $1
     `, [id_integrante_comision]);
@@ -231,15 +278,17 @@ const Comision = {
   /** Registra o actualiza la asistencia de un asambleísta a una sesión */
   async registrarAsistencia({ id_sesion_comision, asambleista_id, id_estado_asistencia }) {
     const result = await db.query(`
-        INSERT INTO asistencia_sesion_comision
-        (id_sesion_comision, asambleista_id, id_estado_asistencia)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (id_sesion_comision, asambleista_id)
-        DO UPDATE SET id_estado_asistencia = EXCLUDED.id_estado_asistencia
-        RETURNING *
+      INSERT INTO asistencia_sesion_comision
+        (id_sesion_comision, asambleista_id, id_estado_asistencia, comision_id)
+      SELECT $1, $2, $3, sc.id_comision
+      FROM sesion_comision sc
+      WHERE sc.id_sesion_comision = $1
+      ON CONFLICT (id_sesion_comision, asambleista_id)
+      DO UPDATE SET id_estado_asistencia = EXCLUDED.id_estado_asistencia
+      RETURNING *
     `, [id_sesion_comision, asambleista_id, id_estado_asistencia]);
     return result.rows[0];
-},
+  },
 
   /** Registra asistencia masiva (array de { asambleista_id, id_estado_asistencia }) */
   async registrarAsistenciaMasiva(id_sesion_comision, registros) {
@@ -309,19 +358,19 @@ const Comision = {
           ORDER BY p.titulo ASC
         `),
         db.query(`
-            SELECT s.id_sesion, s.numero_sesion, s.fecha::text AS fecha
-            FROM sesiones s
-            ORDER BY s.fecha DESC
-            LIMIT 50
-            `)
+          SELECT s.id_sesion, s.numero_sesion, s.fecha::text AS fecha
+          FROM sesiones s
+          ORDER BY s.fecha DESC
+          LIMIT 50
+        `)
       ]);
 
     return {
-      tipos_comision:    tipos.rows,
-      roles_comision:    roles.rows,
+      tipos_comision:     tipos.rows,
+      roles_comision:     roles.rows,
       estados_asistencia: estadosAsistencia.rows,
-      asambleistas:      asambleistas.rows,
-      propuestas:        propuestas.rows,
+      asambleistas:       asambleistas.rows,
+      propuestas:         propuestas.rows,
       sesiones_plenarias: sesionesPlenary.rows
     };
   }
