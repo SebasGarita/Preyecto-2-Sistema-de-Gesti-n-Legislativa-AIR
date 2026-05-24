@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle Comisión — AIR</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+  <style>
+    :root {
+      --color-primario   : #003366;
+      --color-acento     : #005fa3;
+      --color-peligro    : #c0392b;
+      --color-exito      : #1e7e34;
+      --color-advertencia: #856404;
+      --bg-advertencia   : #fff3cd;
+      --bg-peligro       : #f8d7da;
+      --bg-exito         : #d4edda;
+      --radio            : 6px;
+      --sombra           : 0 2px 12px rgba(0,0,0,.12);
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
+
+    .navbar {
+      background: var(--color-primario); color: #fff;
+      padding: 0 28px; display: flex; align-items: center;
+      justify-content: space-between; height: 48px; font-size: .88rem;
+    }
+    .navbar a { color: rgba(255,255,255,.85); text-decoration: none; }
+    .navbar a:hover { color: #fff; }
+
+    .page-header {
+      background: var(--color-primario); color: #fff;
+      padding: 24px 28px; text-align: center;
+    }
+    .page-header h1 { margin: 0 0 6px; font-size: 1.6rem; font-weight: 600; }
+    .page-header p  { margin: 0; font-size: .9rem; opacity: .9; }
+    .page-header .objeto-acta {
+      margin: 10px auto 0; max-width: 700px;
+      font-size: .85rem; opacity: .85; font-style: italic;
+      line-height: 1.5;
+    }
+    .badge-modulo {
+      background: rgba(255,255,255,.18); border-radius: 20px;
+      padding: 4px 14px; font-size: .78rem; display: inline-block; margin-top: 10px;
+    }
+
+    .contenedor { max-width: 960px; margin: 24px auto; padding: 0 20px; }
+
+    .alerta { padding: 12px 16px; border-radius: var(--radio); font-size: .9rem;
+               font-weight: 500; margin-bottom: 16px; }
+    .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border: 1px solid #f5c6cb; }
+    .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
+    .alerta-warn  { background: var(--bg-advertencia); color: var(--color-advertencia); border: 1px solid #ffc107; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      padding: 18px 20px; text-align: center;
+    }
+    .stat-card .numero { font-size: 2rem; font-weight: 700; color: var(--color-acento); }
+    .stat-card .etiqueta { font-size: .82rem; color: #666; margin-top: 4px; }
+
+    .tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid #d0d7de; }
+    .tab {
+      padding: 12px 22px; cursor: pointer; font-size: .9rem; font-weight: 600;
+      color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: all .15s; background: none; border-top: none;
+      border-left: none; border-right: none; font-family: inherit;
+    }
+    .tab:hover { color: var(--color-acento); }
+    .tab.activo { color: var(--color-acento); border-bottom-color: var(--color-acento); }
+    .tab-panel { display: none; padding-top: 20px; }
+    .tab-panel.activo { display: block; }
+
+    .card {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      border: 1px solid rgba(0,0,0,.05); overflow: hidden; margin-bottom: 16px;
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid #eef0f3;
+    }
+    .card-header h3 { margin: 0; font-size: 1rem; color: var(--color-primario); }
+    .card-body { padding: 20px; }
+
+    .card-table {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      border: 1px solid rgba(0,0,0,.05); overflow: hidden; margin-bottom: 16px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    thead { background: var(--color-primario); color: #fff; }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 600;
+               font-size: .83rem; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #eef0f3; transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f4f9; }
+    tbody td { padding: 11px 14px; color: #333; vertical-align: middle; }
+    .td-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    /* Formularios */
+    .form-inline {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      padding: 16px 20px; background: #f8f9fa;
+      border-top: 1px solid #eef0f3;
+    }
+    .form-inline.una-col { grid-template-columns: 1fr; }
+    .campo label { display: block; font-size: .83rem; font-weight: 600;
+                   color: #444; margin-bottom: 5px; }
+    .campo input, .campo select, .campo textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid #d0d7de;
+      border-radius: var(--radio); font-size: .88rem; font-family: inherit;
+      background: #fff; outline: none;
+    }
+    .campo input:focus, .campo select:focus, .campo textarea:focus {
+      border-color: var(--color-acento);
+      box-shadow: 0 0 0 3px rgba(0,95,163,.12);
+    }
+    .campo textarea { resize: vertical; min-height: 72px; }
+    .form-acciones { grid-column: 1/-1; display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* Tom Select overrides para consistencia visual */
+    .ts-wrapper { font-family: 'Segoe UI', sans-serif; }
+    .ts-control {
+      border: 1px solid #d0d7de !important;
+      border-radius: var(--radio) !important;
+      font-size: .88rem !important;
+      min-height: 40px !important;
+      padding: 4px 8px !important;
+    }
+    .ts-control:focus-within {
+      border-color: var(--color-acento) !important;
+      box-shadow: 0 0 0 3px rgba(0,95,163,.12) !important;
+    }
+    .ts-dropdown { border-radius: var(--radio) !important; font-size: .88rem !important; }
+    .ts-dropdown .option.selected,
+    .ts-dropdown .option:hover { background: var(--color-acento) !important; color: #fff !important; }
+    .ts-control .item {
+      background: #d0e8ff !important; color: #003f8a !important;
+      border-radius: 20px !important; padding: 2px 10px !important;
+      font-size: .78rem !important; font-weight: 600 !important;
+    }
+
+    /* Asistencia */
+    .asistencia-grid {
+      display: grid; grid-template-columns: 1fr auto; align-items: center;
+      gap: 8px; padding: 10px 14px; border-bottom: 1px solid #eef0f3;
+    }
+    .asistencia-grid:last-child { border-bottom: none; }
+    .asistencia-grid select { padding: 6px 10px; border-radius: var(--radio);
+      border: 1px solid #d0d7de; font-size: .85rem; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: var(--radio); border: none;
+      cursor: pointer; font-size: .88rem; font-weight: 600;
+      font-family: inherit; text-decoration: none; transition: all .15s;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primario   { background: var(--color-acento);  color: #fff; }
+    .btn-secundario { background: #e9ecef; color: #444; }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+    .btn-peligro { background: var(--bg-peligro); color: var(--color-peligro); }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
+              font-size: .76rem; font-weight: 600; }
+    .badge-verde  { background: var(--bg-exito);  color: var(--color-exito); }
+    .badge-gris   { background: #e9ecef;           color: #555; }
+    .badge-azul   { background: #d0e8ff;           color: #003f8a; }
+    .badge-amarillo { background: var(--bg-advertencia); color: var(--color-advertencia); }
+
+    /* Separador de secciones dentro del tab */
+    .seccion-titulo {
+      font-size: .8rem; font-weight: 700; color: #888;
+      text-transform: uppercase; letter-spacing: .5px;
+      margin: 0 0 10px; padding: 0;
+    }
+
+    .empty { text-align: center; padding: 36px 20px; color: #888; font-size: .9rem; }
+    .footer { text-align: center; padding: 24px 0; color: #666;
+               font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 40px; }
+
+    @media (max-width: 768px) {
+      .contenedor { padding: 0 14px; }
+      .stats-row  { grid-template-columns: 1fr; }
+      .form-inline { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/comisiones/comisiones-lista.view.html">← Volver a comisiones</a>
+  <span>AIR – Sistema de Gestión Normativa</span>
+</nav>
+
+<header class="page-header">
+  <h1 id="titulo-comision">Cargando...</h1>
+  <p id="tipo-comision"></p>
+  <p class="objeto-acta" id="objeto-acta" style="display:none"></p>
+  <span class="badge-modulo">Comisiones de Trabajo</span>
+</header>
+
+<main class="contenedor">
+  <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
+  <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
+  <div id="msg-warn"  class="alerta alerta-warn"  style="display:none"></div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="numero" id="stat-integrantes">—</div>
+      <div class="etiqueta">Integrantes activos</div>
+    </div>
+    <div class="stat-card">
+      <div class="numero" id="stat-sesiones">—</div>
+      <div class="etiqueta">Sesiones registradas</div>
+    </div>
+    <div class="stat-card">
+      <div class="numero" id="stat-informes">—</div>
+      <div class="etiqueta">Informes del Directorio</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab activo" onclick="cambiarTab('integrantes', this)">👥 Integrantes</button>
+    <button class="tab" onclick="cambiarTab('sesiones', this)">📅 Sesiones</button>
+    <button class="tab" onclick="cambiarTab('informes', this)">📄 Informes del Directorio</button>
+  </div>
+
+  <!-- ── TAB: INTEGRANTES ──────────────────────────────────── -->
+  <div class="tab-panel activo" id="panel-integrantes">
+
+    <!-- Tabla de integrantes actuales -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Integrantes de la comisión</h3>
+      </div>
+      <div class="card-table" style="box-shadow:none;border:none;margin:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Asambleísta</th>
+              <th>Cédula</th>
+              <th>Rol</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-integrantes">
+            <tr><td colspan="7" class="empty">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Formulario: agregar en masa con Tom Select -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Agregar integrantes</h3>
+      </div>
+      <div class="form-inline">
+        <!-- Tom Select multiselect de asambleístas -->
+        <div class="campo" style="grid-column:1/-1">
+          <label>Asambleístas a agregar * <span style="font-weight:400;color:#888">(busca y selecciona varios)</span></label>
+          <select id="f-int-asambleistas" multiple placeholder="Buscar asambleísta..."></select>
+        </div>
+        <div class="campo">
+          <label>Rol en la comisión *</label>
+          <select id="f-int-rol">
+            <option value="">Seleccione...</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Fecha de ingreso</label>
+          <input type="date" id="f-int-fecha-inicio">
+        </div>
+        <div class="campo">
+          <label>Fecha de fin (opcional)</label>
+          <input type="date" id="f-int-fecha-fin">
+        </div>
+        <div class="form-acciones">
+          <button class="btn btn-primario" onclick="agregarIntegrantes()">
+            + Agregar integrantes
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── TAB: SESIONES ──────────────────────────────────────── -->
+  <div class="tab-panel" id="panel-sesiones">
+    <div class="card">
+      <div class="card-header">
+        <h3>Sesiones de la comisión</h3>
+      </div>
+      <div class="card-table" style="box-shadow:none;border:none;margin:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>N° Sesión</th>
+              <th>Fecha / Hora</th>
+              <th>Descripción</th>
+              <th>Asistentes</th>
+              <th>Acta</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-sesiones">
+            <tr><td colspan="6" class="empty">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-inline">
+        <div class="campo">
+          <label>N° de sesión</label>
+          <input type="text" id="f-ses-numero" placeholder="ej: SC-001-2025">
+        </div>
+        <div class="campo">
+          <label>Fecha y hora *</label>
+          <input type="datetime-local" id="f-ses-fecha">
+        </div>
+        <div class="campo" style="grid-column:1/-1">
+          <label>Descripción / agenda</label>
+          <textarea id="f-ses-descripcion" placeholder="Temas a tratar..."></textarea>
+        </div>
+        <div class="campo" style="grid-column:1/-1">
+          <label>Link al acta (URL)</label>
+          <input type="url" id="f-ses-acta" placeholder="https://...">
+        </div>
+        <div class="form-acciones">
+          <button class="btn btn-primario" onclick="crearSesion()">+ Registrar sesión</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel asistencia sesión seleccionada -->
+    <div class="card" id="panel-asistencia" style="display:none">
+      <div class="card-header">
+        <h3 id="titulo-asistencia">Asistencia — Sesión</h3>
+        <button class="btn btn-sm btn-secundario" onclick="cerrarAsistencia()">✕ Cerrar</button>
+      </div>
+      <div id="lista-asistencia" class="card-body"></div>
+      <div style="padding:0 20px 16px;display:flex;justify-content:flex-end;">
+        <button class="btn btn-primario" onclick="guardarAsistencia()">Guardar asistencia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: INFORMES DEL DIRECTORIO ──────────────────────── -->
+  <div class="tab-panel" id="panel-informes">
+    <div class="card">
+      <div class="card-header">
+        <h3>Informes del Directorio</h3>
+      </div>
+      <div class="card-table" style="box-shadow:none;border:none;margin:0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Título oficial</th>
+              <th>Propuesta asociada</th>
+              <th>Sesión plenaria</th>
+              <th>Fecha presentación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-informes">
+            <tr><td colspan="5" class="empty">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-inline">
+        <div class="campo" style="grid-column:1/-1">
+          <label>Título oficial del informe *</label>
+          <input type="text" id="f-inf-titulo"
+                 placeholder="ej: Informe de la Comisión sobre Reforma al Art. 5">
+        </div>
+        <div class="campo">
+          <label>Propuesta asociada</label>
+          <select id="f-inf-propuesta"><option value="">— Sin propuesta —</option></select>
+        </div>
+        <div class="campo">
+          <label>Sesión plenaria</label>
+          <select id="f-inf-sesion"><option value="">— Sin sesión —</option></select>
+        </div>
+        <div class="campo">
+          <label>Fecha de presentación</label>
+          <input type="date" id="f-inf-fecha">
+        </div>
+        <div class="campo" style="grid-column:1/-1">
+          <label>Recomendación / dictamen</label>
+          <textarea id="f-inf-recomendacion"
+                    placeholder="Texto de la recomendación al Directorio..."></textarea>
+        </div>
+        <div class="form-acciones">
+          <button class="btn btn-secundario" id="btn-cancelar-informe"
+                  style="display:none" onclick="cancelarEditarInforme()">
+            Cancelar
+          </button>
+          <button class="btn btn-primario" onclick="guardarInforme()">+ Registrar informe</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Módulo de Comisiones de Trabajo — AIR</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="/shared/auth.js"></script>
+<script>
+  // ── Estado global ──────────────────────────────────────────
+  const idComision      = new URLSearchParams(window.location.search).get('id');
+  let catalogos         = {};
+  let datoComision      = {};
+  let sesionActivaId    = null;
+  let informeEditandoId = null;
+  let tomSelectInstance = null;  // instancia del buscador multiselect
+
+  // ── Inicialización ─────────────────────────────────────────
+  async function init() {
+    if (!idComision) {
+      mostrarError('No se especificó una comisión. Vuelve al listado.');
+      return;
+    }
+
+    try {
+      const [catRes, detRes] = await Promise.all([
+        fetch('/comisiones/catalogos'),
+        fetch(`/comisiones/${idComision}`)
+      ]);
+
+      if (!catRes.ok) throw new Error('Error al cargar catálogos');
+      if (!detRes.ok) throw new Error('Comisión no encontrada');
+
+      catalogos    = await catRes.json();
+      datoComision = await detRes.json();
+
+      if (!datoComision.id_comision) {
+        mostrarError('Comisión no encontrada'); return;
+      }
+
+      // Header
+      document.getElementById('titulo-comision').textContent = datoComision.nombre_comision;
+      document.getElementById('tipo-comision').textContent   = datoComision.tipo_comision;
+      document.title = `${datoComision.nombre_comision} — AIR`;
+
+      // Objeto según acta
+      if (datoComision.objeto_acta) {
+        const el = document.getElementById('objeto-acta');
+        el.textContent = `Objeto: ${datoComision.objeto_acta}`;
+        el.style.display = 'block';
+      }
+
+      // Stats
+      actualizarStats();
+
+      // Poblar selects normales
+      poblarSelect('f-int-rol', catalogos.roles_comision,
+                   'id_rol_comision', r => r.nombre_rol);
+      poblarSelect('f-inf-propuesta', catalogos.propuestas,
+                   'id_propuesta', p => `${p.codigo_air ? p.codigo_air + ' - ' : ''}${p.titulo}`);
+      poblarSelect('f-inf-sesion', catalogos.sesiones_plenarias,
+                   'id_sesion', s => `${s.numero_sesion} (${s.fecha})`);
+
+      // Tom Select: multiselect de asambleístas con búsqueda
+      iniciarTomSelect();
+
+      renderIntegrantes();
+      renderSesiones();
+      renderInformes();
+
+    } catch (e) {
+      mostrarError('Error al cargar los datos de la comisión: ' + e.message);
+      console.error(e);
+    }
+  }
+
+  function iniciarTomSelect() {
+    // Destruir instancia previa si existe (en recargas)
+    if (tomSelectInstance) { tomSelectInstance.destroy(); }
+
+    // Construir opciones — excluye los que ya son integrantes activos
+    const activos = new Set(
+      datoComision.integrantes
+        .filter(i => i.estado === 'ACTIVO')
+        .map(i => String(i.asambleista_id))
+    );
+
+  const opciones = catalogos.asambleistas
+    .filter(a => !activos.has(String(a.asambleista_id)))
+    .map(a => ({
+      value: String(a.asambleista_id),
+      text:  `${a.nombre} (${a.cedula})`
+    }));
+
+    tomSelectInstance = new TomSelect('#f-int-asambleistas', {
+      options:     opciones,
+      plugins:     ['remove_button'],
+      maxOptions:  200,
+      placeholder: 'Buscar asambleísta...'
+    });
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────
+  function cambiarTab(nombre, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('activo'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+    btn.classList.add('activo');
+    document.getElementById(`panel-${nombre}`).classList.add('activo');
+  }
+
+  function actualizarStats() {
+    const intActivos = datoComision.integrantes.filter(i => i.estado === 'ACTIVO').length;
+    document.getElementById('stat-integrantes').textContent = intActivos;
+    document.getElementById('stat-sesiones').textContent    = datoComision.sesiones.length;
+    document.getElementById('stat-informes').textContent    = datoComision.informes.length;
+  }
+
+  // ── INTEGRANTES ────────────────────────────────────────────
+  function renderIntegrantes() {
+    const tbody = document.getElementById('tabla-integrantes');
+    const lista  = datoComision.integrantes;
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">Sin integrantes registrados.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = lista.map(i => `
+      <tr>
+        <td><strong>${esc(i.nombre_asambleista)}</strong></td>
+        <td>${esc(i.cedula)}</td>
+        <td><span class="badge badge-azul">${esc(i.nombre_rol)}</span></td>
+        <td>${i.fecha_ingreso_nombramiento ?? '—'}</td>
+        <td>${i.fecha_fin_nombramiento ?? '—'}</td>
+        <td>${estadoBadge(i.estado)}</td>
+        <td>
+          ${i.estado === 'ACTIVO' ? `
+            <div class="td-acciones">
+              <button class="btn btn-sm btn-peligro"
+                      onclick="removerIntegrante(${i.id_integrante_comision})">
+                Dar de baja
+              </button>
+            </div>` : '—'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function agregarIntegrantes() {
+    const seleccionados = tomSelectInstance ? tomSelectInstance.getValue() : [];
+    const idRol         = document.getElementById('f-int-rol').value;
+    const fechaInicio   = document.getElementById('f-int-fecha-inicio').value || null;
+    const fechaFin      = document.getElementById('f-int-fecha-fin').value || null;
+
+    if (!seleccionados.length) {
+      mostrarError('Selecciona al menos un asambleísta'); return;
+    }
+    if (!idRol) {
+      mostrarError('Selecciona un rol para los integrantes'); return;
+    }
+
+    const integrantes = seleccionados.map(id => ({
+      id_asambleista:  Number(id),
+      id_rol_comision: Number(idRol)
+    }));
+
+    const res  = await fetch(`/comisiones/${idComision}/integrantes/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        integrantes,
+        fecha_ingreso_nombramiento: fechaInicio,
+        fecha_fin_nombramiento:     fechaFin
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) { mostrarError(data.error); return; }
+
+    // Limpiar formulario
+    tomSelectInstance.clear();
+    document.getElementById('f-int-rol').value         = '';
+    document.getElementById('f-int-fecha-inicio').value = '';
+    document.getElementById('f-int-fecha-fin').value    = '';
+
+    // Mostrar resultado
+    let msg = `${data.agregados} integrante(s) agregado(s) correctamente.`;
+    if (data.omitidos > 0) {
+      mostrarWarn(`${msg} ${data.omitidos} omitido(s) por ya ser integrantes activos.`);
+    } else {
+      mostrarOk(msg);
+    }
+
+    await recargar();
+  }
+
+  async function removerIntegrante(id) {
+    if (!confirm('¿Dar de baja a este integrante de la comisión?')) return;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const res = await fetch(`/comisiones/${idComision}/integrantes/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fecha_fin: hoy })
+    });
+    const data = await res.json();
+    if (!res.ok) { mostrarError(data.error); return; }
+    mostrarOk('Integrante dado de baja.');
+    await recargar();
+  }
+
+  // ── SESIONES ───────────────────────────────────────────────
+  function renderSesiones() {
+    const tbody = document.getElementById('tabla-sesiones');
+    const lista  = datoComision.sesiones;
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty">Sin sesiones registradas.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = lista.map(s => {
+      const fecha = new Date(s.fecha_hora).toLocaleString('es-CR');
+      return `
+        <tr>
+          <td>${esc(s.numero_sesion ?? '—')}</td>
+          <td>${fecha}</td>
+          <td>${esc(s.descripcion ?? '—')}</td>
+          <td><span class="badge badge-azul">${s.total_asistentes}</span></td>
+          <td>${s.link_acta
+                ? `<a href="${esc(s.link_acta)}" target="_blank" class="btn btn-sm btn-secundario">Ver acta</a>`
+                : '—'}</td>
+          <td>
+            <div class="td-acciones">
+              <button class="btn btn-sm btn-primario"
+                      onclick="abrirAsistencia(${s.id_sesion_comision},
+                               '${esc(s.numero_sesion ?? String(s.id_sesion_comision))}')">
+                Registrar asistencia
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function crearSesion() {
+    const body = {
+      fecha_hora:    document.getElementById('f-ses-fecha').value,
+      numero_sesion: document.getElementById('f-ses-numero').value.trim() || null,
+      descripcion:   document.getElementById('f-ses-descripcion').value.trim() || null,
+      link_acta:     document.getElementById('f-ses-acta').value.trim() || null
+    };
+    if (!body.fecha_hora) { mostrarError('La fecha y hora son requeridas'); return; }
+
+    const res  = await fetch(`/comisiones/${idComision}/sesiones`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) { mostrarError(data.error); return; }
+
+    mostrarOk('Sesión registrada correctamente.');
+    ['f-ses-numero','f-ses-fecha','f-ses-descripcion','f-ses-acta']
+      .forEach(id => document.getElementById(id).value = '');
+    await recargar();
+  }
+
+  async function abrirAsistencia(sesionId, numeroSesion) {
+    sesionActivaId = sesionId;
+    const res  = await fetch(`/comisiones/sesiones/${sesionId}`);
+    const data = await res.json();
+    if (!res.ok) { mostrarError('Error al cargar la sesión'); return; }
+
+    document.getElementById('titulo-asistencia').textContent = `Asistencia — ${numeroSesion}`;
+
+    const mapaActual = {};
+    data.asistencia.forEach(a => { mapaActual[a.asambleista_id] = a.id_estado_asistencia; });
+
+    const integrantes   = datoComision.integrantes.filter(i => i.estado === 'ACTIVO');
+    const opcionesEstado = catalogos.estados_asistencia.map(e =>
+      `<option value="${e.id_estado_asistencia}">${esc(e.nombre)}</option>`
+    ).join('');
+
+    const html = integrantes.length
+      ? integrantes.map(i => `
+          <div class="asistencia-grid">
+            <div>
+              <strong>${esc(i.nombre_asambleista)}</strong>
+              <span style="color:#888;font-size:.82rem"> · ${esc(i.cedula)}</span>
+            </div>
+            <select data-id="${i.asambleista_id}" style="min-width:200px">
+              ${catalogos.estados_asistencia.map(e => `
+                <option value="${e.id_estado_asistencia}"
+                  ${mapaActual[i.asambleista_id] == e.id_estado_asistencia ? 'selected' : ''}>
+                  ${esc(e.nombre)}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+        `).join('')
+      : '<p class="empty">No hay integrantes activos en esta comisión.</p>';
+
+    document.getElementById('lista-asistencia').innerHTML = html;
+    document.getElementById('panel-asistencia').style.display = 'block';
+    document.getElementById('panel-asistencia').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function cerrarAsistencia() {
+    sesionActivaId = null;
+    document.getElementById('panel-asistencia').style.display = 'none';
+  }
+
+  async function guardarAsistencia() {
+    const selects  = document.querySelectorAll('#lista-asistencia select[data-id]');
+    const registros = Array.from(selects).map(sel => ({
+      asambleista_id:       Number(sel.dataset.id),
+      id_estado_asistencia: Number(sel.value)
+    }));
+    if (!registros.length) { mostrarError('No hay integrantes para registrar'); return; }
+
+    const res  = await fetch(`/comisiones/sesiones/${sesionActivaId}/asistencia`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registros })
+    });
+    const data = await res.json();
+    if (!res.ok) { mostrarError(data.error); return; }
+
+    mostrarOk(`Asistencia guardada: ${data.registrados} registros.`);
+    cerrarAsistencia();
+    await recargar();
+  }
+
+  // ── INFORMES ───────────────────────────────────────────────
+  function renderInformes() {
+    const tbody = document.getElementById('tabla-informes');
+    const lista  = datoComision.informes;
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty">Sin informes registrados.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = lista.map(inf => `
+      <tr>
+        <td><strong>${esc(inf.titulo ?? '—')}</strong></td>
+        <td>${inf.titulo_propuesta ? esc(inf.titulo_propuesta) : '—'}</td>
+        <td>${inf.sesion_plenaria  ? esc(inf.sesion_plenaria)  : '—'}</td>
+        <td>${inf.fecha_presentacion ?? '—'}</td>
+        <td>
+          <div class="td-acciones">
+            <button class="btn btn-sm btn-secundario"
+                    onclick="cargarInformeEditar(${inf.id_informe})">
+              Editar
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function guardarInforme() {
+    const body = {
+      titulo:             document.getElementById('f-inf-titulo').value.trim(),
+      id_propuesta:       document.getElementById('f-inf-propuesta').value || null,
+      id_sesion:          document.getElementById('f-inf-sesion').value || null,
+      fecha_presentacion: document.getElementById('f-inf-fecha').value || null,
+      recomendacion:      document.getElementById('f-inf-recomendacion').value.trim() || null
+    };
+    if (!body.titulo) { mostrarError('El título del informe es requerido'); return; }
+
+    const url = informeEditandoId
+      ? `/comisiones/informes/${informeEditandoId}`
+      : `/comisiones/${idComision}/informes`;
+    const metodo = informeEditandoId ? 'PUT' : 'POST';
+
+    const res  = await fetch(url, { method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) { mostrarError(data.error); return; }
+
+    mostrarOk(informeEditandoId ? 'Informe actualizado.' : 'Informe registrado correctamente.');
+    cancelarEditarInforme();
+    await recargar();
+  }
+
+  function cargarInformeEditar(id) {
+    const inf = datoComision.informes.find(i => i.id_informe === id);
+    if (!inf) return;
+    informeEditandoId = id;
+    document.getElementById('f-inf-titulo').value        = inf.titulo ?? '';
+    document.getElementById('f-inf-propuesta').value     = inf.id_propuesta ?? '';
+    document.getElementById('f-inf-sesion').value        = inf.id_sesion ?? '';
+    document.getElementById('f-inf-fecha').value         = inf.fecha_presentacion ?? '';
+    document.getElementById('f-inf-recomendacion').value = inf.recomendacion ?? '';
+    document.getElementById('btn-cancelar-informe').style.display = 'inline-flex';
+    document.querySelector('#panel-informes .form-acciones .btn-primario').textContent = 'Actualizar informe';
+    document.getElementById('panel-informes').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function cancelarEditarInforme() {
+    informeEditandoId = null;
+    ['f-inf-titulo','f-inf-propuesta','f-inf-sesion','f-inf-fecha','f-inf-recomendacion']
+      .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('btn-cancelar-informe').style.display = 'none';
+    document.querySelector('#panel-informes .form-acciones .btn-primario').textContent = '+ Registrar informe';
+  }
+
+  // ── Recarga datos sin recargar página ─────────────────────
+  async function recargar() {
+    const res = await fetch(`/comisiones/${idComision}`);
+    datoComision = await res.json();
+    actualizarStats();
+    renderIntegrantes();
+    renderSesiones();
+    renderInformes();
+    // Reiniciar Tom Select con la lista actualizada (nuevos activos quedan deshabilitados)
+    iniciarTomSelect();
+  }
+
+  // ── Helpers ────────────────────────────────────────────────
+  function poblarSelect(selectId, items, valKey, labelFn) {
+    const sel = document.getElementById(selectId);
+    items.forEach(i => sel.add(new Option(
+      typeof labelFn === 'function' ? labelFn(i) : i[labelFn], i[valKey]
+    )));
+  }
+
+  function estadoBadge(estado) {
+    return estado === 'ACTIVO'
+      ? `<span class="badge badge-verde">Activo</span>`
+      : `<span class="badge badge-gris">Inactivo</span>`;
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById('msg-error');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 6000);
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function mostrarOk(msg) {
+    const el = document.getElementById('msg-ok');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+  function mostrarWarn(msg) {
+    const el = document.getElementById('msg-warn');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 6000);
+  }
+
+  init();
+</script>
+</body>
+</html>

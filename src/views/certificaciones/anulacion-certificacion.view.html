@@ -1,0 +1,449 @@
+<!-- src/views/certificaciones/anulacion-certificacion.view.html -->
+<!-- Issue #15 — Gestión de Anulaciones y Sustituciones -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Certificaciones — AIR</title>
+    <link rel="stylesheet" href="/public/css/styles.css">
+    <style>
+        /* ── Variables ── */
+        :root {
+            --color-primario   : #003366;
+            --color-acento     : #005fa3;
+            --color-peligro    : #c0392b;
+            --color-exito      : #1e7e34;
+            --color-advertencia: #856404;
+            --bg-advertencia   : #fff3cd;
+            --bg-peligro       : #f8d7da;
+            --bg-exito         : #d4edda;
+            --radio            : 6px;
+            --sombra           : 0 2px 12px rgba(0,0,0,.12);
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
+
+        /* ── Layout ── */
+        .page-header {
+            background: var(--color-primario); color: #fff;
+            padding: 18px 28px; display: flex; align-items: center; gap: 14px;
+        }
+        .page-header h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+        .page-header .badge-modulo {
+            background: rgba(255,255,255,.18); border-radius: 20px;
+            padding: 3px 12px; font-size: .78rem; letter-spacing: .4px;
+        }
+        .contenedor { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+
+        /* ── Filtros ── */
+        .filtros-bar {
+            background: #fff; border-radius: var(--radio); padding: 16px 20px;
+            display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;
+            box-shadow: var(--sombra); margin-bottom: 20px;
+        }
+        .filtros-bar .grupo { display: flex; flex-direction: column; gap: 4px; }
+        .filtros-bar label  { font-size: .78rem; font-weight: 600; color: #555; }
+        .filtros-bar select,
+        .filtros-bar input  {
+            padding: 7px 10px; border: 1px solid #ccc; border-radius: var(--radio);
+            font-size: .9rem; min-width: 160px;
+        }
+        .btn { padding: 8px 18px; border-radius: var(--radio); border: none; cursor: pointer; font-size: .88rem; font-weight: 600; transition: opacity .15s; }
+        .btn:hover         { opacity: .85; }
+        .btn-primario      { background: var(--color-acento);  color: #fff; }
+        .btn-peligro       { background: var(--color-peligro); color: #fff; }
+        .btn-secundario    { background: #6c757d; color: #fff; }
+        .btn-sm            { padding: 5px 12px; font-size: .8rem; }
+
+        /* ── Tabla ── */
+        .tabla-card { background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; }
+        .tabla-card table { width: 100%; border-collapse: collapse; }
+        .tabla-card thead { background: var(--color-primario); color: #fff; }
+        .tabla-card th, .tabla-card td { padding: 11px 14px; text-align: left; font-size: .88rem; }
+        .tabla-card tbody tr:nth-child(even) { background: #f8f9fa; }
+        .tabla-card tbody tr:hover { background: #eef3fb; }
+
+        /* ── Badges de estado ── */
+        .badge { display: inline-block; border-radius: 12px; padding: 3px 10px; font-size: .75rem; font-weight: 700; letter-spacing: .3px; }
+        .badge-activo  { background: #d4edda; color: var(--color-exito); }
+        .badge-anulado { background: #f8d7da; color: var(--color-peligro); }
+
+        /* ── Paginación ── */
+        .paginacion { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 16px; }
+        .paginacion button { padding: 5px 12px; border: 1px solid #ccc; border-radius: var(--radio); background: #fff; cursor: pointer; }
+        .paginacion button.activo { background: var(--color-acento); color: #fff; border-color: var(--color-acento); }
+
+        /* ── Modales ── */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.5);
+            display: none; align-items: center; justify-content: center; z-index: 999;
+        }
+        .overlay.visible { display: flex; }
+        .modal {
+            background: #fff; border-radius: var(--radio); box-shadow: 0 8px 32px rgba(0,0,0,.25);
+            width: 100%; max-width: 520px; padding: 28px; position: relative;
+        }
+        .modal h2 { margin: 0 0 6px; font-size: 1.1rem; color: var(--color-primario); }
+        .modal .subtitulo { font-size: .85rem; color: #666; margin-bottom: 20px; }
+        .modal .campo { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+        .modal label { font-size: .82rem; font-weight: 600; color: #444; }
+        .modal input, .modal textarea, .modal select {
+            padding: 9px 12px; border: 1px solid #ccc; border-radius: var(--radio);
+            font-size: .9rem; font-family: inherit; resize: vertical;
+        }
+        .modal textarea { min-height: 90px; }
+        .modal .aviso {
+            border-radius: var(--radio); padding: 10px 14px; font-size: .83rem;
+            margin-bottom: 18px; line-height: 1.5;
+        }
+        .aviso-peligro      { background: var(--bg-peligro);    color: var(--color-peligro); border-left: 4px solid var(--color-peligro); }
+        .aviso-advertencia  { background: var(--bg-advertencia); color: var(--color-advertencia); border-left: 4px solid #f0ad4e; }
+        .aviso-exito        { background: var(--bg-exito);  color: var(--color-exito); border-left: 4px solid var(--color-exito); }
+        .modal .acciones    { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+        .cerrar-modal       { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
+
+        /* ── Toast ── */
+        #toast {
+            position: fixed; bottom: 28px; right: 28px;
+            background: #333; color: #fff; padding: 12px 20px;
+            border-radius: var(--radio); font-size: .88rem; opacity: 0;
+            transition: opacity .3s; pointer-events: none; z-index: 1100; max-width: 360px;
+        }
+        #toast.show { opacity: 1; }
+        #toast.exito  { background: var(--color-exito); }
+        #toast.error  { background: var(--color-peligro); }
+    </style>
+</head>
+<body>
+
+<!-- ── Encabezado ── -->
+<header class="page-header">
+    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+    </svg>
+    <h1>Certificaciones Emitidas</h1>
+    <span class="badge-modulo">Módulo de Fe Pública</span>
+</header>
+
+<main class="contenedor">
+
+    <!-- ── Filtros ── -->
+    <div class="filtros-bar">
+        <div class="grupo">
+            <label for="filtroEstado">Estado</label>
+            <select id="filtroEstado">
+                <option value="">Todos</option>
+                <option value="Activo">Activo</option>
+                <option value="Anulado">Anulado</option>
+            </select>
+        </div>
+        <div class="grupo">
+            <label for="filtroCedula">Cédula / Nombre</label>
+            <input type="text" id="filtroCedula" placeholder="Buscar asambleísta...">
+        </div>
+        <div class="grupo">
+            <label for="filtroDesde">Desde</label>
+            <input type="date" id="filtroDesde">
+        </div>
+        <div class="grupo">
+            <label for="filtroHasta">Hasta</label>
+            <input type="date" id="filtroHasta">
+        </div>
+        <button class="btn btn-primario" onclick="cargarCertificaciones(1)">Buscar</button>
+    </div>
+
+    <!-- ── Tabla ── -->
+    <div class="tabla-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Asambleísta</th>
+                    <th>Cédula</th>
+                    <th>Fecha Emisión</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaCuerpo">
+                <tr><td colspan="6" style="text-align:center;color:#999;padding:28px">Cargando...</td></tr>
+            </tbody>
+        </table>
+        <div class="paginacion" id="paginacion"></div>
+    </div>
+</main>
+
+<!-- ════════════════════════════════════════════════
+     MODAL — Anular certificación
+════════════════════════════════════════════════ -->
+<div class="overlay" id="overlayAnular">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloAnular">
+        <button class="cerrar-modal" onclick="cerrarModal('overlayAnular')" title="Cerrar">×</button>
+        <h2 id="tituloAnular">Anular Certificación</h2>
+        <p class="subtitulo">Folio: <strong id="folioAnularLabel">—</strong></p>
+
+        <div class="aviso aviso-peligro">
+            ⚠️ Esta acción es <strong>irreversible</strong>. El número de folio quedará
+            marcado como inválido y no podrá reutilizarse. El registro permanece en la
+            base de datos por fe pública.
+        </div>
+
+        <div class="campo">
+            <label for="motivoAnulacion">Motivo de anulación <span style="color:red">*</span></label>
+            <textarea id="motivoAnulacion" placeholder="Describa la razón de la anulación (obligatorio)..."></textarea>
+        </div>
+
+        <div id="errorAnular" class="aviso aviso-peligro" style="display:none"></div>
+
+        <div class="acciones">
+            <button class="btn btn-secundario" onclick="cerrarModal('overlayAnular')">Cancelar</button>
+            <button class="btn btn-peligro"    onclick="confirmarAnulacion()">Confirmar Anulación</button>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     MODAL — Sustituir certificación
+════════════════════════════════════════════════ -->
+<div class="overlay" id="overlaySustituir">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="tituloSustituir">
+        <button class="cerrar-modal" onclick="cerrarModal('overlaySustituir')" title="Cerrar">×</button>
+        <h2 id="tituloSustituir">Emitir Certificación de Sustitución</h2>
+        <p class="subtitulo">Sustituye el folio: <strong id="folioSustituirLabel">—</strong></p>
+
+        <div class="aviso aviso-advertencia">
+            📋 Se anulará el folio original y se emitirá un nuevo documento que lo reemplaza.
+            El nuevo folio incluirá la referencia al folio sustituido.
+        </div>
+
+        <div class="campo">
+            <label for="motivoSustitucion">Motivo de sustitución <span style="color:red">*</span></label>
+            <textarea id="motivoSustitucion" placeholder='Ej: "Error en el periodo reportado — se corrige fecha de inicio"'></textarea>
+        </div>
+        <div class="campo">
+            <label for="contenidoNuevo">Contenido corregido del documento <span style="color:red">*</span></label>
+            <textarea id="contenidoNuevo" style="min-height:120px"
+                placeholder="Pegue aquí el texto completo y corregido de la certificación..."></textarea>
+        </div>
+        <input type="hidden" id="asambleistaIdSustituir">
+
+        <div id="errorSustituir" class="aviso aviso-peligro" style="display:none"></div>
+        <div id="exitoSustituir" class="aviso aviso-exito"   style="display:none"></div>
+
+        <div class="acciones">
+            <button class="btn btn-secundario" onclick="cerrarModal('overlaySustituir')">Cancelar</button>
+            <button class="btn btn-primario"   onclick="confirmarSustitucion()">Generar Sustitución</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast"></div>
+
+<script src="/shared/auth.js"></script>
+<script>
+    let paginaActual    = 1;
+    let idCertAnular    = null;
+    let idCertSustituir = null;
+
+    async function cargarCertificaciones(pagina = 1) {
+        paginaActual = pagina;
+        const estado = document.getElementById('filtroEstado').value;
+        const desde  = document.getElementById('filtroDesde').value;
+        const hasta  = document.getElementById('filtroHasta').value;
+
+        const params = new URLSearchParams({ pagina, porPagina: 15 });
+        if (estado) params.set('estado', estado);
+        if (desde)  params.set('desde',  desde);
+        if (hasta)  params.set('hasta',  hasta);
+
+        try {
+            const res  = await fetch(`/certificaciones?${params}`);
+            const json = await res.json();
+
+            if (!json.ok) { mostrarToast(json.error, 'error'); return; }
+
+            renderTabla(json.datos);
+            renderPaginacion(json.total, json.porPagina, pagina);
+        } catch (e) {
+            mostrarToast('Error al cargar certificaciones.', 'error');
+        }
+    }
+
+    function renderTabla(filas) {
+        const tbody = document.getElementById('tablaCuerpo');
+        if (!filas.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;padding:28px">Sin resultados.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = filas.map(f => `
+            <tr>
+                <td><code>${f.folio_unico}</code>
+                    ${f.folio_sustituido_por ? `<br><small style="color:#888">→ ${f.folio_sustituido_por}</small>` : ''}
+                </td>
+                <td>${f.nombre_asambleista}</td>
+                <td>${f.cedula_asambleista}</td>
+                <td>${new Date(f.fecha_emision).toLocaleDateString('es-CR', { day:'2-digit', month:'short', year:'numeric' })}</td>
+                <td>
+                    <span class="badge ${f.estado === 'Activo' ? 'badge-activo' : 'badge-anulado'}">
+                        ${f.estado}
+                    </span>
+                </td>
+                <td>
+                    ${f.estado === 'Activo' ? `
+                        <button class="btn btn-sm btn-peligro"
+                            onclick="abrirModalAnular('${f.id_certificacion}', '${f.folio_unico}')">
+                            Anular
+                        </button>
+                        <button class="btn btn-sm btn-primario" style="margin-left:5px"
+                            onclick="abrirModalSustituir('${f.id_certificacion}', '${f.folio_unico}', '${f.id_asambleista ?? 0}')">
+                            Sustituir
+                        </button>
+                    ` : `<span style="color:#999;font-size:.8rem">Sin acciones</span>`}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderPaginacion(total, porPagina, actual) {
+        const totalPags = Math.ceil(total / porPagina);
+        const cont = document.getElementById('paginacion');
+        if (totalPags <= 1) { cont.innerHTML = ''; return; }
+        let html = '';
+        for (let i = 1; i <= totalPags; i++) {
+            html += `<button class="${i === actual ? 'activo' : ''}" onclick="cargarCertificaciones(${i})">${i}</button>`;
+        }
+        cont.innerHTML = html;
+    }
+
+    function abrirModalAnular(id, folio) {
+        idCertAnular = id;
+        document.getElementById('folioAnularLabel').textContent = folio;
+        document.getElementById('motivoAnulacion').value = '';
+        document.getElementById('errorAnular').style.display = 'none';
+        document.getElementById('overlayAnular').classList.add('visible');
+        document.getElementById('motivoAnulacion').focus();
+    }
+
+    async function confirmarAnulacion() {
+        const motivo = document.getElementById('motivoAnulacion').value.trim();
+        const errDiv = document.getElementById('errorAnular');
+
+        if (!motivo) {
+            errDiv.textContent = 'El motivo es obligatorio.';
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res  = await fetch(`/certificaciones/${idCertAnular}/anular`, {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ motivo })
+            });
+            const json = await res.json();
+
+            if (!json.ok) {
+                errDiv.textContent   = json.error;
+                errDiv.style.display = 'block';
+                return;
+            }
+
+            cerrarModal('overlayAnular');
+            mostrarToast(json.msg, 'exito');
+            cargarCertificaciones(paginaActual);
+        } catch (e) {
+            errDiv.textContent   = 'Error de conexión. Intente de nuevo.';
+            errDiv.style.display = 'block';
+        }
+    }
+
+    function abrirModalSustituir(id, folio, asambleistaId) {
+        idCertSustituir = id;
+        document.getElementById('folioSustituirLabel').textContent  = folio;
+        document.getElementById('asambleistaIdSustituir').value     = asambleistaId;
+        document.getElementById('motivoSustitucion').value          = '';
+        document.getElementById('contenidoNuevo').value             = '';
+        document.getElementById('errorSustituir').style.display     = 'none';
+        document.getElementById('exitoSustituir').style.display     = 'none';
+        document.getElementById('overlaySustituir').classList.add('visible');
+        document.getElementById('motivoSustitucion').focus();
+    }
+
+    async function confirmarSustitucion() {
+        const motivo         = document.getElementById('motivoSustitucion').value.trim();
+        const contenidoNuevo = document.getElementById('contenidoNuevo').value.trim();
+        const asambleistaId  = document.getElementById('asambleistaIdSustituir').value;
+        const errDiv         = document.getElementById('errorSustituir');
+        const exitoDiv       = document.getElementById('exitoSustituir');
+
+        errDiv.style.display   = 'none';
+        exitoDiv.style.display = 'none';
+
+        if (!motivo) {
+            errDiv.textContent   = 'El motivo de sustitución es obligatorio.';
+            errDiv.style.display = 'block';
+            return;
+        }
+        if (!contenidoNuevo) {
+            errDiv.textContent   = 'El contenido del nuevo documento es obligatorio.';
+            errDiv.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res  = await fetch(`/certificaciones/${idCertSustituir}/sustituir`, {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ motivo, contenidoNuevo, asambleistaId })
+            });
+            const json = await res.json();
+
+            if (!json.ok) {
+                errDiv.textContent   = json.error;
+                errDiv.style.display = 'block';
+                return;
+            }
+
+            exitoDiv.innerHTML     = `✅ ${json.msg}`;
+            exitoDiv.style.display = 'block';
+
+            setTimeout(() => {
+                cerrarModal('overlaySustituir');
+                cargarCertificaciones(paginaActual);
+            }, 2200);
+        } catch (e) {
+            errDiv.textContent   = 'Error de conexión. Intente de nuevo.';
+            errDiv.style.display = 'block';
+        }
+    }
+
+    function cerrarModal(id) {
+        document.getElementById(id).classList.remove('visible');
+    }
+
+    document.querySelectorAll('.overlay').forEach(overlay => {
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) cerrarModal(overlay.id);
+        });
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.overlay.visible').forEach(o => cerrarModal(o.id));
+        }
+    });
+
+    function mostrarToast(mensaje, tipo = '') {
+        const t = document.getElementById('toast');
+        t.textContent = mensaje;
+        t.className   = `show ${tipo}`;
+        setTimeout(() => { t.className = ''; }, 3500);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => cargarCertificaciones(1));
+</script>
+
+</body>
+</html>

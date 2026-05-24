@@ -1,1 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Asambleísta — AIR</title>
+  <style>
+    /* ── Variables ── */
+    :root {
+      --color-primario   : #003366;
+      --color-acento     : #005fa3;
+      --color-peligro    : #c0392b;
+      --color-exito      : #1e7e34;
+      --color-advertencia: #856404;
+      --bg-advertencia   : #fff3cd;
+      --bg-peligro       : #f8d7da;
+      --bg-exito         : #d4edda;
+      --radio            : 6px;
+      --sombra           : 0 2px 12px rgba(0,0,0,.12);
+    }
 
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      color: #222;
+      margin: 0;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--color-primario);
+      color: #fff;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 48px;
+      font-size: .88rem;
+      font-weight: 500;
+    }
+    .navbar a {
+      color: rgba(255,255,255,.85);
+      text-decoration: none;
+      font-size: .88rem;
+      transition: color .15s;
+    }
+    .navbar a:hover { color: #fff; }
+
+    /* ── Page Header ── */
+    .page-header {
+      background: var(--color-primario);
+      color: #fff;
+      padding: 28px 28px 24px;
+      text-align: center;
+    }
+    .page-header h1 {
+      margin: 0 0 8px;
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+    .page-header .subtitulo {
+      margin: 0;
+      font-size: .95rem;
+      opacity: .95;
+    }
+    .page-header .badge-modulo {
+      background: rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .8rem;
+      letter-spacing: .4px;
+      display: inline-block;
+      margin-top: 12px;
+    }
+
+    /* ── Layout ── */
+    .contenedor {
+      max-width: 720px;
+      margin: 28px auto;
+      padding: 0 20px;
+    }
+
+    /* ── Alertas ── */
+    .alerta {
+      padding: 12px 16px;
+      border-radius: var(--radio);
+      font-size: .9rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .alerta-error {
+      background: var(--bg-peligro);
+      color: var(--color-peligro);
+      border: 1px solid #f5c6cb;
+    }
+    .alerta-ok {
+      background: var(--bg-exito);
+      color: var(--color-exito);
+      border: 1px solid #c3e6cb;
+    }
+
+    /* ── Card / Fieldset ── */
+    .card {
+      background: #fff;
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+      border: 1px solid rgba(0,0,0,.05);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    fieldset {
+      border: none;
+      margin: 0;
+      padding: 24px;
+    }
+    fieldset + fieldset {
+      border-top: 1px solid #eef0f3;
+    }
+    legend {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-primario);
+      padding: 0;
+      margin-bottom: 6px;
+      float: left;
+      width: 100%;
+    }
+
+    .hint {
+      font-size: .82rem;
+      color: #777;
+      line-height: 1.5;
+      margin: 4px 0 18px;
+      clear: both;
+    }
+
+    /* ── Campos ── */
+    .campo {
+      margin-bottom: 16px;
+    }
+    .campo label {
+      display: block;
+      font-size: .88rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .campo input,
+    .campo select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d0d7de;
+      border-radius: var(--radio);
+      font-size: .92rem;
+      font-family: inherit;
+      background: #fff;
+      box-sizing: border-box;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+      color: #222;
+    }
+    .campo input:focus,
+    .campo select:focus {
+      border-color: var(--color-acento);
+      box-shadow: 0 0 0 3px rgba(0,95,163,.12);
+    }
+    .campo input::placeholder { color: #aaa; }
+    .campo small {
+      display: block;
+      font-size: .78rem;
+      color: var(--color-peligro);
+      margin-top: 4px;
+      min-height: 16px;
+    }
+
+    .fila-dos-columnas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radio);
+      border: none;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      font-family: inherit;
+      text-decoration: none;
+      transition: all .15s;
+    }
+    .btn:hover {
+      opacity: .9;
+      transform: translateY(-1px);
+    }
+    .btn-primario {
+      background: var(--color-acento);
+      color: #fff;
+    }
+    .btn-secundario {
+      background: #e9ecef;
+      color: #444;
+    }
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: .82rem;
+      background: var(--color-acento);
+      color: #fff;
+    }
+
+    /* ── Acciones formulario ── */
+    .acciones-formulario {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      border-top: 1px solid #eef0f3;
+      background: #fff;
+      border-radius: 0 0 var(--radio) var(--radio);
+    }
+
+    /* ── Historial ── */
+    .seccion-historial {
+      margin-top: 28px;
+    }
+    .seccion-historial h2 {
+      font-size: 1.1rem;
+      color: var(--color-primario);
+      font-weight: 600;
+      margin: 0 0 14px;
+    }
+
+    .card-table {
+      background: #fff;
+      border-radius: var(--radio);
+      box-shadow: var(--sombra);
+      border: 1px solid rgba(0,0,0,.05);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .92rem;
+    }
+    thead {
+      background: var(--color-primario);
+      color: #fff;
+    }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: .85rem;
+      letter-spacing: .3px;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid #eef0f3;
+      transition: background .12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f4f9; }
+    tbody td {
+      padding: 12px 16px;
+      color: #333;
+      vertical-align: middle;
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .78rem;
+      font-weight: 600;
+      letter-spacing: .3px;
+    }
+    .badge-verde { background: var(--bg-exito);  color: var(--color-exito); }
+    .badge-gris  { background: #e9ecef; color: #555; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 24px 0;
+      color: #666;
+      font-size: .88rem;
+      border-top: 1px solid #e9ecef;
+      margin-top: 44px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .contenedor { padding: 0 16px; }
+      .page-header { padding: 24px 20px 20px; }
+      .page-header h1 { font-size: 1.5rem; }
+      fieldset { padding: 20px; }
+      .fila-dos-columnas { grid-template-columns: 1fr; }
+      .acciones-formulario { flex-direction: column; }
+      .acciones-formulario .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar">
+    <a href="/asambleistas/asambleista-lista.view.html">← Volver al listado</a>
+    <span>AIR – Sistema de Gestión Normativa</span>
+  </nav>
+
+  <!-- ── Encabezado ── -->
+  <header class="page-header">
+    <h1 id="titulo-formulario">Nuevo Asambleísta</h1>
+    <p class="subtitulo">Registro de identidad y nombramiento inicial en el sistema</p>
+    <span class="badge-modulo">Asambleístas</span>
+  </header>
+
+  <main class="contenedor">
+
+    <div id="mensaje-error" class="alerta alerta-error" style="display:none"></div>
+    <div id="mensaje-ok"    class="alerta alerta-ok"    style="display:none"></div>
+
+    <form id="form-asambleista" onsubmit="guardar(event)">
+
+      <div class="card">
+        <!-- ── IDENTIDAD PERMANENTE ── -->
+        <fieldset>
+          <legend>Datos de identidad</legend>
+          <p class="hint">
+            Esta información es la identidad única de la persona en el sistema.
+            El sector y cargo van en el nombramiento, no aquí.
+          </p>
+
+          <div class="campo">
+            <label for="nombre">Nombre completo *</label>
+            <input type="text" id="nombre" required
+                   placeholder="Apellido1 Apellido2 Nombre">
+          </div>
+
+          <div class="campo">
+            <label for="cedula">Cédula de identidad *</label>
+            <input type="text" id="cedula" required
+                   placeholder="X-XXXX-XXXX"
+                   maxlength="11"
+                   oninput="aplicarMascaraCedula(this)">
+            <small id="cedula-feedback"></small>
+          </div>
+
+          <div class="campo">
+            <label for="correo">Correo institucional</label>
+            <input type="email" id="correo"
+                   placeholder="usuario@itcr.ac.cr">
+          </div>
+        </fieldset>
+
+        <!-- ── PRIMER NOMBRAMIENTO ── -->
+        <fieldset>
+          <legend>Nombramiento inicial</legend>
+          <p class="hint">
+            El sector y el cargo son temporales. Cuando cambien, se agrega un nuevo
+            nombramiento sin borrar el historial anterior.
+          </p>
+
+          <div class="campo">
+            <label for="sector">Sector de representación *</label>
+            <select id="sector" required>
+              <option value="">Seleccione...</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="puesto">Puesto / Rol *</label>
+            <select id="puesto" required>
+              <option value="">Seleccione...</option>
+            </select>
+          </div>
+
+          <div class="fila-dos-columnas">
+            <div class="campo">
+              <label for="fecha-inicio">Fecha de inicio *</label>
+              <input type="date" id="fecha-inicio" required>
+            </div>
+            <div class="campo">
+              <label for="fecha-fin">Fecha de fin (opcional)</label>
+              <input type="date" id="fecha-fin">
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="resolucion">Resolución de acreditación (número)</label>
+            <input type="text" id="resolucion"
+                   placeholder="ej: AIR-RES-001-2024">
+          </div>
+        </fieldset>
+
+        <div class="campo"
+            id="campo-razon-cambio"
+            style="display:none">
+          <label for="razon-cambio">Razón del cambio</label>
+          <input type="text"
+                id="razon-cambio"
+                placeholder="Razón del cambio...">
+        </div>
+
+        <div class="acciones-formulario">
+          <a href="/asambleistas" class="btn btn-secundario">Cancelar</a>
+          <button type="submit" class="btn btn-primario">Guardar asambleísta</button>
+        </div>
+      </div>
+
+    </form>
+
+    <!-- ── HISTORIAL DE NOMBRAMIENTOS (modo edición) ── -->
+    <section id="seccion-historial" class="seccion-historial" style="display:none">
+      <h2>Historial de nombramientos</h2>
+      <div class="card-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Sector</th>
+              <th>Puesto</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-historial"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-secundario" onclick="mostrarFormNombramiento()">
+        + Asignar nuevo nombramiento
+      </button>
+    </section>
+
+    <div class="footer">
+      Módulo de administración de asambleístas — AIR
+    </div>
+  </main>
+
+<script src="/shared/auth.js"></script>
+<script>
+    const idEnUrl = window.location.pathname.split('/').pop();
+    const esEdicion = idEnUrl && !isNaN(idEnUrl);
+
+    function aplicarMascaraCedula(input) {
+        let val = input.value.replace(/\D/g, '');
+        if (val.length > 1 && val.length <= 5)
+            val = val[0] + '-' + val.slice(1);
+        else if (val.length > 5)
+            val = val[0] + '-' + val.slice(1, 5) + '-' + val.slice(5, 9);
+        input.value = val;
+
+        const valido = /^\d{1}-\d{4}-\d{4}$/.test(val);
+        document.getElementById('cedula-feedback').textContent =
+            val.length > 0 && !valido ? 'Formato requerido: X-XXXX-XXXX' : '';
+    }
+
+    async function cargarCatalogos() {
+        const res  = await fetch('/asambleistas/catalogos');
+        const data = await res.json();
+
+        const selectSector = document.getElementById('sector');
+        data.sectores.forEach(s => {
+            selectSector.add(new Option(s.nombre, s.id_sector));
+        });
+
+        const selectPuesto = document.getElementById('puesto');
+        data.puestos.forEach(p => {
+            selectPuesto.add(new Option(p.nombre_puesto, p.id_puesto));
+        });
+    }
+
+    async function guardar(e) {
+        e.preventDefault();
+        ocultarMensajes();
+
+        const body = esEdicion
+      ? {
+          cedula: document.getElementById("cedula").value,
+          nombre: document.getElementById("nombre").value,
+          correo_institucional:
+            document.getElementById("correo").value,
+          razon_cambio:
+            document.getElementById("razon-cambio")?.value
+            || "Actualización",
+        }
+      : {
+          cedula:
+            document.getElementById("cedula").value,
+          nombre:
+            document.getElementById("nombre").value,
+          correo_institucional:
+            document.getElementById("correo").value,
+          sector_id:
+            document.getElementById("sector").value,
+          id_puesto:
+            document.getElementById("puesto").value,
+          fecha_inicio:
+            document.getElementById("fecha-inicio").value,
+          fecha_fin:
+            document.getElementById("fecha-fin").value || null,
+          resolucion_id: null
+        };
+
+        const url    = esEdicion ? `/asambleistas/${idEnUrl}` : '/asambleistas';
+        const metodo = esEdicion ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method:  metodo,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            mostrarError(data.error);
+            return;
+        }
+
+        mostrarOk('Asambleísta guardado correctamente.');
+        setTimeout(() => window.location.href = '/asambleistas', 1500);
+    }
+
+    function mostrarError(msg) {
+        const el = document.getElementById('mensaje-error');
+        el.textContent = msg;
+        el.style.display = 'block';
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function mostrarOk(msg) {
+        const el = document.getElementById('mensaje-ok');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+    function ocultarMensajes() {
+        document.getElementById('mensaje-error').style.display = 'none';
+        document.getElementById('mensaje-ok').style.display = 'none';
+    }
+    function mostrarFormNombramiento() {
+      window.location.href =
+      `/asambleistas/${idEnUrl}/nombramientos/nuevo`;
+    }
+
+    if (esEdicion) {
+      document.getElementById("campo-razon-cambio")
+        .style.display = "block";
+    }
+
+    cargarCatalogos();
+</script>
+  
+</body>
+</html>

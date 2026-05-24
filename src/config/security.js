@@ -1,10 +1,13 @@
 // Configuración central de JWT y BCrypt
 module.exports = {
   jwt: {
-    secret:     process.env.JWT_SECRET || 'cambiar_en_produccion',
-    expiresIn:  '8h'   // sesión de trabajo estándar
+    secret: (() => {
+      if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET no definido en .env');
+      return process.env.JWT_SECRET;
+    })(),
+    expiresIn: '8h'
   },
   bcrypt: {
-    saltRounds: 12     // costo de hashing
+    saltRounds: 12
   }
 };

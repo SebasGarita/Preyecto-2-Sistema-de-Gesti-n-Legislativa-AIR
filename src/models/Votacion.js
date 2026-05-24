@@ -1,4 +1,5 @@
-const pool = require('../config/db.ext');
+// Issue #2 - Motor de Trazabilidad y Participación Activa
+const pool = require('../config/db.js');
 
 class VotacionModel {
 
@@ -33,9 +34,9 @@ class VotacionModel {
         for (const idAsambleista of listaPresentes) {
             await pool.query(
                 `INSERT INTO asistencia_sesion_plenaria
-                 (id_asambleista, id_sesion)
-                 VALUES ($1, $2)
-                 ON CONFLICT (id_asambleista, id_sesion) DO NOTHING`,
+                    (id_asambleista, id_sesion, id_estado_asistencia)
+                VALUES ($1, $2, 1)
+                ON CONFLICT (id_asambleista, id_sesion) DO NOTHING`,
                 [idAsambleista, idSesion]
             );
         }

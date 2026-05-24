@@ -45,3 +45,25 @@ INSERT INTO sys_usuario_rol (id_usuario, id_rol)
 SELECT u.id_usuario, r.id_rol
 FROM sys_usuario u, sys_rol r
 WHERE u.username = 'admin' AND r.nombre_rol = 'ADMINISTRADOR';
+
+INSERT INTO sys_permiso (nombre_permiso, descripcion)
+VALUES ('GESTIONAR_PROPUESTAS', 'Puede crear y gestionar propuestas normativas');
+
+-- Asignar a roles correspondientes:
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol IN ('ADMINISTRADOR','SECRETARIA_AIR')
+  AND p.nombre_permiso = 'GESTIONAR_PROPUESTAS';
+
+
+INSERT INTO sys_permiso (nombre_permiso, descripcion) VALUES
+  ('GESTIONAR_COMISIONES', 'Puede crear y gestionar comisiones de trabajo')
+ON CONFLICT (nombre_permiso) DO NOTHING;
+
+
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol = 'ADMINISTRADOR'
+  AND p.nombre_permiso = 'GESTIONAR_COMISIONES'
+ON CONFLICT DO NOTHING;

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comisiones de Trabajo — AIR</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+  <style>
+    :root {
+      --color-primario   : #003366;
+      --color-acento     : #005fa3;
+      --color-peligro    : #c0392b;
+      --color-exito      : #1e7e34;
+      --bg-peligro       : #f8d7da;
+      --bg-exito         : #d4edda;
+      --radio            : 6px;
+      --sombra           : 0 2px 12px rgba(0,0,0,.12);
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
+
+    .navbar {
+      background: var(--color-primario); color: #fff;
+      padding: 0 28px; display: flex; align-items: center;
+      justify-content: space-between; height: 48px;
+      font-size: .88rem; font-weight: 500;
+    }
+    .navbar a { color: rgba(255,255,255,.85); text-decoration: none; transition: color .15s; }
+    .navbar a:hover { color: #fff; }
+
+    .page-header {
+      background: var(--color-primario); color: #fff;
+      padding: 28px 28px 24px; text-align: center;
+    }
+    .page-header h1 { margin: 0 0 8px; font-size: 1.8rem; font-weight: 600; }
+    .page-header p  { margin: 0; font-size: .95rem; opacity: .95; }
+    .badge-modulo {
+      background: rgba(255,255,255,.18); border-radius: 20px;
+      padding: 4px 14px; font-size: .8rem; display: inline-block; margin-top: 12px;
+    }
+
+    .contenedor { max-width: 960px; margin: 28px auto; padding: 0 20px; }
+
+    .alerta { padding: 12px 16px; border-radius: var(--radio); font-size: .9rem;
+               font-weight: 500; margin-bottom: 20px; }
+    .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border: 1px solid #f5c6cb; }
+    .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
+
+    .toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; gap: 12px; flex-wrap: wrap;
+    }
+    .toolbar input[type=search] {
+      flex: 1; min-width: 200px; padding: 9px 14px;
+      border: 1px solid #d0d7de; border-radius: var(--radio);
+      font-size: .9rem; font-family: inherit; outline: none;
+    }
+    .toolbar input[type=search]:focus {
+      border-color: var(--color-acento);
+      box-shadow: 0 0 0 3px rgba(0,95,163,.12);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: var(--radio); border: none;
+      cursor: pointer; font-size: .9rem; font-weight: 600;
+      font-family: inherit; text-decoration: none; transition: all .15s;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primario   { background: var(--color-acento);  color: #fff; }
+    .btn-secundario { background: #e9ecef; color: #444; }
+    .btn-sm { padding: 6px 14px; font-size: .82rem; }
+
+    .card-table {
+      background: #fff; border-radius: var(--radio);
+      box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05);
+      overflow: hidden; margin-bottom: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    thead { background: var(--color-primario); color: #fff; }
+    thead th { padding: 12px 16px; text-align: left; font-weight: 600;
+               font-size: .85rem; letter-spacing: .3px; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #eef0f3; transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f4f9; }
+    tbody td { padding: 12px 16px; color: #333; vertical-align: middle; }
+    .td-acciones { display: flex; gap: 8px; }
+
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px;
+              font-size: .78rem; font-weight: 600; }
+    .badge-azul  { background: #d0e8ff; color: #003f8a; }
+    .badge-verde { background: var(--bg-exito); color: var(--color-exito); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.abierto { display: flex; }
+    .modal {
+      background: #fff; border-radius: var(--radio);
+      box-shadow: 0 8px 40px rgba(0,0,0,.25);
+      width: 100%; max-width: 520px; padding: 28px;
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal h2 { margin: 0 0 20px; font-size: 1.1rem; color: var(--color-primario); }
+    .campo { margin-bottom: 16px; }
+    .campo label { display: block; font-size: .88rem; font-weight: 600;
+                   color: #333; margin-bottom: 6px; }
+    .campo input, .campo select, .campo textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid #d0d7de;
+      border-radius: var(--radio); font-size: .92rem; font-family: inherit;
+      background: #fff; outline: none; transition: border-color .15s;
+    }
+    .campo input:focus, .campo select:focus, .campo textarea:focus {
+      border-color: var(--color-acento);
+      box-shadow: 0 0 0 3px rgba(0,95,163,.12);
+    }
+    .campo textarea { resize: vertical; min-height: 80px; }
+    .modal-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+    .empty { text-align: center; padding: 44px 20px; color: #888; font-size: .95rem; }
+    .footer { text-align: center; padding: 24px 0; color: #666;
+               font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 44px; }
+
+    @media (max-width: 768px) {
+      .contenedor { padding: 0 16px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .td-acciones { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/">← Inicio</a>
+  <span>AIR – Sistema de Gestión Normativa</span>
+</nav>
+
+<header class="page-header">
+  <h1>Comisiones de Trabajo</h1>
+  <p>Gestión de comisiones, integrantes, sesiones e informes del Directorio</p>
+  <span class="badge-modulo">Comisiones</span>
+</header>
+
+<main class="contenedor">
+  <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
+  <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
+
+  <div class="toolbar">
+    <input type="search" id="buscador" placeholder="Buscar comisión..." oninput="buscar()">
+    <button class="btn btn-primario" onclick="abrirModalCrear()">+ Nueva comisión</button>
+  </div>
+
+  <div class="card-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Comisión</th>
+          <th>Tipo</th>
+          <th>Objeto</th>
+          <th>Integrantes</th>
+          <th>Sesiones</th>
+          <th>Informes</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-tabla">
+        <tr><td colspan="7" class="empty">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">Módulo de Comisiones de Trabajo — AIR</div>
+</main>
+
+<!-- Modal: Crear / Editar comisión -->
+<div class="modal-overlay" id="modal-comision">
+  <div class="modal">
+    <h2 id="modal-titulo">Nueva comisión</h2>
+    <div class="campo">
+      <label for="m-tipo">Tipo de comisión *</label>
+      <select id="m-tipo"><option value="">Seleccione...</option></select>
+    </div>
+    <div class="campo">
+      <label for="m-nombre">Nombre de la comisión *</label>
+      <input type="text" id="m-nombre" placeholder="ej: Comisión de Análisis de Reglamento X">
+    </div>
+    <div class="campo">
+      <label for="m-objeto">Objeto según acta de creación</label>
+      <textarea id="m-objeto"
+                placeholder="Describa el objeto de la comisión conforme al acta oficial..."></textarea>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn btn-secundario" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primario"   onclick="guardarComision()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/shared/auth.js"></script>
+<script>
+  let catalogos = {};
+  let editandoId = null;
+  let debounceTimer;
+
+  async function init() {
+    try {
+      const res = await fetch('/comisiones/catalogos');
+      if (!res.ok) throw new Error('Error al cargar catálogos');
+      catalogos = await res.json();
+      poblarSelect('m-tipo', catalogos.tipos_comision, 'id_tipo_comision', 'nombre');
+      await cargarLista();
+    } catch (e) {
+      mostrarError('Error al cargar los datos iniciales: ' + e.message);
+    }
+  }
+
+  async function cargarLista(busqueda = '') {
+    const url = busqueda
+      ? `/comisiones?busqueda=${encodeURIComponent(busqueda)}`
+      : '/comisiones';
+    const res  = await fetch(url);
+    const data = await res.json();
+    renderTabla(data);
+  }
+
+  function renderTabla(lista) {
+    const tbody = document.getElementById('cuerpo-tabla');
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">No hay comisiones registradas.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = lista.map(c => `
+      <tr>
+        <td><strong>${esc(c.nombre_comision)}</strong></td>
+        <td><span class="badge badge-azul">${esc(c.tipo_comision)}</span></td>
+        <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+            title="${esc(c.objeto_acta ?? '')}">
+          ${c.objeto_acta ? esc(c.objeto_acta.slice(0, 60)) + (c.objeto_acta.length > 60 ? '…' : '') : '—'}
+        </td>
+        <td>${c.total_integrantes}</td>
+        <td>${c.total_sesiones}</td>
+        <td>${c.total_informes}</td>
+        <td>
+          <div class="td-acciones">
+            <a class="btn btn-sm btn-primario"
+               href="/comisiones/comision-detalle.view.html?id=${c.id_comision}">
+               Ver detalle
+            </a>
+            <button class="btn btn-sm btn-secundario"
+                    onclick="abrirModalEditar(${c.id_comision}, '${esc(c.nombre_comision)}',
+                             ${c.id_tipo_comision}, ${JSON.stringify(c.objeto_acta ?? '')})">
+              Editar
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function buscar() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      cargarLista(document.getElementById('buscador').value.trim());
+    }, 300);
+  }
+
+  function abrirModalCrear() {
+    editandoId = null;
+    document.getElementById('modal-titulo').textContent = 'Nueva comisión';
+    document.getElementById('m-tipo').value   = '';
+    document.getElementById('m-nombre').value = '';
+    document.getElementById('m-objeto').value = '';
+    document.getElementById('modal-comision').classList.add('abierto');
+  }
+
+  function abrirModalEditar(id, nombre, tipoId, objeto) {
+    editandoId = id;
+    document.getElementById('modal-titulo').textContent = 'Editar comisión';
+    document.getElementById('m-tipo').value   = tipoId;
+    document.getElementById('m-nombre').value = nombre;
+    document.getElementById('m-objeto').value = objeto ?? '';
+    document.getElementById('modal-comision').classList.add('abierto');
+  }
+
+  function cerrarModal() {
+    document.getElementById('modal-comision').classList.remove('abierto');
+    editandoId = null;
+  }
+
+  async function guardarComision() {
+    const body = {
+      id_tipo_comision: document.getElementById('m-tipo').value,
+      nombre_comision:  document.getElementById('m-nombre').value.trim(),
+      objeto_acta:      document.getElementById('m-objeto').value.trim() || null
+    };
+
+    if (!body.id_tipo_comision || !body.nombre_comision) {
+      mostrarError('Tipo y nombre son requeridos');
+      return;
+    }
+
+    const url    = editandoId ? `/comisiones/${editandoId}` : '/comisiones';
+    const metodo = editandoId ? 'PUT' : 'POST';
+
+    const res  = await fetch(url, {
+      method: metodo,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (!res.ok) { mostrarError(data.error); return; }
+
+    cerrarModal();
+    mostrarOk(editandoId ? 'Comisión actualizada.' : 'Comisión creada correctamente.');
+    await cargarLista();
+  }
+
+  function poblarSelect(selectId, items, valKey, labelKey) {
+    const sel = document.getElementById(selectId);
+    items.forEach(i => sel.add(new Option(i[labelKey], i[valKey])));
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById('msg-error');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 5000);
+  }
+
+  function mostrarOk(msg) {
+    const el = document.getElementById('msg-ok');
+    el.textContent = msg; el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+
+  init();
+</script>
+</body>
+</html>
