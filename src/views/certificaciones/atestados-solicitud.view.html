@@ -510,15 +510,51 @@
             </div>`;
     }
 
-    function seleccionarAsambleista(id, nombre, cedula, sector) {
-        asambleistaSeleccionado = { id: String(id), nombre, cedula, sector };
-        document.getElementById('listaResultados').style.display = 'none';
-        document.getElementById('busquedaInput').value = nombre;
-        document.getElementById('nombreSeleccionado').textContent  = nombre;
-        document.getElementById('detalleSeleccionado').textContent = `Cédula: ${cedula}  ·  Sector: ${sector}`;
+    async function seleccionarAsambleista(id, nombre, cedula, sector) {
+    asambleistaSeleccionado = { id: String(id), nombre, cedula, sector };
+    document.getElementById('listaResultados').style.display = 'none';
+    document.getElementById('busquedaInput').value = nombre;
+    document.getElementById('nombreSeleccionado').textContent = nombre;
+
+    // Consultar nombramientos para validar vigencia
+    try {
+        const res  = await fetch(`/asambleistas/${id}/nombramientos`);
+        const data = await res.json();
+        const nombramientos = Array.isArray(data) ? data : (data.datos ?? []);
+        const vigente = nombramientos.find(n => n.estado === 'VIGENTE' || n.estado === 'activo');
+
+        if (vigente) {
+            document.getElementById('detalleSeleccionado').innerHTML =
+                `Cédula: ${cedula} &nbsp;·&nbsp; Sector: ${sector}
+                 <span style="display:inline-block;margin-left:10px;background:#1e7e34;color:#fff;
+                 padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:700">
+                 NOMBRAMIENTO VIGENTE</span>
+                 <div style="font-size:.82rem;margin-top:4px;color:#2d6a35">
+                 Desde: ${vigente.fecha_inicio ? new Date(vigente.fecha_inicio).toLocaleDateString('es-CR') : '—'}
+                 ${vigente.fecha_fin ? ' · Hasta: ' + new Date(vigente.fecha_fin).toLocaleDateString('es-CR') : ' · Activo'}
+                 </div>`;
+            document.getElementById('asambleistaSeleccionado').classList.add('visible');
+            document.getElementById('btnPaso1').disabled = false;
+        } else {
+            document.getElementById('detalleSeleccionado').innerHTML =
+                `Cédula: ${cedula}
+                 <span style="display:inline-block;margin-left:10px;background:#c0392b;color:#fff;
+                 padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:700">
+                 SIN NOMBRAMIENTO VIGENTE</span>
+                 <div style="font-size:.82rem;margin-top:4px;color:#721c24">
+                 Este asambleísta no tiene un nombramiento activo. No se puede emitir certificación.
+                 </div>`;
+            document.getElementById('asambleistaSeleccionado').classList.add('visible');
+            document.getElementById('btnPaso1').disabled = true;
+            asambleistaSeleccionado = null;
+        }
+    } catch(e) {
+        document.getElementById('detalleSeleccionado').textContent =
+            `Cédula: ${cedula}  ·  Sector: ${sector}`;
         document.getElementById('asambleistaSeleccionado').classList.add('visible');
         document.getElementById('btnPaso1').disabled = false;
     }
+}
 
     // ── Navegación ────────────────────────────────────────────
     function irPaso1() { mostrarPaso(1); }
