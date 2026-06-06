@@ -445,16 +445,26 @@
     // Acciones
     // ─────────────────────────────────────────────────────────────
     function descargarPDF() {
-      if (!folio) return;
-      window.open(`/certificaciones/${encodeURIComponent(folio)}/pdf`, '_blank');
-    }
+    if (!folio) return;
+    fetch(`/certificaciones/${encodeURIComponent(folio)}/pdf`, {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('token')}` }
+    })
+    .then(res => res.blob())
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href     = url;
+        a.download = `${folio}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+}
 
     function nuevoCertificado() {
-      window.location.href = '/src/views/certificaciones/atestados-solicitud.view.html';
+      window.location.href = '/certificaciones/atestados-solicitud.view.html';
     }
-
     function irHistorial() {
-      window.location.href = '/src/views/certificaciones/anulacion-certificacion.view.html';
+      window.location.href = '/certificaciones/anulacion-certificacion.view.html';
     }
 
     function copiarURL() {

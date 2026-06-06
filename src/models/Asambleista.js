@@ -159,7 +159,78 @@ const Asambleista = {
       sectores: sectores.rows,
       puestos:  puestos.rows
     };
-  }
+  },
+
+    // Reporte de asistencia histórico para certificación
+  // Cumple: COUNT/SUM por período, desglose exacto de sesiones
+  async getReporteAsistencia(asambleistaId) {
+    // ── Totales globales ──────────────────────────────────────────────────────
+    const totales = await db.query(`
+      SELECT
+        COUNT(*)                                                        AS total_sesiones,
+        COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Presente')             AS total_presentes,
+        COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Ausente')              AS total_ausentes,
+        COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Justificado')          AS total_justificados,
+        ROUND(
+          COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Presente') * 100.0
+          / NULLIF(COUNT(*), 0), 2
+        )                                                              AS porcentaje_asistencia,
+        MIN(s.fecha)                                                   AS primera_sesion,
+        MAX(s.fecha)                                                   AS ultima_sesion
+      FROM asistencia_sesion_plenaria asp
+      JOIN sesiones s
+        ON asp.id_sesion = s.id_sesion
+      JOIN catalogo_asistencia_sesion_comision ea
+        ON asp.id_estado_asistencia = ea.id_estado_asistencia
+      WHERE asp.id_asambleista = $1
+    `, [asambleistaId]);
+ 
+    // ── Desglose por tipo de sesión ───────────────────────────────────────────
+    const desglose = await db.query(`
+      SELECT
+        ts.nombre                                                       AS tipo_sesion,
+        COUNT(*)                                                        AS total,
+        COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Presente')             AS presentes,
+        COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Ausente')              AS ausentes,
+        COUNT(*) FILTER (WHERE ea.nombre ILIKE 'Justificado')          AS justificados
+      FROM asistencia_sesion_plenaria asp
+      JOIN sesiones s
+        ON asp.id_sesion = s.id_sesion
+      JOIN catalogo_tipo_sesion ts
+        ON s.id_tipo_sesion = ts.id_tipo_sesion
+      JOIN catalogo_asistencia_sesion_comision ea
+        ON asp.id_estado_asistencia = ea.id_estado_asistencia
+      WHERE asp.id_asambleista = $1
+      GROUP BY ts.nombre
+      ORDER BY ts.nombre
+    `, [asambleistaId]);
+ 
+    // ── Sesiones individuales (para validación BD vs. impreso) ───────────────
+    const sesiones = await db.query(`
+      SELECT
+        s.id_sesion,
+        s.numero_sesion,
+        s.fecha,
+        ts.nombre  AS tipo_sesion,
+        ea.nombre  AS estado_asistencia
+      FROM asistencia_sesion_plenaria asp
+      JOIN sesiones s
+        ON asp.id_sesion = s.id_sesion
+      JOIN catalogo_tipo_sesion ts
+        ON s.id_tipo_sesion = ts.id_tipo_sesion
+      JOIN catalogo_asistencia_sesion_comision ea
+        ON asp.id_estado_asistencia = ea.id_estado_asistencia
+      WHERE asp.id_asambleista = $1
+      ORDER BY s.fecha ASC
+    `, [asambleistaId]);
+ 
+    return {
+      totales:  totales.rows[0],
+      desglose: desglose.rows,
+      sesiones: sesiones.rows
+    };
+  },
+ 
 };
 
 module.exports = Asambleista;
