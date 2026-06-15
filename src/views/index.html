@@ -121,10 +121,7 @@
         }
 
         @media (max-width: 768px) {
-            .grid-cards {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
+            .grid-cards { grid-template-columns: 1fr; gap: 16px; }
             .contenedor { padding: 0 16px; }
             .page-header { padding: 24px 20px 20px; }
             .page-header h1 { font-size: 1.5rem; }
@@ -223,6 +220,23 @@
             </a>
         </article>
 
+        <article class="card">
+            <h2>Comisiones</h2>
+            <p>Listado de comisiones de análisis, sus integrantes y tipos registrados en el sistema.</p>
+            <a href="/comisiones/comisiones-lista.view.html" class="btn btn-primario">
+                Ver comisiones
+            </a>
+        </article>
+
+        <article class="card">
+            <h2>Control de Asistencias</h2>
+            <p>Hoja de asistencia digital, registro de votaciones y reporte de participación por período.</p>
+            <a href="/sesiones/asistencia-hoja.view.html" class="btn btn-primario">
+                Ir a asistencias
+             </a>
+        </article>
+
+
     </section>
 
     <div class="footer">
@@ -231,6 +245,5 @@
 </main>
 
 <script src="/shared/auth.js"></script>
-
 </body>
 </html>

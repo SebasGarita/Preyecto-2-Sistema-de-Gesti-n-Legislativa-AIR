@@ -1,4 +1,4 @@
-const VotacionModel = require('../models/Votacion.ext');
+const VotacionModel = require('../models/Votacion');
 
 const votacionModel = new VotacionModel();
 

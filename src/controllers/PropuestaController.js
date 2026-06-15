@@ -113,11 +113,4 @@ if (!estadoBorrador) {
   }
 };
 
-// Helper interno para consulta simple de un valor
-async function db_query_helper(sql, params) {
-  const db = require('../config/db');
-  const r = await db.query(sql, params);
-  return r.rows[0]?.id_estado_propuesta || null;
-}
-
 module.exports = PropuestaController;

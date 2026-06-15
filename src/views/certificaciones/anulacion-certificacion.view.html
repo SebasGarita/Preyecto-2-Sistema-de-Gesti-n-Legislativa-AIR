@@ -293,11 +293,11 @@
                 <td>
                     ${f.estado === 'Activo' ? `
                         <button class="btn btn-sm btn-peligro"
-                            onclick="abrirModalAnular(${f.id_certificacion}, '${f.folio_unico}')">
+                            onclick="abrirModalAnular('${f.id_certificacion}', '${f.folio_unico}')">
                             Anular
                         </button>
                         <button class="btn btn-sm btn-primario" style="margin-left:5px"
-                            onclick="abrirModalSustituir(${f.id_certificacion}, '${f.folio_unico}', ${f.id_asambleista ?? 0})">
+                            onclick="abrirModalSustituir('${f.id_certificacion}', '${f.folio_unico}', '${f.id_asambleista ?? 0}')">
                             Sustituir
                         </button>
                     ` : `<span style="color:#999;font-size:.8rem">Sin acciones</span>`}

@@ -37,11 +37,8 @@ class ReporteController {
         try {
             const { asambleistaId, contenido } = req.body;
 
-            // 👇 DEBUG TEMPORAL
-            console.log("📩 asambleistaId recibido:", asambleistaId);
-            console.log("📩 tipo:", typeof asambleistaId);
 
-            const usuarioId = req.session?.usuarioId ?? 'sistema';
+            const usuarioId = req.usuario?.id ?? 'sistema';
 
             if (!asambleistaId || !contenido) {
                 return res.status(400).json({
@@ -169,7 +166,7 @@ class ReporteController {
                 });
             }
 
-            await certificadoModel.anular(parseInt(id), motivo.trim());
+            await certificadoModel.anular(id, motivo.trim());
 
             return res.json({
                 ok : true,
@@ -219,7 +216,7 @@ class ReporteController {
             }
 
             const resultado = await certificadoModel.sustituir(
-                parseInt(id),
+                id,
                 motivo.trim(),
                 asambleistaId,
                 contenidoNuevo.trim(),
@@ -358,6 +355,207 @@ class ReporteController {
             return res.send(pdfBuffer);
 
         } catch (error) {
+            return res.status(500).json({ ok: false, error: error.message });
+        }
+    }
+
+    // ----------------------------------------------------------
+    // NOTAS CONDICIONALES — Issue #6
+    // ----------------------------------------------------------
+
+    async obtenerNotaCondicional(req, res) {
+        try {
+            const { id } = req.params;
+            const Propuesta = require('../models/Propuesta.js');
+
+            const leyenda = await Propuesta.obtenerLeyendaPorPropuesta(parseInt(id));
+
+            return res.json({
+                ok: true,
+                nota: leyenda?.leyenda_legal ?? null,
+                origen: leyenda?.descripcion_origen ?? null
+            });
+
+        } catch (error) {
+            return res.status(500).json({ ok: false, error: error.message });
+        }
+    }
+
+    // ----------------------------------------------------------
+    // PREVISUALIZACIÓN HTML — Issue #4
+    // ----------------------------------------------------------
+
+    async previewCertificacion(req, res) {
+        try {
+            const { asambleistaId } = req.params;
+            const { contenido }     = req.query;
+
+            if (!asambleistaId) {
+                return res.status(400).json({ ok: false, error: 'Falta asambleistaId.' });
+            }
+
+            // Datos del asambleísta
+            const db = require('../config/db.js');
+            const { rows } = await db.query(`
+                SELECT
+                    ba.nombre         AS nombre_completo,
+                    ba.cedula,
+                    cs.nombre         AS sector,
+                    n.fecha_inicio    AS periodo
+                FROM asambleista ba
+                JOIN nombramiento n   ON n.asambleista_id = ba.asambleista_id
+                                    AND n.estado = 'VIGENTE'
+                JOIN catalogo_sector cs ON cs.id_sector = n.sector_id
+                WHERE ba.asambleista_id = $1
+                LIMIT 1
+            `, [asambleistaId]);
+
+            if (!rows.length) {
+                return res.status(404).json({ ok: false, error: 'Asambleísta no encontrado.' });
+            }
+
+            const asm = rows[0];
+
+            // Siguiente folio (solo para mostrar — no se reserva aquí)
+            const folioRes = await db.query(
+                `SELECT ultimo_numero, prefijo FROM public.control_folio WHERE anio = $1`,
+                [new Date().getFullYear()]
+            );
+            const ultimo  = folioRes.rows[0]?.ultimo_numero ?? 0;
+            const prefijo = folioRes.rows[0]?.prefijo       ?? 'DAIR';
+            const folioPreview = `${prefijo}-${String(ultimo + 1).padStart(3, '0')}-${new Date().getFullYear()} (BORRADOR)`;
+
+            // Secretaria activa
+            const secretaria = 'Secretaría AIR — ITCR';
+            // Fecha en texto
+            const hoy    = new Date();
+            const meses  = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+            const diaNum = hoy.getDate();
+            const unidades = ['','uno','dos','tres','cuatro','cinco','seis','siete','ocho','nueve','diez','once','doce','trece','catorce','quince','dieciséis','diecisiete','dieciocho','diecinueve','veinte','veintiún','veintidós','veintitrés','veinticuatro','veinticinco','veintiséis','veintisiete','veintiocho','veintinueve','treinta','treinta y uno'];
+
+            // Generar HTML de previsualización
+            const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <style>
+    :root { --azul:#003865; --dorado:#C8942A; }
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{ font-family:'Times New Roman',serif; font-size:11.5pt; color:#1a1a1a;
+          background:#fff; padding:2cm 2.5cm; line-height:1.6; }
+
+    .encabezado{ display:flex; justify-content:space-between; align-items:center;
+                 border-bottom:3px solid var(--azul); padding-bottom:10px; margin-bottom:16px; }
+    .inst{ font-size:13pt; font-weight:bold; color:var(--azul); text-transform:uppercase; }
+    .dep { font-size:10pt; color:var(--dorado); font-weight:bold; margin-top:2px; }
+    .folio-num{ font-size:10pt; color:var(--azul); font-weight:bold;
+                border:1.5px solid var(--azul); padding:3px 8px; border-radius:3px; }
+
+    .titulo{ text-align:center; margin:18px 0 10px; }
+    .titulo h1{ font-size:14pt; text-transform:uppercase; color:var(--azul); }
+    .titulo .sub{ font-size:10.5pt; color:#555; margin-top:3px; }
+    hr{ border:none; border-top:1px solid #ccc; margin:12px 0; }
+
+    .cuerpo{ margin:16px 0; text-align:justify; }
+    .cuerpo p{ margin-bottom:10px; }
+
+    .nota-borrador{
+        background:#fff3cd; border-left:4px solid #f0ad4e;
+        padding:8px 12px; font-size:9.5pt; color:#856404;
+        margin:10px 0; border-radius:3px;
+    }
+
+    .contenido-cert{
+        background:#f8f9fa; border:1px dashed #ccc;
+        padding:14px; border-radius:4px; margin:14px 0;
+        font-size:10.5pt; line-height:1.6; white-space:pre-wrap;
+    }
+
+    .clausula{
+        border:1px solid #ccc; padding:10px 14px; border-radius:3px;
+        background:#fbfbfb; font-style:italic; font-size:10.5pt;
+        margin:16px 0;
+    }
+
+    .firma-bloque{ margin-top:40px; display:flex; justify-content:flex-end; }
+    .firma-contenido{ text-align:center; width:260px; }
+    .firma-linea{ border-top:1.5px solid #1a1a1a; margin-bottom:6px; }
+    .firma-nombre{ font-weight:bold; font-size:11pt; }
+    .firma-cargo{ font-size:10pt; color:#555; }
+
+    .pie{ margin-top:30px; border-top:2px solid var(--azul); padding-top:8px;
+          display:flex; justify-content:space-between; font-size:8.5pt; color:#888; }
+  </style>
+</head>
+<body>
+  <header class="encabezado">
+    <div>
+      <div class="inst">Instituto Tecnológico de Costa Rica</div>
+      <div class="dep">Secretaría de la Asamblea Institucional Representativa</div>
+    </div>
+    <div style="text-align:right">
+      <span class="folio-num">${folioPreview}</span>
+      <div style="font-size:9pt;color:#555;margin-top:4px">${hoy.toLocaleDateString('es-CR')}</div>
+    </div>
+  </header>
+
+  <div class="nota-borrador">
+    ⚠️ <strong>Vista previa — BORRADOR.</strong> El folio definitivo se asignará al confirmar la emisión.
+  </div>
+
+  <div class="titulo">
+    <h1>Certificación de Participación</h1>
+    <div class="sub">Asamblea Institucional Representativa &mdash; Período ${asm.periodo ?? '—'}</div>
+  </div>
+  <hr/>
+
+  <div class="cuerpo">
+    <p>
+      <strong>${secretaria}</strong>, en su condición de Secretaria(o) de la
+      Asamblea Institucional Representativa del Instituto Tecnológico de Costa Rica,
+      <strong>CERTIFICA:</strong>
+    </p>
+    <p>
+      Que según consta en los registros oficiales de esta Secretaría,
+      el(la) señor(a) <strong>${asm.nombre_completo}</strong>,
+      portador(a) de la cédula de identidad número <strong>${asm.cedula}</strong>,
+      en su calidad de representante del sector <strong>${asm.sector}</strong>.
+    </p>
+  </div>
+
+  <div class="contenido-cert">${contenido ? contenido.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<em style="color:#999">Sin contenido ingresado aún.</em>'}</div>
+
+  <div class="clausula">
+    Se extiende la presente certificación a solicitud del(la) interesado(a), a los
+    <strong>${unidades[diaNum] || diaNum}</strong> días del mes de
+    <strong>${meses[hoy.getMonth()]}</strong> del año <strong>${hoy.getFullYear()}</strong>.
+    El suscrito declara, bajo la fe del juramento establecido en el artículo 301
+    de la Ley General de la Administración Pública, que la información aquí
+    consignada es fiel reflejo de los registros oficiales custodiados por esta Secretaría.
+  </div>
+
+  <div class="firma-bloque">
+    <div class="firma-contenido">
+      <div class="firma-linea"></div>
+      <div class="firma-nombre">${secretaria}</div>
+      <div class="firma-cargo">Secretaría de la AIR &mdash; ITCR</div>
+    </div>
+  </div>
+
+  <footer class="pie">
+    <span>Documento generado por el Sistema AIR &mdash; ITCR</span>
+    <span style="font-family:'Courier New',monospace;font-size:7.5pt;color:#aaa">
+      SHA-256: [se asigna al emitir]
+    </span>
+  </footer>
+</body>
+</html>`;
+
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            return res.send(html);
+
+      } catch (error) {
+            console.error('[PREVIEW ERROR]', error.stack);
             return res.status(500).json({ ok: false, error: error.message });
         }
     }

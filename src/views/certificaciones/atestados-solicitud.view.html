@@ -1,5 +1,7 @@
 <!-- src/views/certificaciones/atestados-solicitud.view.html -->
 <!-- Issue #1 / Issue #17 — Emisión de Certificaciones con Folio Previo -->
+<!-- Issue #6  — Motor de Reglas para Notas Condicionales               -->
+<!-- Issue #4  — Previsualización de Documento                          -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -49,18 +51,11 @@
         .contenedor { max-width: 760px; margin: 28px auto; padding: 0 20px; }
 
         /* ── Steps ── */
-        .steps {
-            display: flex; align-items: center; justify-content: center;
-            gap: 0; margin-bottom: 28px;
-        }
-        .step {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 6px; flex: 1; position: relative;
-        }
+        .steps { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 28px; }
+        .step { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; position: relative; }
         .step:not(:last-child)::after {
             content: ''; position: absolute; top: 16px; left: calc(50% + 16px);
-            width: calc(100% - 32px); height: 2px; background: #d0d7de;
-            transition: background .3s;
+            width: calc(100% - 32px); height: 2px; background: #d0d7de; transition: background .3s;
         }
         .step.completado:not(:last-child)::after { background: var(--color-acento); }
         .step-circulo {
@@ -69,23 +64,15 @@
             font-weight: 700; font-size: .85rem; border: 2px solid #d0d7de;
             background: #fff; color: #999; transition: all .3s; z-index: 1;
         }
-        .step.activo   .step-circulo { border-color: var(--color-acento); background: var(--color-acento); color: #fff; }
-        .step.completado .step-circulo { border-color: var(--color-exito); background: var(--color-exito); color: #fff; }
+        .step.activo    .step-circulo { border-color: var(--color-acento); background: var(--color-acento); color: #fff; }
+        .step.completado .step-circulo { border-color: var(--color-exito);  background: var(--color-exito);  color: #fff; }
         .step-label { font-size: .75rem; color: #888; font-weight: 600; text-align: center; }
-        .step.activo .step-label { color: var(--color-acento); }
+        .step.activo    .step-label { color: var(--color-acento); }
         .step.completado .step-label { color: var(--color-exito); }
 
         /* ── Cards ── */
-        .card {
-            background: #fff; border-radius: var(--radio);
-            box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05);
-            overflow: hidden; margin-bottom: 20px;
-        }
-        .card-header {
-            padding: 16px 24px; border-bottom: 1px solid #eef0f3;
-            font-weight: 600; font-size: 1rem; color: var(--color-primario);
-            display: flex; align-items: center; gap: 10px;
-        }
+        .card { background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05); overflow: hidden; margin-bottom: 20px; }
+        .card-header { padding: 16px 24px; border-bottom: 1px solid #eef0f3; font-weight: 600; font-size: 1rem; color: var(--color-primario); display: flex; align-items: center; gap: 10px; }
         .card-body { padding: 24px; }
 
         /* ── Campos ── */
@@ -102,7 +89,6 @@
         }
         .campo textarea { min-height: 120px; resize: vertical; }
         .campo input::placeholder { color: #aaa; }
-
         .fila-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
         /* ── Busqueda ── */
@@ -112,8 +98,7 @@
         /* ── Resultado busqueda ── */
         .resultado-asambleista {
             border: 2px solid var(--color-exito); border-radius: var(--radio);
-            padding: 16px 20px; background: var(--bg-exito);
-            display: none; margin-top: 12px;
+            padding: 16px 20px; background: var(--bg-exito); display: none; margin-top: 12px;
         }
         .resultado-asambleista.visible { display: block; }
         .resultado-asambleista .nombre { font-weight: 700; font-size: 1.05rem; color: #1a5c2a; }
@@ -123,8 +108,7 @@
         .folio-preview {
             background: linear-gradient(135deg, #003366 0%, #005fa3 100%);
             border-radius: var(--radio); padding: 20px 24px;
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 20px; display: none;
+            display: none; align-items: center; justify-content: space-between; margin-bottom: 20px;
         }
         .folio-preview.visible { display: flex; }
         .folio-preview .label { color: rgba(255,255,255,.75); font-size: .82rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
@@ -137,6 +121,23 @@
         .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
         .alerta-info  { background: #e7f3ff; color: #004085; border: 1px solid #b8daff; }
 
+        /* ── Nota condicional ── */
+        .nota-condicional-box {
+            border: 1.5px solid #b8daff; border-left: 4px solid var(--color-acento);
+            border-radius: var(--radio); background: #e7f3ff;
+            padding: 14px 16px; margin-top: 12px; display: none;
+        }
+        .nota-condicional-box.visible { display: block; }
+        .nota-condicional-box .nota-titulo { font-size: .78rem; font-weight: 700; color: var(--color-acento); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+        .nota-condicional-box .nota-origen { font-size: .75rem; color: #5a7aa5; margin-bottom: 8px; }
+        .nota-condicional-box .nota-texto  { font-size: .86rem; color: #003366; line-height: 1.55; margin-bottom: 10px; }
+        .nota-condicional-box .btn-insertar {
+            background: var(--color-acento); color: #fff; border: none;
+            border-radius: var(--radio); padding: 6px 14px; font-size: .8rem;
+            font-weight: 600; cursor: pointer; transition: opacity .15s;
+        }
+        .nota-condicional-box .btn-insertar:hover { opacity: .85; }
+
         /* ── Buttons ── */
         .btn {
             display: inline-flex; align-items: center; gap: 8px;
@@ -144,7 +145,7 @@
             cursor: pointer; font-size: .9rem; font-weight: 600;
             font-family: inherit; text-decoration: none; transition: all .15s;
         }
-        .btn:hover { opacity: .9; transform: translateY(-1px); }
+        .btn:hover    { opacity: .9; transform: translateY(-1px); }
         .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
         .btn-primario   { background: var(--color-acento); color: #fff; }
         .btn-secundario { background: #e9ecef; color: #444; }
@@ -152,31 +153,6 @@
         .btn-sm { padding: 7px 14px; font-size: .82rem; }
 
         .acciones { display: flex; justify-content: flex-end; gap: 12px; padding: 20px 24px; border-top: 1px solid #eef0f3; background: #fff; }
-
-        /* ── Modal confirmación ── */
-        .overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,.5);
-            display: none; align-items: center; justify-content: center; z-index: 999;
-        }
-        .overlay.visible { display: flex; }
-        .modal {
-            background: #fff; border-radius: var(--radio);
-            box-shadow: 0 8px 32px rgba(0,0,0,.25);
-            width: 100%; max-width: 480px; padding: 32px; position: relative;
-        }
-        .modal-icono { text-align: center; margin-bottom: 16px; }
-        .modal h2 { margin: 0 0 6px; font-size: 1.2rem; color: var(--color-primario); text-align: center; }
-        .modal .subtitulo { font-size: .88rem; color: #666; margin-bottom: 24px; text-align: center; }
-        .modal-folio {
-            background: linear-gradient(135deg, #003366 0%, #005fa3 100%);
-            border-radius: var(--radio); padding: 18px;
-            text-align: center; margin-bottom: 20px;
-        }
-        .modal-folio .etiqueta { color: rgba(255,255,255,.7); font-size: .78rem; letter-spacing: 1px; text-transform: uppercase; }
-        .modal-folio .numero   { color: #fff; font-size: 2rem; font-weight: 700; font-family: 'Courier New', monospace; letter-spacing: 3px; margin-top: 6px; }
-        .modal-aviso { background: var(--bg-advertencia); border-left: 4px solid #f0ad4e; border-radius: var(--radio); padding: 12px 16px; font-size: .85rem; color: var(--color-advertencia); margin-bottom: 20px; line-height: 1.5; }
-        .modal-acciones { display: flex; gap: 10px; justify-content: center; }
-        .cerrar-modal { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
 
         /* ── Spinner ── */
         .spinner {
@@ -189,6 +165,106 @@
         /* ── Footer ── */
         .footer { text-align: center; padding: 24px 0; color: #666; font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 44px; }
 
+        /* ══════════════════════════════════════════════════════
+           Issue #4 — Modal de previsualización
+        ══════════════════════════════════════════════════════ */
+        #overlayPreview {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        #overlayPreview.visible {
+            display: flex;
+        }
+        .modal-preview-caja {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 8px 40px rgba(0,0,0,.35);
+            width: 900px;
+            max-width: 96vw;
+            height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-preview-cabecera {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--color-primario);
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .modal-preview-cabecera span { font-weight: 700; font-size: 14px; }
+        .modal-preview-cabecera button {
+            background: none; border: none; color: #fff;
+            font-size: 22px; cursor: pointer; line-height: 1; padding: 0 4px;
+        }
+        .modal-preview-cabecera button:hover { color: #f0c040; }
+        .modal-preview-cuerpo {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #d8dde4;
+        }
+        #iframePreview {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+            background: #fff;
+        }
+        #spinnerPreview {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: #d8dde4;
+            color: #555;
+            font-size: 14px;
+        }
+        .spinner-ring {
+            width: 36px; height: 36px;
+            border: 3px solid #bbb;
+            border-top-color: var(--color-acento);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+        .modal-preview-pie {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-top: 1px solid #dde1e7;
+            background: #f7f8fa;
+            flex-shrink: 0;
+        }
+        .modal-preview-pie .asm-label { font-size: 12px; color: #666; }
+        .modal-preview-pie .acciones-modal { display: flex; gap: 10px; }
+        .btn-modal-volver {
+            padding: 7px 16px; border-radius: 5px; font-size: 13px;
+            cursor: pointer; font-weight: 600;
+            border: 1.5px solid var(--color-primario);
+            background: #fff; color: var(--color-primario);
+            transition: background .15s;
+        }
+        .btn-modal-volver:hover { background: #eef3fb; }
+        .btn-modal-confirmar {
+            padding: 7px 18px; border-radius: 5px; font-size: 13px;
+            cursor: pointer; font-weight: 600; border: none;
+            background: var(--color-exito); color: #fff;
+            transition: opacity .15s;
+        }
+        .btn-modal-confirmar:hover { opacity: .88; }
+
         @media (max-width: 768px) {
             .contenedor { padding: 0 16px; }
             .fila-dos { grid-template-columns: 1fr; }
@@ -197,6 +273,7 @@
             .folio-preview { flex-direction: column; gap: 8px; text-align: center; }
             .acciones { flex-direction: column; }
             .acciones .btn { width: 100%; justify-content: center; }
+            .modal-preview-caja { height: 95vh; }
         }
     </style>
 </head>
@@ -251,9 +328,7 @@
                         </button>
                     </div>
                 </div>
-
                 <div id="listaResultados" style="display:none; margin-top:8px;"></div>
-
                 <div id="asambleistaSeleccionado" class="resultado-asambleista">
                     <div class="nombre" id="nombreSeleccionado"></div>
                     <div class="detalle" id="detalleSeleccionado"></div>
@@ -279,7 +354,23 @@
                 <div class="alerta alerta-info" style="margin-bottom:16px">
                     ℹ️ El folio DAIR se asignará automáticamente al confirmar. Se mostrará el número exacto antes de emitir.
                 </div>
+
+                <!-- Issue #6: Selector de propuesta relacionada -->
                 <div class="campo">
+                    <label for="propuestaRelacionada">Propuesta relacionada (opcional)</label>
+                    <select id="propuestaRelacionada" onchange="cargarNotaCondicional(this.value)">
+                        <option value="">— Sin propuesta específica —</option>
+                    </select>
+                </div>
+
+                <div id="notaCondicionalBox" class="nota-condicional-box">
+                    <div class="nota-titulo">⚖️ Nota legal sugerida</div>
+                    <div class="nota-origen" id="notaOrigenTexto"></div>
+                    <div class="nota-texto"  id="notaCondicionalTexto"></div>
+                    <button class="btn-insertar" onclick="insertarNota()">Insertar nota en el contenido</button>
+                </div>
+
+                <div class="campo" style="margin-top:16px">
                     <label for="contenidoCert">Texto de la certificación <span style="color:red">*</span></label>
                     <textarea id="contenidoCert"
                         placeholder="La Secretaría de la Asamblea Institucional Representativa del Instituto Tecnológico de Costa Rica certifica que..."></textarea>
@@ -287,8 +378,8 @@
             </div>
             <div class="acciones">
                 <button class="btn btn-secundario" onclick="irPaso1()">← Volver</button>
-                <button class="btn btn-primario" onclick="irPaso3()">
-                    Ver folio y confirmar →
+                <button class="btn btn-primario" onclick="abrirPreview()">
+                    👁️ Previsualizar y confirmar →
                 </button>
             </div>
         </div>
@@ -343,6 +434,37 @@
     <div class="footer">Módulo de Fe Pública — AIR</div>
 </main>
 
+<!-- ══════════════════════════════════════════════════════════
+     Issue #4 — Modal de previsualización
+     FUERA del <main>, antes del </body>
+══════════════════════════════════════════════════════════ -->
+<div id="overlayPreview">
+  <div class="modal-preview-caja">
+
+    <div class="modal-preview-cabecera">
+      <span>📄 Vista previa — Certificación (borrador)</span>
+      <button onclick="cerrarPreview()" title="Cerrar">✕</button>
+    </div>
+
+    <div class="modal-preview-cuerpo">
+      <iframe id="iframePreview" src="about:blank"></iframe>
+      <div id="spinnerPreview">
+        <div class="spinner-ring"></div>
+        <span>Cargando vista previa…</span>
+      </div>
+    </div>
+
+    <div class="modal-preview-pie">
+      <span class="asm-label" id="labelPreviewAsm"></span>
+      <div class="acciones-modal">
+        <button class="btn-modal-volver" onclick="cerrarPreview()">← Volver a editar</button>
+        <button class="btn-modal-confirmar" onclick="cerrarYConfirmar()">✓ Confirmar y emitir</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script src="/shared/auth.js"></script>
 <script>
     let asambleistaSeleccionado = null;
@@ -352,17 +474,13 @@
     async function buscarAsambleista() {
         const q = document.getElementById('busquedaInput').value.trim();
         if (!q) return;
-
         const btn = document.getElementById('btnBuscar');
         btn.innerHTML = '<span class="spinner"></span>';
         btn.disabled = true;
-
         try {
             const res  = await fetch(`/asambleistas?busqueda=${encodeURIComponent(q)}`);
             const json = await res.json();
-            const lista = Array.isArray(json) ? json : (json.datos ?? []);
-
-            renderListaResultados(lista);
+            renderListaResultados(Array.isArray(json) ? json : (json.datos ?? []));
         } catch {
             mostrarMsg('Error al buscar asambleístas.');
         } finally {
@@ -378,79 +496,90 @@
             cont.style.display = 'block';
             return;
         }
-
         cont.style.display = 'block';
         cont.innerHTML = `
             <div style="border:1px solid #d0d7de;border-radius:var(--radio);overflow:hidden;max-height:220px;overflow-y:auto;">
                 ${lista.map(a => `
-                    <div onclick="seleccionarAsambleista('${a.asambleista_id}', '${escapar(a.nombre)}', '${escapar(a.cedula)}', '${escapar(a.sector_actual ?? 'Sin sector activo')}')"
+                    <div onclick="seleccionarAsambleista('${a.asambleista_id}','${escapar(a.nombre)}','${escapar(a.cedula)}','${escapar(a.sector_actual ?? 'Sin sector activo')}')"
                          style="padding:12px 16px;cursor:pointer;border-bottom:1px solid #eef0f3;transition:background .12s;font-size:.9rem"
                          onmouseenter="this.style.background='#f0f4f9'" onmouseleave="this.style.background=''">
                         <strong>${a.nombre}</strong>
                         <span style="color:#888;margin-left:8px;font-size:.82rem">${a.cedula}</span>
                         ${a.sector_actual ? `<span style="float:right;font-size:.78rem;color:#005fa3;background:#e7f3ff;padding:2px 8px;border-radius:10px">${a.sector_actual}</span>` : ''}
-                    </div>
-                `).join('')}
+                    </div>`).join('')}
             </div>`;
     }
 
-    function seleccionarAsambleista(id, nombre, cedula, sector) {
-        asambleistaSeleccionado = {
-            id: String(id),
-            nombre,
-            cedula,
-            sector
-        };
-        document.getElementById('listaResultados').style.display = 'none';
-        document.getElementById('busquedaInput').value = nombre;
+    async function seleccionarAsambleista(id, nombre, cedula, sector) {
+    asambleistaSeleccionado = { id: String(id), nombre, cedula, sector };
+    document.getElementById('listaResultados').style.display = 'none';
+    document.getElementById('busquedaInput').value = nombre;
+    document.getElementById('nombreSeleccionado').textContent = nombre;
 
-        const box = document.getElementById('asambleistaSeleccionado');
-        document.getElementById('nombreSeleccionado').textContent = nombre;
-        document.getElementById('detalleSeleccionado').textContent = `Cédula: ${cedula}  ·  Sector: ${sector}`;
-        box.classList.add('visible');
+    // Consultar nombramientos para validar vigencia
+    try {
+        const res  = await fetch(`/asambleistas/${id}/nombramientos`);
+        const data = await res.json();
+        const nombramientos = Array.isArray(data) ? data : (data.datos ?? []);
+        const vigente = nombramientos.find(n => n.estado === 'VIGENTE' || n.estado === 'activo');
 
+        if (vigente) {
+            document.getElementById('detalleSeleccionado').innerHTML =
+                `Cédula: ${cedula} &nbsp;·&nbsp; Sector: ${sector}
+                 <span style="display:inline-block;margin-left:10px;background:#1e7e34;color:#fff;
+                 padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:700">
+                 NOMBRAMIENTO VIGENTE</span>
+                 <div style="font-size:.82rem;margin-top:4px;color:#2d6a35">
+                 Desde: ${vigente.fecha_inicio ? new Date(vigente.fecha_inicio).toLocaleDateString('es-CR') : '—'}
+                 ${vigente.fecha_fin ? ' · Hasta: ' + new Date(vigente.fecha_fin).toLocaleDateString('es-CR') : ' · Activo'}
+                 </div>`;
+            document.getElementById('asambleistaSeleccionado').classList.add('visible');
+            document.getElementById('btnPaso1').disabled = false;
+        } else {
+            document.getElementById('detalleSeleccionado').innerHTML =
+                `Cédula: ${cedula}
+                 <span style="display:inline-block;margin-left:10px;background:#c0392b;color:#fff;
+                 padding:2px 10px;border-radius:10px;font-size:.78rem;font-weight:700">
+                 SIN NOMBRAMIENTO VIGENTE</span>
+                 <div style="font-size:.82rem;margin-top:4px;color:#721c24">
+                 Este asambleísta no tiene un nombramiento activo. No se puede emitir certificación.
+                 </div>`;
+            document.getElementById('asambleistaSeleccionado').classList.add('visible');
+            document.getElementById('btnPaso1').disabled = true;
+            asambleistaSeleccionado = null;
+        }
+    } catch(e) {
+        document.getElementById('detalleSeleccionado').textContent =
+            `Cédula: ${cedula}  ·  Sector: ${sector}`;
+        document.getElementById('asambleistaSeleccionado').classList.add('visible');
         document.getElementById('btnPaso1').disabled = false;
     }
+}
 
-    // ── Navegación entre pasos ────────────────────────────────
-    function irPaso1() {
-        mostrarPaso(1);
-    }
-
-    function irPaso2() {
-        if (!asambleistaSeleccionado) return;
-        mostrarPaso(2);
-    }
+    // ── Navegación ────────────────────────────────────────────
+    function irPaso1() { mostrarPaso(1); }
+    function irPaso2() { if (!asambleistaSeleccionado) return; mostrarPaso(2); }
 
     async function irPaso3() {
         const contenido = document.getElementById('contenidoCert').value.trim();
-        if (!contenido) {
-            mostrarMsg('El contenido de la certificación es obligatorio.');
-            return;
-        }
-
+        if (!contenido) { mostrarMsg('El contenido de la certificación es obligatorio.'); return; }
         mostrarPaso(3);
-
-        // Obtener siguiente folio del servidor
-        document.getElementById('folioTexto').textContent = 'Consultando...';
+        document.getElementById('folioTexto').textContent   = 'Consultando...';
         document.getElementById('resumenFolio').textContent = '...';
-
         try {
             const res  = await fetch('/certificaciones/siguiente-folio');
             const json = await res.json();
             if (!json.ok) throw new Error(json.error);
-
             folioSiguiente = json.siguienteFolio;
-            document.getElementById('folioTexto').textContent    = folioSiguiente;
-            document.getElementById('resumenFolio').textContent  = folioSiguiente;
+            document.getElementById('folioTexto').textContent   = folioSiguiente;
+            document.getElementById('resumenFolio').textContent = folioSiguiente;
         } catch (e) {
             document.getElementById('folioTexto').textContent   = 'Error al obtener folio';
             document.getElementById('resumenFolio').textContent = 'Error';
             mostrarMsg('No se pudo consultar el siguiente folio: ' + e.message);
         }
-
-        document.getElementById('resumenNombre').textContent   = asambleistaSeleccionado.nombre;
-        document.getElementById('resumenCedula').textContent   = `Cédula: ${asambleistaSeleccionado.cedula}`;
+        document.getElementById('resumenNombre').textContent    = asambleistaSeleccionado.nombre;
+        document.getElementById('resumenCedula').textContent    = `Cédula: ${asambleistaSeleccionado.cedula}`;
         document.getElementById('resumenContenido').textContent = document.getElementById('contenidoCert').value.trim();
     }
 
@@ -470,33 +599,108 @@
     async function emitirCertificacion() {
         const contenido = document.getElementById('contenidoCert').value.trim();
         const btn = document.getElementById('btnEmitir');
-
         btn.innerHTML = '<span class="spinner"></span> Emitiendo...';
         btn.disabled = true;
-
         try {
             const res  = await fetch('/certificaciones', {
                 method : 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body   : JSON.stringify({
-                    asambleistaId: asambleistaSeleccionado.id,
-                    contenido
-                })
+                body   : JSON.stringify({ asambleistaId: asambleistaSeleccionado.id, contenido })
             });
             const json = await res.json();
-
             if (!json.ok) throw new Error(json.error);
-
-            // Redirigir al certificado final
             window.location.href = `/certificaciones/certificado-final.view.html?folio=${encodeURIComponent(json.folio)}`;
-
         } catch (e) {
             mostrarMsg('Error al emitir: ' + e.message);
-            btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Emitir certificación oficial`;
+            btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Emitir certificación oficial';
             btn.disabled = false;
         }
     }
 
+    // ── Issue #6: Notas condicionales ─────────────────────────
+    async function cargarPropuestas() {
+        try {
+            const res  = await fetch('/propuestas');
+            const json = await res.json();
+            const lista = Array.isArray(json) ? json : (json.datos ?? []);
+            const select = document.getElementById('propuestaRelacionada');
+            lista.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value       = p.id_propuesta;
+                opt.textContent = `${p.codigo_air ?? 'S/C'} — ${p.titulo}`;
+                select.appendChild(opt);
+            });
+        } catch { /* select queda vacío, no rompe el flujo */ }
+    }
+
+    async function cargarNotaCondicional(idPropuesta) {
+        const box = document.getElementById('notaCondicionalBox');
+        if (!idPropuesta) { box.classList.remove('visible'); return; }
+        try {
+            const res  = await fetch(`/propuestas/${idPropuesta}/nota`);
+            const json = await res.json();
+            if (json.ok && json.nota) {
+                document.getElementById('notaCondicionalTexto').textContent = json.nota;
+                document.getElementById('notaOrigenTexto').textContent      = `Origen: ${json.origen ?? ''}`;
+                box.classList.add('visible');
+            } else {
+                box.classList.remove('visible');
+            }
+        } catch { box.classList.remove('visible'); }
+    }
+
+    function insertarNota() {
+        const nota      = document.getElementById('notaCondicionalTexto').textContent;
+        const textarea  = document.getElementById('contenidoCert');
+        const separador = textarea.value.trim() ? '\n\n' : '';
+        textarea.value += `${separador}Nota: ${nota}`;
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
+    }
+
+    // ── Issue #4: Modal de previsualización ───────────────────
+    async function abrirPreview() {
+        const contenido = document.getElementById('contenidoCert').value.trim();
+        if (!contenido)              { mostrarMsg('El contenido de la certificación es obligatorio.'); return; }
+        if (!asambleistaSeleccionado){ mostrarMsg('Seleccioná un asambleísta primero.'); return; }
+
+        const overlay = document.getElementById('overlayPreview');
+        const iframe  = document.getElementById('iframePreview');
+        const spinner = document.getElementById('spinnerPreview');
+
+        // Mostrar modal con spinner
+        overlay.classList.add('visible');
+        iframe.style.display  = 'none';
+        spinner.style.display = 'flex';
+        document.getElementById('labelPreviewAsm').textContent =
+            `Asambleísta: ${asambleistaSeleccionado.nombre}`;
+
+        try {
+            const params = new URLSearchParams({ contenido });
+            const res    = await fetch(`/certificaciones/preview/${asambleistaSeleccionado.id}?${params}`);
+            if (!res.ok) throw new Error(`Error ${res.status} — ${res.statusText}`);
+            const html = await res.text();
+            iframe.srcdoc = html;
+            iframe.onload = () => {
+                spinner.style.display = 'none';
+                iframe.style.display  = 'block';
+            };
+        } catch (err) {
+            spinner.innerHTML = `<span style="color:#c0392b;font-size:13px">⚠️ ${err.message}</span>`;
+        }
+    }
+
+    function cerrarPreview() {
+        document.getElementById('overlayPreview').classList.remove('visible');
+        document.getElementById('iframePreview').srcdoc = '';
+    }
+
+    function cerrarYConfirmar() {
+        cerrarPreview();
+        irPaso3();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
     function mostrarMsg(msg) {
         const el = document.getElementById('msgGlobal');
         el.textContent = msg;
@@ -507,6 +711,19 @@
     function escapar(s) {
         return String(s ?? '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
     }
+
+    // ── Cerrar modal con Escape o clic fuera ──────────────────
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') cerrarPreview();
+    });
+    document.getElementById('overlayPreview').addEventListener('click', e => {
+        if (e.target === document.getElementById('overlayPreview')) cerrarPreview();
+    });
+
+    // ── Init ──────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarPropuestas();
+    });
 </script>
 </body>
 </html>

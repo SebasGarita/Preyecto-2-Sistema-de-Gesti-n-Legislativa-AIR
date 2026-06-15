@@ -134,4 +134,67 @@ INSERT INTO elemento_normativo (
 
 (72, 1, 64, 3, 'ARTICULO 15', 'Los miembros del Consejo Institucional deberán cumplir las siguientes condiciones: a. Ser costarricenses...', 72, '1998-09-30', 1);
 
+-- ==========================================
+-- RESET SECUENCIAS (CockroachDB/PostgreSQL)
+-- ==========================================
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'catalogo_nivel_reglamento',
+    'id_nivel_reglamento'
+  ),
+  (SELECT MAX(id_nivel_reglamento)
+   FROM catalogo_nivel_reglamento)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'catalogo_estado_vigencia',
+    'id_estado_vigencia'
+  ),
+  (SELECT MAX(id_estado_vigencia)
+   FROM catalogo_estado_vigencia)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'reglamento',
+    'id_reglamento'
+  ),
+  (SELECT MAX(id_reglamento)
+   FROM reglamento)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'elemento_normativo',
+    'id_elemento'
+  ),
+  (SELECT MAX(id_elemento)
+   FROM elemento_normativo)
+);
+
 COMMIT;
+
+--Issue 15
+ALTER TABLE certificacion_emitida
+  ADD COLUMN id_usuario_secretaria INT REFERENCES sys_usuario(id_usuario);
+
+-- Migrar datos existentes:
+UPDATE certificacion_emitida ce
+SET id_usuario_secretaria = u.id_usuario::INT
+FROM sys_usuario u
+WHERE ce.usuario_secretaria = u.id_usuario::TEXT;
+
+-- Luego eliminar la columna vieja:
+ALTER TABLE certificacion_emitida DROP COLUMN usuario_secretaria;
+
+SELECT *
+FROM certificacion_emitida
+WHERE id_usuario_secretaria IS NULL;
+
+ALTER TABLE certificacion_emitida
+ADD COLUMN usuario_secretaria VARCHAR(100);
+
+UPDATE certificacion_emitida
+SET usuario_secretaria = id_usuario_secretaria::TEXT;

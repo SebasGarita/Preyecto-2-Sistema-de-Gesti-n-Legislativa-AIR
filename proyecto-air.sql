@@ -357,6 +357,21 @@ CREATE TABLE anulacion_certificacion (
     fecha               DATE    NOT NULL DEFAULT CURRENT_DATE
 );
 
+CREATE TABLE IF NOT EXISTS votacion (
+    id_votacion         SERIAL          PRIMARY KEY,
+    id_sesion           INT             NOT NULL REFERENCES sesiones(id_sesion),
+    id_punto_agenda     INT             REFERENCES punto_agenda(id_punto_agenda),
+    id_propuesta        INT             REFERENCES propuesta(id_propuesta),
+    votos_favor         INT             NOT NULL DEFAULT 0,
+    votos_contra        INT             NOT NULL DEFAULT 0,
+    votos_abstencion    INT             NOT NULL DEFAULT 0,
+    tipo_mayoria        VARCHAR(50)     NOT NULL,   -- 'Simple' | 'Calificada'
+    resultado           VARCHAR(50),                -- 'APROBADA' | 'RECHAZADA' | 'SIN_VOTOS'
+    quorum_valido       BOOLEAN         NOT NULL DEFAULT FALSE,
+    id_usuario_registro INT             REFERENCES sys_usuario(id_usuario),
+    fecha_registro      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Roles base del sistema
 INSERT INTO sys_rol (nombre_rol) VALUES
   ('ADMINISTRADOR'),
@@ -404,6 +419,37 @@ INSERT INTO sys_usuario_rol (id_usuario, id_rol)
 SELECT u.id_usuario, r.id_rol
 FROM sys_usuario u, sys_rol r
 WHERE u.username = 'admin' AND r.nombre_rol = 'ADMINISTRADOR';
+
+
+INSERT INTO sys_permiso (nombre_permiso, descripcion)
+VALUES ('GESTIONAR_PROPUESTAS', 'Puede crear y gestionar propuestas normativas');
+
+-- Asignar a roles correspondientes:
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol IN ('ADMINISTRADOR','SECRETARIA_AIR')
+  AND p.nombre_permiso = 'GESTIONAR_PROPUESTAS';
+
+INSERT INTO sys_permiso (nombre_permiso, descripcion) VALUES
+  ('GESTIONAR_COMISIONES', 'Puede crear y gestionar comisiones de trabajo')
+ON CONFLICT (nombre_permiso) DO NOTHING;
+
+
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol = 'ADMINISTRADOR'
+  AND p.nombre_permiso = 'GESTIONAR_COMISIONES'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO sys_rol_permiso (id_rol, id_permiso)
+SELECT r.id_rol, p.id_permiso
+FROM sys_rol r, sys_permiso p
+WHERE r.nombre_rol = 'SECRETARIA_AIR'
+  AND p.nombre_permiso = 'GESTIONAR_COMISIONES'
+ON CONFLICT DO NOTHING;
+
+
 
 -- ── Seeds: sectores disponibles ────────────────────────────────────────────
 INSERT INTO catalogo_sector (nombre) VALUES
@@ -461,6 +507,29 @@ INSERT INTO catalogo_estado_vigencia (nombre) VALUES
 INSERT INTO catalogo_tipo_mayoria_requerida (nombre_rol) VALUES
   ('Simple'),
   ('Calificada');
+
+INSERT INTO catalogo_tipo_comision (nombre) VALUES
+  ('Comisión de Análisis'),
+  ('Comisión Especial'),
+  ('Comisión Permanente')
+ON CONFLICT (nombre) DO NOTHING;
+
+INSERT INTO catalogo_rol_comision (nombre_rol) VALUES
+  ('Coordinador'),
+  ('Secretario'),
+  ('Integrante'),
+  ('Asesor')
+ON CONFLICT (nombre_rol) DO NOTHING;
+
+INSERT INTO catalogo_asistencia_sesion_comision (nombre) VALUES
+  ('Presente'),
+  ('Ausente justificado'),
+  ('Ausente sin justificación')
+ON CONFLICT (nombre) DO NOTHING;
+
+ALTER TABLE votacion
+  ADD CONSTRAINT IF NOT EXISTS uq_votacion_punto
+  UNIQUE (id_punto_agenda)
 
   -- ============================================================================
 -- TRIGGER: tg_vigencia_normativa
@@ -562,6 +631,8 @@ ALTER TABLE public.certificacion_emitida
     ADD COLUMN IF NOT EXISTS estado VARCHAR(20) NOT NULL DEFAULT 'Activo',
     ADD COLUMN IF NOT EXISTS folio_sustituido_por VARCHAR(50) NULL;
 
+ALTER TABLE certificacion_emitida ADD COLUMN contenido TEXT;
+
 -- folio_sustituido_por: si esta cert fue reemplazada, apunta al folio nuevo
 
 
@@ -661,11 +732,84 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 -- ------------------------------------------------------------
--- Ejemplo de uso:
-SELECT anular_certificacion(123, 'Error en el periodo reportado', 'DAIR-010-2026');
 
-ROLLBACK;
-BEGIN;
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+
+CREATE TRIGGER tg_no_repudio_cert_upd
+  BEFORE UPDATE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+CREATE TRIGGER tg_no_repudio_cert_del
+  BEFORE DELETE ON public.certificacion_emitida
+  FOR EACH ROW
+  EXECUTE FUNCTION fn_proteger_certificacion();
+
+-- ── Función: validar quórum legal ─────────────────────────────
+CREATE OR REPLACE FUNCTION validar_quorum_legal(p_id_sesion INT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_presentes  INT;
+  v_quorum_req INT;
+BEGIN
+  SELECT COUNT(*) INTO v_presentes
+  FROM asistencia_sesion_plenaria
+  WHERE id_sesion = p_id_sesion;
+
+  SELECT quorum_requerido INTO v_quorum_req
+  FROM sesiones
+  WHERE id_sesion = p_id_sesion;
+
+  RETURN v_presentes >= COALESCE(v_quorum_req, 29);
+END;
+$$ LANGUAGE plpgsql;
+
+-- ── Función: calcular resultado de votación ───────────────────
+CREATE OR REPLACE FUNCTION calcular_resultado_votacion(
+  p_favor  INT,
+  p_contra INT,
+  p_tipo   VARCHAR
+)
+RETURNS VARCHAR AS $$
+DECLARE
+  v_total  FLOAT;
+  v_umbral FLOAT;
+BEGIN
+  v_total  := (p_favor + p_contra)::FLOAT;
+  v_umbral := CASE p_tipo
+                WHEN 'Calificada' THEN 0.66
+                ELSE 0.50
+              END;
+
+  RETURN CASE
+    WHEN v_total = 0 THEN 'SIN_VOTOS'
+    WHEN (p_favor::FLOAT / v_total) > v_umbral THEN 'APROBADA'
+    ELSE 'RECHAZADA'
+  END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ── Vista: participación activa ───────────────────────────────
+CREATE OR REPLACE VIEW v_participacion_activa AS
+SELECT
+  a.asambleista_id,
+  a.nombre,
+  COUNT(asp.id_sesion)                              AS sesiones_asistidas,
+  (SELECT COUNT(*) FROM sesiones)                   AS total_sesiones,
+  ROUND(
+    COUNT(asp.id_sesion)::DECIMAL /
+    NULLIF((SELECT COUNT(*) FROM sesiones), 0) * 100
+  , 2)                                              AS indice_participacion_pct
+FROM asambleista a
+LEFT JOIN asistencia_sesion_plenaria asp
+  ON a.asambleista_id = asp.id_asambleista
+GROUP BY a.asambleista_id, a.nombre;
+
+-- ── UNIQUE para ON CONFLICT en asistencia ─────────────────────
+ALTER TABLE asistencia_sesion_plenaria
+  ADD CONSTRAINT uq_asistencia
+  UNIQUE (id_asambleista, id_sesion);
 
 -- 1. Insertar Niveles de Reglamento controlando conflictos por el campo UNIQUE 'nombre'
 INSERT INTO catalogo_nivel_reglamento (id_nivel_reglamento, nombre) 
@@ -800,6 +944,46 @@ INSERT INTO elemento_normativo (
 
 (72, 1, 64, 3, 'ARTICULO 15', 'Los miembros del Consejo Institucional deberán cumplir las siguientes condiciones: a. Ser costarricenses...', 72, '1998-09-30', 1);
 
+-- ==========================================
+-- RESET SECUENCIAS (CockroachDB/PostgreSQL)
+-- ==========================================
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'catalogo_nivel_reglamento',
+    'id_nivel_reglamento'
+  ),
+  (SELECT MAX(id_nivel_reglamento)
+   FROM catalogo_nivel_reglamento)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'catalogo_estado_vigencia',
+    'id_estado_vigencia'
+  ),
+  (SELECT MAX(id_estado_vigencia)
+   FROM catalogo_estado_vigencia)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'reglamento',
+    'id_reglamento'
+  ),
+  (SELECT MAX(id_reglamento)
+   FROM reglamento)
+);
+
+SELECT setval(
+  pg_get_serial_sequence(
+    'elemento_normativo',
+    'id_elemento'
+  ),
+  (SELECT MAX(id_elemento)
+   FROM elemento_normativo)
+);
+
 COMMIT;
 
 -- Función para validar traslape de nombramientos
@@ -813,10 +997,10 @@ DECLARE
     v_fecha_fin DATE;
 BEGIN
     -- Asignamos los valores de NEW a nuestras variables de CockroachDB
-    v_asambleista_id := NEW.asambleista_id;
-    v_id_nombramiento := NEW.id_nombramiento;
-    v_fecha_inicio := NEW.fecha_inicio;
-    v_fecha_fin := NEW.fecha_fin;
+    v_asambleista_id := (NEW).asambleista_id;
+    v_id_nombramiento := (NEW).id_nombramiento;
+    v_fecha_inicio := (NEW).fecha_inicio;
+    v_fecha_fin := (NEW).fecha_fin;
 
     IF EXISTS (
         SELECT 1 FROM nombramiento
@@ -833,7 +1017,7 @@ BEGIN
         RAISE EXCEPTION 'TRASLAPE_NOMBRAMIENTO: El asambleísta ya tiene un nombramiento vigente en ese período';
     END IF;
     
-    RETURN NEW;
+    RETURN (NEW);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -898,10 +1082,390 @@ CREATE TRIGGER tg_auditoria_resolucion
 AFTER INSERT OR UPDATE OR DELETE ON resolucion
 FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
 
-CREATE TRIGGER tg_auditoria_certificacion
-AFTER INSERT ON certificacion_emitida
-FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
-
 CREATE TRIGGER tg_auditoria_elemento_normativo
 AFTER INSERT OR UPDATE ON elemento_normativo
 FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
+CREATE TRIGGER tg_traslape_sector
+BEFORE INSERT ON nombramiento
+FOR EACH ROW
+EXECUTE FUNCTION fn_validar_traslape_nombramiento();
+
+-- Issue 6
+-- Issue 6
+-- Issue 6
+-- Issue 6
+-- Issue 6
+-- Issue 6
+
+-- Tabla para leyendas legales según el origen de la propuesta
+CREATE TABLE tipo_propuesta_leyenda (
+    id_leyenda SERIAL PRIMARY KEY,
+    codigo_origen VARCHAR(50) UNIQUE NOT NULL,  -- ej: 'CI', 'DIEZ_PORCIENTO', 'COMISION'
+    descripcion_origen VARCHAR(200) NOT NULL,
+    leyenda_legal TEXT NOT NULL,
+    activo BOOLEAN DEFAULT TRUE
+);
+
+ALTER TABLE tipo_propuesta_leyenda 
+ALTER COLUMN leyenda_legal DROP NOT NULL;
+
+-- Datos semilla
+INSERT INTO tipo_propuesta_leyenda (codigo_origen, descripcion_origen, leyenda_legal) VALUES
+(
+    'CI',
+    'Propuesta presentada por el Consejo Institucional',
+    'La Secretaría de la AIR no dispone de registros de asistencia para las propuestas presentadas directamente por el Consejo Institucional, dado que su origen no involucra el proceso de procedencia con participación de asambleístas.'
+),
+(
+    'DIEZ_PORCIENTO',
+    'Propuesta por el 10% de la Asamblea (etapa de procedencia)',
+    'La Secretaría de la AIR no dispone de registros de asistencia para la etapa de procedencia del 10% de asambleístas, ya que dicha etapa no genera convocatorias formales registradas en el sistema.'
+),
+(
+    'COMISION',
+    'Propuesta dictaminada por comisión',
+    NULL  -- No aplica nota, hay registros completos
+);
+
+ALTER TABLE propuesta 
+ADD COLUMN id_leyenda INT REFERENCES tipo_propuesta_leyenda(id_leyenda);
+
+ALTER TABLE informe_directorio
+  ADD COLUMN IF NOT EXISTS titulo VARCHAR(500);
+
+ALTER TABLE sesion_comision
+  ADD COLUMN IF NOT EXISTS numero_sesion  VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS descripcion    TEXT,
+  ADD COLUMN IF NOT EXISTS link_acta      VARCHAR(500);
+
+  ALTER TABLE integrante_comision
+  ADD CONSTRAINT IF NOT EXISTS uq_integrante_comision_activo
+  UNIQUE (id_comision, id_asambleista);
+
+ALTER TABLE asistencia_sesion_comision
+  ADD CONSTRAINT IF NOT EXISTS uq_asistencia_sesion_comision
+  UNIQUE (id_sesion_comision, asambleista_id);
+
+CREATE OR REPLACE VIEW v_participacion_comision AS
+SELECT
+  c.id_comision,
+  c.nombre_comision,
+  tc.nombre                                       AS tipo_comision,
+  a.asambleista_id,
+  a.nombre                                        AS nombre_asambleista,
+  a.cedula,
+  rc.nombre_rol                                   AS rol_en_comision,
+  ic.fecha_ingreso_nombramiento,
+  ic.fecha_fin_nombramiento,
+  ic.estado                                       AS estado_membresia,
+  (SELECT COUNT(*)
+   FROM sesion_comision sc
+   WHERE sc.id_comision = c.id_comision)          AS total_sesiones_comision,
+  (SELECT COUNT(*)
+   FROM asistencia_sesion_comision asc2
+   JOIN sesion_comision sc ON sc.id_sesion_comision = asc2.id_sesion_comision
+   JOIN catalogo_asistencia_sesion_comision cas
+     ON cas.id_estado_asistencia = asc2.id_estado_asistencia
+   WHERE sc.id_comision = c.id_comision
+     AND asc2.asambleista_id = a.asambleista_id
+     AND cas.nombre = 'Presente')                 AS sesiones_asistidas,
+  (SELECT COUNT(*)
+   FROM informe_directorio id2
+   WHERE id2.id_comision = c.id_comision)         AS total_informes
+FROM integrante_comision ic
+JOIN comision               c  ON c.id_comision       = ic.id_comision
+JOIN catalogo_tipo_comision tc ON tc.id_tipo_comision  = c.id_tipo_comision
+JOIN asambleista            a  ON a.asambleista_id     = ic.id_asambleista
+JOIN catalogo_rol_comision  rc ON rc.id_rol_comision   = ic.id_rol_comision;
+
+ALTER TABLE comision
+  ADD COLUMN IF NOT EXISTS objeto_acta TEXT;
+
+-- ISSUE #17 — Fe Púb
+-- Esta parte conecta las funciones ya definidas en la BD con sus triggers,
+-- agrega la función generar_hash_verificacion y el seed de control_folio.
+
+
+-- 1. TRIGGER: tg_no_repudio_cert
+
+DROP TRIGGER IF EXISTS tg_no_repudio_cert ON public.certificacion_emitida;
+
+CREATE TRIGGER tg_no_repudio_cert
+    BEFORE UPDATE OR DELETE
+    ON public.certificacion_emitida
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_proteger_certificacion();
+
+
+-- 2. TRIGGER: tg_auditoria_certificacion
+-- Lanzará error si el campo no existe.
+ 
+DROP TRIGGER IF EXISTS tg_auditoria_certificacion ON public.certificacion_emitida;
+ 
+CREATE OR REPLACE FUNCTION public.fn_auditoria_certificacion()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+DECLARE
+    v_registro_id INT8;
+BEGIN
+    v_registro_id := CASE
+        WHEN TG_OP = 'DELETE' THEN (old).id_certificacion
+        ELSE                       (new).id_certificacion
+    END;
+ 
+    INSERT INTO public.sys_log_auditoria (
+        accion,
+        tabla_afectada,
+        detalle,
+        registro_id
+    ) VALUES (
+        TG_OP,
+        TG_TABLE_NAME,
+        'Cambio en certificación, folio: ' || COALESCE(
+            CASE WHEN TG_OP = 'DELETE' THEN (old).folio_unico
+                 ELSE (new).folio_unico
+            END, 'N/A'
+        ),
+        v_registro_id
+    );
+ 
+    RETURN COALESCE(new, old);
+END;
+$$;
+ 
+CREATE TRIGGER tg_auditoria_certificacion
+    AFTER INSERT OR UPDATE OR DELETE
+    ON public.certificacion_emitida
+    FOR EACH ROW
+    EXECUTE FUNCTION public.fn_auditoria_certificacion();
+-- 3. FUNCIÓN: generar_hash_verificacion
+
+DROP FUNCTION IF EXISTS public.generar_hash_verificacion(text);
+ 
+CREATE OR REPLACE FUNCTION public.generar_hash_verificacion(p_contenido TEXT)
+    RETURNS TEXT
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+BEGIN
+    RETURN sha256(p_contenido);
+END;
+$$;
+ 
+
+
+-- 4. FUNCIÓN: verificar_permiso_usuario  (Issue #0 / Issue #17)
+DROP FUNCTION IF EXISTS public.verificar_permiso_usuario(INT8, TEXT);
+
+CREATE OR REPLACE FUNCTION public.verificar_permiso_usuario(
+    p_id_usuario INT8,
+    p_accion     TEXT
+)
+    RETURNS BOOLEAN
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+DECLARE
+    v_tiene_permiso BOOLEAN := FALSE;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.sys_usuario        u
+        JOIN public.sys_usuario_rol    ur ON ur.id_usuario = u.id_usuario
+        JOIN public.sys_rol_permiso    rp ON rp.id_rol     = ur.id_rol
+        JOIN public.sys_permiso        sp ON sp.id_permiso = rp.id_permiso
+        WHERE u.id_usuario = p_id_usuario
+          AND u.activo     = TRUE
+          AND sp.nombre_permiso    = p_accion
+    ) INTO v_tiene_permiso;
+
+    RETURN v_tiene_permiso;
+END;
+$$;
+
+
+
+INSERT INTO public.control_folio (anio, ultimo_numero, prefijo, fecha_actualizacion)
+VALUES (EXTRACT(YEAR FROM current_date())::INT8, 0, 'DAIR', current_timestamp())
+ON CONFLICT DO NOTHING;
+
+
+
+--    Ejecutar estas consultas para demostrar que si sirven.
+--Ver triggers activos sobre certificacion_emitida:
+SELECT trigger_name, event_manipulation, action_timing
+FROM information_schema.triggers
+WHERE event_object_table = 'certificacion_emitida';
+
+--Probar la función de hash:
+SELECT generar_hash_verificacion('DAIR-001-2026');
+
+-- Ver registro de control de folio:
+SELECT * FROM public.control_folio;
+
+-- Probar protección de fe pública (debe lanzar excepción):
+UPDATE public.certificacion_emitida
+SET folio_unico = 'HACKEADO'
+WHERE id_certificacion = 1;
+
+---- Corregir anular certificación issue 17
+CREATE OR REPLACE FUNCTION public.anular_certificacion(
+    p_certificacion_id INT8,
+    p_motivo TEXT,
+    p_folio_sustitucion VARCHAR DEFAULT NULL
+)
+    RETURNS void
+    LANGUAGE plpgsql
+    VOLATILE
+AS $$
+DECLARE
+    v_estado_actual VARCHAR(20);
+BEGIN
+    IF (p_motivo IS NULL) OR (btrim(p_motivo) = '') THEN
+        RAISE EXCEPTION 'El motivo de anulación es obligatorio.';
+    END IF;
+
+    SELECT estado
+    INTO v_estado_actual
+    FROM public.certificacion_emitida
+    WHERE id_certificacion = p_certificacion_id;
+
+    IF v_estado_actual IS NULL THEN
+        RAISE EXCEPTION 'No se encontró la certificación con id %', p_certificacion_id;
+    END IF;
+
+    IF v_estado_actual = 'Anulado' THEN
+        RAISE EXCEPTION 'La certificación ya se encuentra anulada.';
+    END IF;
+
+    INSERT INTO public.anulacion_certificacion
+        (certificacion_id, motivo, fecha, folio_sustitucion)
+    VALUES
+        (p_certificacion_id, btrim(p_motivo), current_date(), p_folio_sustitucion);
+
+    UPDATE public.certificacion_emitida
+    SET estado = 'Anulado',
+        folio_sustituido_por = p_folio_sustitucion
+    WHERE id_certificacion = p_certificacion_id;
+END;
+$$;
+
+CREATE OR REPLACE VIEW v_participacion_activa AS
+SELECT
+  a.asambleista_id,
+  a.nombre,
+  COUNT(
+    CASE WHEN cas.nombre = 'Presente' THEN asp.id_sesion END
+  )                                                             AS sesiones_asistidas,
+  (SELECT COUNT(*) FROM sesiones)                               AS total_sesiones,
+  ROUND(
+    COUNT(
+      CASE WHEN cas.nombre = 'Presente' THEN asp.id_sesion END
+    )::DECIMAL /
+    NULLIF((SELECT COUNT(*) FROM sesiones), 0) * 100
+  , 2)                                                          AS indice_participacion_pct
+FROM asambleista a
+LEFT JOIN asistencia_sesion_plenaria asp
+  ON asp.id_asambleista = a.asambleista_id
+LEFT JOIN catalogo_asistencia_sesion_comision cas
+  ON cas.id_estado_asistencia = asp.id_estado_asistencia
+GROUP BY a.asambleista_id, a.nombre;
+
+CREATE OR REPLACE FUNCTION fn_pct_plenaria(
+    p_asambleista_id    INT,
+    p_fecha_inicio      DATE,
+    p_fecha_fin         DATE
+)
+RETURNS NUMERIC AS $$
+DECLARE
+    v_convocadas BIGINT;
+    v_asistidas  BIGINT;
+BEGIN
+    SELECT COUNT(*)
+    INTO   v_convocadas
+    FROM   sesiones
+    WHERE  fecha BETWEEN p_fecha_inicio AND p_fecha_fin;
+
+    SELECT COUNT(*)
+    INTO   v_asistidas
+    FROM   asistencia_sesion_plenaria asp
+    JOIN   sesiones s
+      ON   s.id_sesion = asp.id_sesion
+    JOIN   catalogo_asistencia_sesion_comision cas
+      ON   cas.id_estado_asistencia = asp.id_estado_asistencia
+    WHERE  asp.id_asambleista = p_asambleista_id
+      AND  cas.nombre         = 'Presente'
+      AND  s.fecha            BETWEEN p_fecha_inicio AND p_fecha_fin;
+
+    IF v_convocadas = 0 THEN RETURN 0; END IF;
+    RETURN ROUND(v_asistidas::DECIMAL / v_convocadas * 100, 2);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pct_comision(
+    p_asambleista_id    INT,
+    p_fecha_inicio      DATE,
+    p_fecha_fin         DATE
+)
+RETURNS NUMERIC AS $$
+DECLARE
+    v_convocadas BIGINT;
+    v_asistidas  BIGINT;
+BEGIN
+    -- Solo sesiones de comisiones donde es o fue integrante
+    SELECT COUNT(DISTINCT sc.id_sesion_comision)
+    INTO   v_convocadas
+    FROM   sesion_comision sc
+    JOIN   integrante_comision ic
+      ON   ic.id_comision    = sc.id_comision
+      AND  ic.id_asambleista = p_asambleista_id
+    WHERE  sc.fecha_hora::DATE BETWEEN p_fecha_inicio AND p_fecha_fin;
+
+    SELECT COUNT(*)
+    INTO   v_asistidas
+    FROM   asistencia_sesion_comision asc2
+    JOIN   sesion_comision sc
+      ON   sc.id_sesion_comision = asc2.id_sesion_comision
+    JOIN   catalogo_asistencia_sesion_comision cas
+      ON   cas.id_estado_asistencia = asc2.id_estado_asistencia
+    WHERE  asc2.asambleista_id = p_asambleista_id
+      AND  cas.nombre          = 'Presente'
+      AND  sc.fecha_hora::DATE BETWEEN p_fecha_inicio AND p_fecha_fin;
+
+    IF v_convocadas = 0 THEN RETURN 0; END IF;
+    RETURN ROUND(v_asistidas::DECIMAL / v_convocadas * 100, 2);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE VIEW v_reporte_asistencia_global AS
+SELECT
+  a.asambleista_id,
+  a.nombre,
+  a.cedula,
+  -- Plenarias
+  COUNT(DISTINCT s.id_sesion)   AS plenarias_totales,
+  COUNT(
+    CASE WHEN cas.nombre = 'Presente' THEN asp.id_sesion END
+  )                             AS plenarias_asistidas,
+  -- Comisiones
+  (SELECT COUNT(DISTINCT sc2.id_sesion_comision)
+   FROM   sesion_comision sc2
+   JOIN   integrante_comision ic2
+     ON   ic2.id_comision    = sc2.id_comision
+     AND  ic2.id_asambleista = a.asambleista_id)  AS comision_convocadas,
+  (SELECT COUNT(*)
+   FROM   asistencia_sesion_comision asc3
+   JOIN   catalogo_asistencia_sesion_comision cas3
+     ON   cas3.id_estado_asistencia = asc3.id_estado_asistencia
+   WHERE  asc3.asambleista_id = a.asambleista_id
+     AND  cas3.nombre         = 'Presente')        AS comision_asistidas
+FROM asambleista a
+LEFT JOIN asistencia_sesion_plenaria asp
+  ON  asp.id_asambleista = a.asambleista_id
+LEFT JOIN sesiones s
+  ON  s.id_sesion = asp.id_sesion
+LEFT JOIN catalogo_asistencia_sesion_comision cas
+  ON  cas.id_estado_asistencia = asp.id_estado_asistencia
+GROUP BY a.asambleista_id, a.nombre, a.cedula;

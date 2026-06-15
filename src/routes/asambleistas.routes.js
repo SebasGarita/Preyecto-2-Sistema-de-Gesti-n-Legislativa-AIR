@@ -1,10 +1,11 @@
 const express     = require('express');
 const router      = express.Router();
 const ctrl        = require('../controllers/AsambleistaController');
-const { verificarToken, requierePermiso } = require('../middlewares/auth');
+const { verificarToken, requierePermiso, auditarEscritura } = require('../middlewares/auth');
 
 // Todas las rutas requieren token
 router.use(verificarToken);
+router.use(auditarEscritura); 
 
 // Catálogos (sectores y puestos para los selects del formulario)
 router.get('/catalogos', ctrl.catalogos);
