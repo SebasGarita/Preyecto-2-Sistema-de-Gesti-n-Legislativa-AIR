@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bitácora de Auditoría — AIR</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .filtros {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filtros label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #333;
+    }
+    .filtros select,
+    .filtros input {
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    .badge-insert { background: #d4edda; color: #155724; }
+    .badge-update { background: #fff3cd; color: #856404; }
+    .badge-delete { background: #f8d7da; color: #721c24; }
+    .badge-login  { background: #d1ecf1; color: #0c5460; }
+    .badge-logout { background: #e2e3e5; color: #383d41; }
+    .badge-accion {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .detalle-celda {
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #666;
+    }
+    .paginacion {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 16px;
+      justify-content: flex-end;
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.activo { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .stat-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+      text-align: center;
+    }
+    .stat-card .numero {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #003366;
+    }
+    .stat-card .label {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" style="display:flex;justify-content:space-between;align-items:center">
+    <span>AIR – Sistema de Gestión Normativa</span>
+    <span id="usuario-actual" style="font-size:0.9rem"></span>
+  </nav>
+
+  <main class="contenedor">
+    <div class="encabezado-seccion">
+      <h1>🔍 Bitácora de Auditoría</h1>
+      <a href="/index.html" class="btn btn-secundario">← Menú</a>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="stat-cards" id="stat-cards">
+      <div class="stat-card"><div class="numero" id="stat-total">—</div><div class="label">Total registros</div></div>
+      <div class="stat-card"><div class="numero" id="stat-insert">—</div><div class="label">Inserciones</div></div>
+      <div class="stat-card"><div class="numero" id="stat-update">—</div><div class="label">Actualizaciones</div></div>
+      <div class="stat-card"><div class="numero" id="stat-delete">—</div><div class="label">Eliminaciones</div></div>
+      <div class="stat-card"><div class="numero" id="stat-login">—</div><div class="label">Inicios de sesión</div></div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros">
+      <label>Tabla afectada
+        <select id="filtro-tabla" onchange="cargarBitacora()">
+          <option value="">Todas</option>
+          <option value="asambleista">asambleista</option>
+          <option value="nombramiento">nombramiento</option>
+          <option value="resolucion">resolucion</option>
+          <option value="certificacion_emitida">certificacion_emitida</option>
+          <option value="elemento_normativo">elemento_normativo</option>
+          <option value="sys_usuario">sys_usuario</option>
+        </select>
+      </label>
+      <label>Acción
+        <select id="filtro-accion" onchange="cargarBitacora()">
+          <option value="">Todas</option>
+          <option value="INSERT">INSERT</option>
+          <option value="UPDATE">UPDATE</option>
+          <option value="DELETE">DELETE</option>
+          <option value="LOGIN">LOGIN</option>
+          <option value="LOGOUT">LOGOUT</option>
+        </select>
+      </label>
+      <button class="btn btn-secundario" onclick="limpiarFiltros()">Limpiar filtros</button>
+      <button class="btn btn-primario" onclick="cargarBitacora()">🔄 Actualizar</button>
+    </div>
+
+    <!-- Tabla -->
+    <table id="tabla-bitacora">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fecha y hora</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Tabla</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-bitacora">
+        <tr><td colspan="6">Cargando...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Paginación -->
+    <div class="paginacion">
+      <button class="btn btn-secundario" id="btn-anterior"
+              onclick="cambiarPagina(-1)" disabled>← Anterior</button>
+      <span id="info-pagina" style="font-size:0.9rem;color:#666"></span>
+      <button class="btn btn-secundario" id="btn-siguiente"
+              onclick="cambiarPagina(1)">Siguiente →</button>
+    </div>
+  </main>
+
+  <!-- Modal de detalle completo -->
+  <div class="modal-overlay" id="modal-detalle">
+    <div class="modal">
+      <h3 style="color:#003366;margin-bottom:12px">Detalle del registro</h3>
+      <div id="modal-contenido"></div>
+      <div style="margin-top:16px;text-align:right">
+        <button class="btn btn-secundario" onclick="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    const token = sessionStorage.getItem('token');
+    const payload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+    if (payload) document.getElementById('usuario-actual').textContent = '👤 ' + payload.username;
+
+    const LIMIT = 25;
+    let paginaActual = 0;
+    let totalRegistros = 0;
+
+    function getBadgeClass(accion) {
+      const mapa = {
+        INSERT: 'badge-insert', UPDATE: 'badge-update',
+        DELETE: 'badge-delete', LOGIN: 'badge-login', LOGOUT: 'badge-logout'
+      };
+      return mapa[accion] || '';
+    }
+
+    function formatFecha(f) {
+      return new Date(f).toLocaleString('es-CR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    }
+
+    async function cargarBitacora() {
+      const tabla  = document.getElementById('filtro-tabla').value;
+      const accion = document.getElementById('filtro-accion').value;
+      const offset = paginaActual * LIMIT;
+
+      let url = `/auth/bitacora?limit=${LIMIT}&offset=${offset}`;
+      if (tabla)  url += `&tabla=${tabla}`;
+      if (accion) url += `&accion=${accion}`;
+
+      try {
+        const res  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+
+        totalRegistros = data.total;
+        renderTabla(data.logs);
+        actualizarPaginacion();
+        cargarEstadisticas();
+      } catch (e) {
+        document.getElementById('cuerpo-bitacora').innerHTML =
+          `<tr><td colspan="6" style="color:#c00">Error: ${e.message}</td></tr>`;
+      }
+    }
+
+    function renderTabla(logs) {
+      const tbody = document.getElementById('cuerpo-bitacora');
+      if (!logs.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay registros con esos filtros.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = logs.map((l, i) => `
+        <tr>
+          <td style="color:#888;font-size:0.82rem">${l.id_log}</td>
+          <td style="font-size:0.85rem;white-space:nowrap">${formatFecha(l.fecha_hora)}</td>
+          <td><strong>${l.usuario || '(sistema)'}</strong></td>
+          <td>
+            <span class="badge-accion ${getBadgeClass(l.accion)}">${l.accion}</span>
+          </td>
+          <td style="font-size:0.85rem;font-family:monospace">${l.tabla_afectada || '—'}</td>
+          <td class="detalle-celda" onclick="verDetalle(${JSON.stringify(l).replace(/"/g, '&quot;')})">
+            ${(l.detalle || '—').substring(0, 80)}${l.detalle?.length > 80 ? '...' : ''}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function actualizarPaginacion() {
+      const totalPaginas = Math.ceil(totalRegistros / LIMIT);
+      const paginaNum = paginaActual + 1;
+      document.getElementById('info-pagina').textContent =
+        `Página ${paginaNum} de ${totalPaginas} (${totalRegistros} registros)`;
+      document.getElementById('btn-anterior').disabled = paginaActual === 0;
+      document.getElementById('btn-siguiente').disabled = paginaNum >= totalPaginas;
+    }
+
+    function cambiarPagina(dir) {
+      paginaActual += dir;
+      cargarBitacora();
+    }
+
+    function limpiarFiltros() {
+      document.getElementById('filtro-tabla').value = '';
+      document.getElementById('filtro-accion').value = '';
+      paginaActual = 0;
+      cargarBitacora();
+    }
+
+    async function cargarEstadisticas() {
+      try {
+        const res  = await fetch('/auth/bitacora?limit=0&offset=0',
+                                 { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+
+        const conteo = { INSERT:0, UPDATE:0, DELETE:0, LOGIN:0 };
+        // Cargar stats por acción
+        for (const accion of ['INSERT','UPDATE','DELETE','LOGIN']) {
+          const r = await fetch(`/auth/bitacora?limit=1&offset=0&accion=${accion}`,
+                               { headers: { Authorization: `Bearer ${token}` } });
+          const d = await r.json();
+          conteo[accion] = d.total;
+        }
+
+        document.getElementById('stat-total').textContent  = data.total;
+        document.getElementById('stat-insert').textContent = conteo.INSERT;
+        document.getElementById('stat-update').textContent = conteo.UPDATE;
+        document.getElementById('stat-delete').textContent = conteo.DELETE;
+        document.getElementById('stat-login').textContent  = conteo.LOGIN;
+      } catch(e) {}
+    }
+
+    function verDetalle(log) {
+      let detalleFormateado = log.detalle || '(sin detalle)';
+      try {
+        const obj = JSON.parse(detalleFormateado);
+        detalleFormateado = JSON.stringify(obj, null, 2);
+      } catch(e) {}
+
+      document.getElementById('modal-contenido').innerHTML = `
+        <p><strong>ID Log:</strong> ${log.id_log}</p>
+        <p><strong>Fecha:</strong> ${formatFecha(log.fecha_hora)}</p>
+        <p><strong>Usuario:</strong> ${log.usuario || '(sistema)'}</p>
+        <p><strong>Acción:</strong> <span class="badge-accion ${getBadgeClass(log.accion)}">${log.accion}</span></p>
+        <p><strong>Tabla:</strong> <code>${log.tabla_afectada || '—'}</code></p>
+        <p><strong>Registro ID:</strong> ${log.registro_id || '—'}</p>
+        <p><strong>Detalle completo:</strong></p>
+        <pre>${detalleFormateado}</pre>
+      `;
+      document.getElementById('modal-detalle').classList.add('activo');
+    }
+
+    function cerrarModal() {
+      document.getElementById('modal-detalle').classList.remove('activo');
+    }
+
+    cargarBitacora();
+  </script>
+</body>
+</html>

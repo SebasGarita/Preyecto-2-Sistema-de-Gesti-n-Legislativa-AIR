@@ -19,5 +19,11 @@ router.post('/usuarios',
   requierePermiso('GESTIONAR_USUARIOS'),
   AuthController.crearUsuario
 );
+// Bitácora de auditoría (solo Admin)
+router.get('/bitacora',
+  verificarToken,
+  requierePermiso('GESTIONAR_USUARIOS'),
+  AuthController.obtenerBitacora
+);
 
 module.exports = router;

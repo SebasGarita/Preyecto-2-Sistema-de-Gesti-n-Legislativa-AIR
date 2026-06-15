@@ -97,5 +97,57 @@ const AuthController = {
     return res.status(201).json(nuevo);
   }
 };
+// GET /auth/bitacora (solo Admin)
+async obtenerBitacora(req, res) {
+    try {
+        const { limit = 50, offset = 0, tabla, accion } = req.query;
+
+        let whereClause = '';
+        const params = [];
+        let paramCount = 1;
+
+        if (tabla) {
+            whereClause += ` AND l.tabla_afectada = $${paramCount++}`;
+            params.push(tabla);
+        }
+        if (accion) {
+            whereClause += ` AND l.accion = $${paramCount++}`;
+            params.push(accion);
+        }
+
+        params.push(parseInt(limit));
+        params.push(parseInt(offset));
+
+        const result = await db.query(`
+            SELECT
+                l.id_log,
+                l.accion,
+                l.tabla_afectada,
+                l.detalle,
+                l.registro_id,
+                l.fecha_hora,
+                u.username AS usuario
+            FROM sys_log_auditoria l
+            LEFT JOIN sys_usuario u ON l.id_usuario = u.id_usuario
+            WHERE 1=1 ${whereClause}
+            ORDER BY l.fecha_hora DESC
+            LIMIT $${paramCount++} OFFSET $${paramCount++}
+        `, params);
+
+        const total = await db.query(
+            `SELECT COUNT(*) FROM sys_log_auditoria WHERE 1=1 ${whereClause}`,
+            params.slice(0, -2)
+        );
+
+        return res.json({
+            logs: result.rows,
+            total: parseInt(total.rows[0].count),
+            limit: parseInt(limit),
+            offset: parseInt(offset)
+        });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 
 module.exports = AuthController;

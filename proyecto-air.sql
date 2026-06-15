@@ -1021,6 +1021,70 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ============================================================
+-- TRIGGER: tg_auditoria_total (Issue #13)
+-- Registra automáticamente INSERT, UPDATE, DELETE en tablas sensibles
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION fn_auditoria_total()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_registro_id INT;
+    v_detalle     TEXT;
+BEGIN
+    -- Obtener el ID del registro afectado
+    IF TG_OP = 'DELETE' THEN
+        BEGIN
+            v_registro_id := (row_to_json(OLD) ->> 'id_' || TG_TABLE_NAME)::INT;
+        EXCEPTION WHEN OTHERS THEN
+            v_registro_id := NULL;
+        END;
+        v_detalle := 'Registro eliminado: ' || row_to_json(OLD)::TEXT;
+    ELSE
+        BEGIN
+            v_registro_id := (row_to_json(NEW) ->> 'id_' || TG_TABLE_NAME)::INT;
+        EXCEPTION WHEN OTHERS THEN
+            v_registro_id := NULL;
+        END;
+        v_detalle := 'Datos: ' || row_to_json(NEW)::TEXT;
+    END IF;
+
+    INSERT INTO sys_log_auditoria (
+        id_usuario,
+        accion,
+        tabla_afectada,
+        detalle,
+        registro_id,
+        fecha_hora
+    ) VALUES (
+        NULL,               -- No hay sesión de BD, el usuario viene del JWT en el app
+        TG_OP,
+        TG_TABLE_NAME,
+        v_detalle,
+        v_registro_id,
+        NOW()
+    );
+
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+-- Aplicar el trigger a las tablas sensibles
+CREATE TRIGGER tg_auditoria_asambleista
+AFTER INSERT OR UPDATE OR DELETE ON asambleista
+FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
+
+CREATE TRIGGER tg_auditoria_nombramiento
+AFTER INSERT OR UPDATE OR DELETE ON nombramiento
+FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
+
+CREATE TRIGGER tg_auditoria_resolucion
+AFTER INSERT OR UPDATE OR DELETE ON resolucion
+FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
+
+CREATE TRIGGER tg_auditoria_elemento_normativo
+AFTER INSERT OR UPDATE ON elemento_normativo
+FOR EACH ROW EXECUTE FUNCTION fn_auditoria_total();
 CREATE TRIGGER tg_traslape_sector
 BEFORE INSERT ON nombramiento
 FOR EACH ROW
