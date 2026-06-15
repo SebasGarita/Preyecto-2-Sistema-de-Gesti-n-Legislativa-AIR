@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle de Sesion — AIR</title>
+    <style>
+        :root {
+            --color-primario   : #003366;
+            --color-acento     : #005fa3;
+            --color-peligro    : #c0392b;
+            --color-exito      : #1e7e34;
+            --radio            : 6px;
+            --sombra           : 0 2px 12px rgba(0,0,0,.12);
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
+        .page-header { background: var(--color-primario); color: #fff; padding: 28px 28px 24px; text-align: center; }
+        .page-header h1 { margin: 0 0 8px; font-size: 1.8rem; font-weight: 600; }
+        .page-header .subtitulo { margin: 0; font-size: .95rem; opacity: .95; }
+        .badge-modulo { background: rgba(255,255,255,.18); border-radius: 20px; padding: 4px 14px; font-size: .8rem; display: inline-block; margin-top: 12px; }
+        .contenedor { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+        .card { background: #fff; border-radius: var(--radio); padding: 24px; box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05); margin-bottom: 24px; }
+        .card h2 { margin: 0 0 20px; font-size: 1.15rem; color: var(--color-primario); font-weight: 600; }
+        .encabezado-seccion { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: var(--radio); padding: 24px; box-shadow: var(--sombra); margin-bottom: 24px; }
+        .encabezado-seccion h1 { margin: 0; font-size: 1.5rem; color: var(--color-primario); }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radio); border: none; cursor: pointer; font-size: .9rem; font-weight: 600; text-decoration: none; transition: all .15s; }
+        .btn:hover { opacity: .9; transform: translateY(-1px); }
+        .btn-primario { background: var(--color-acento); color: #fff; }
+        .btn-secundario { background: #6c757d; color: #fff; }
+        .btn-sm { padding: 8px 14px; font-size: .85rem; }
+        .btn-exito { background: var(--color-exito); color: #fff; }
+        .campo { margin-bottom: 16px; }
+        .campo label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: .92rem; }
+        .campo input, .campo select, .campo textarea { width: 100%; padding: 10px 14px; border: 2px solid #e1e5e9; border-radius: var(--radio); font-size: .95rem; font-family: inherit; box-sizing: border-box; transition: all .15s; }
+        .campo input:focus, .campo select:focus, .campo textarea:focus { outline: none; border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(0,95,163,.1); }
+        .fila-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra); }
+        thead { background: var(--color-primario); color: #fff; }
+        th, td { padding: 14px 18px; text-align: left; border-bottom: 1px solid #e9ecef; }
+        th { font-weight: 600; font-size: .9rem; text-transform: uppercase; }
+        tbody tr:hover { background: rgba(0,95,163,.04); }
+        tbody tr:last-child td { border-bottom: none; }
+        .alerta { border-radius: var(--radio); padding: 14px 18px; margin-bottom: 16px; font-weight: 500; }
+        .alerta-error { background: #f8d7da; color: var(--color-peligro); border: 1px solid rgba(192,57,43,.2); }
+        .alerta-ok { background: #d4edda; color: var(--color-exito); border: 1px solid rgba(30,126,52,.2); }
+        .quorum-ok { background: #d4edda; color: var(--color-exito); border-radius: var(--radio); padding: 16px 20px; font-weight: 600; }
+        .quorum-no { background: #f8d7da; color: var(--color-peligro); border-radius: var(--radio); padding: 16px 20px; font-weight: 600; }
+        .info-sesion { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 8px; }
+        .info-item label { font-size: .8rem; color: #888; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .info-item span { font-size: 1rem; color: #222; font-weight: 500; }
+        .acciones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+        @media (max-width: 768px) {
+            .fila-dos { grid-template-columns: 1fr; }
+            .encabezado-seccion { flex-direction: column; gap: 12px; }
+            .contenedor { padding: 0 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="page-header">
+    <h1 id="titulo-sesion">Detalle de Sesion</h1>
+    <p class="subtitulo">Agenda, asistencia y resoluciones</p>
+    <span class="badge-modulo">Sesiones</span>
+</header>
+
+<main class="contenedor">
+
+    <div class="encabezado-seccion">
+        <h1 id="numero-sesion">Cargando...</h1>
+        <a href="/sesiones/sesion-lista.view.html" class="btn btn-secundario">Volver al listado</a>
+    </div>
+
+    <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
+    <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
+
+    <!-- Info general de la sesion -->
+    <div class="card">
+        <h2>Informacion de la sesion</h2>
+        <div class="info-sesion">
+            <div class="info-item"><label>Fecha</label><span id="info-fecha">—</span></div>
+            <div class="info-item"><label>Tipo</label><span id="info-tipo">—</span></div>
+            <div class="info-item"><label>Modalidad</label><span id="info-modalidad">—</span></div>
+            <div class="info-item"><label>Quorum requerido</label><span id="info-quorum">—</span></div>
+            <div class="info-item"><label>Asistentes registrados</label><span id="info-asistentes">—</span></div>
+        </div>
+        <div id="estado-quorum" style="margin-top:16px"></div>
+    </div>
+
+    <!-- Asistencia -->
+    <div class="card">
+        <h2>Control de Asistencia</h2>
+        <div class="fila-dos">
+            <div class="campo">
+                <label>Buscar asambleista</label>
+                <input type="text" id="busqueda-asistencia"
+                       placeholder="Nombre o cedula..."
+                       oninput="buscarParaAsistencia(this.value)">
+                <div id="resultados-asistencia" style="border:1px solid #e1e5e9;border-radius:6px;max-height:180px;overflow-y:auto;display:none;margin-top:4px"></div>
+            </div>
+            <div class="campo">
+                <label>Estado de asistencia</label>
+                <select id="estado-asistencia">
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
+        </div>
+        <div class="acciones">
+            <button class="btn btn-primario" onclick="registrarAsistencia()">Registrar asistencia</button>
+        </div>
+        <hr style="margin:20px 0;border:none;border-top:1px solid #e9ecef">
+        <h2 style="margin-bottom:16px">Asistentes registrados</h2>
+        <table id="tabla-asistencia">
+            <thead><tr><th>Nombre</th><th>Cedula</th><th>Estado</th></tr></thead>
+            <tbody id="cuerpo-asistencia"><tr><td colspan="3">Sin asistentes registrados.</td></tr></tbody>
+        </table>
+    </div>
+
+    <!-- Agenda -->
+    <div class="card">
+        <h2>Orden del Dia</h2>
+        <div class="campo">
+            <label>Descripcion del punto</label>
+            <input type="text" id="desc-punto" placeholder="ej: Discusion reforma articulo 18">
+        </div>
+        <div class="fila-dos">
+            <div class="campo">
+                <label>Orden</label>
+                <input type="number" id="orden-punto" min="1" placeholder="1">
+            </div>
+            <div class="campo">
+                <label>Propuesta vinculada (opcional)</label>
+                <select id="propuesta-punto">
+                    <option value="">Sin propuesta</option>
+                </select>
+            </div>
+        </div>
+        <div class="acciones">
+            <button class="btn btn-primario" onclick="agregarPunto()">Agregar punto</button>
+        </div>
+        <hr style="margin:20px 0;border:none;border-top:1px solid #e9ecef">
+        <table id="tabla-agenda">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Descripcion</th>
+                    <th>Propuesta</th>
+                    <th>Resolucion</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpo-agenda"><tr><td colspan="5">Sin puntos de agenda.</td></tr></tbody>
+        </table>
+    </div>
+
+    <!-- Modal de resolucion -->
+    <div id="modal-resolucion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center">
+        <div style="background:#fff;border-radius:10px;padding:28px;max-width:480px;width:90%">
+            <h3 style="color:var(--color-primario);margin:0 0 16px">Registrar Resolucion</h3>
+            <input type="hidden" id="modal-punto-id">
+            <div class="campo">
+                <label>Numero de resolucion</label>
+                <input type="text" id="modal-numero-res" placeholder="ej: AIR-RES-005-2025">
+            </div>
+            <div class="campo">
+                <label>Fecha de emision</label>
+                <input type="date" id="modal-fecha-res">
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+                <button class="btn btn-secundario" onclick="cerrarModalRes()">Cancelar</button>
+                <button class="btn btn-primario" onclick="guardarResolucion()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="/shared/auth.js"></script>
+<script>
+    const token   = sessionStorage.getItem('token');
+    const idSesion = new URLSearchParams(location.search).get('id')
+                   || location.pathname.split('/').pop();
+    let asambleistaParaAsistencia = null;
+    let timerBusqueda;
+
+    function mostrarMsg(msg, tipo) {
+        const ok  = document.getElementById('msg-ok');
+        const err = document.getElementById('msg-error');
+        if (tipo === 'ok') { ok.textContent = msg; ok.style.display = 'block'; err.style.display = 'none'; }
+        else { err.textContent = msg; err.style.display = 'block'; ok.style.display = 'none'; }
+        setTimeout(() => { ok.style.display = 'none'; err.style.display = 'none'; }, 5000);
+    }
+
+    async function cargarSesion() {
+        const [sesion, cats, propuestas] = await Promise.all([
+            fetch(`/sesiones/${idSesion}`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+            fetch('/sesiones/catalogos',   { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+            fetch('/propuestas',           { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => [])
+        ]);
+
+        document.getElementById('titulo-sesion').textContent  = `Sesion ${sesion.numero_sesion}`;
+        document.getElementById('numero-sesion').textContent  = `Sesion ${sesion.numero_sesion}`;
+        document.getElementById('info-fecha').textContent     = new Date(sesion.fecha).toLocaleDateString('es-CR');
+        document.getElementById('info-tipo').textContent      = sesion.tipo_sesion;
+        document.getElementById('info-modalidad').textContent = sesion.tipo_modalidad;
+        document.getElementById('info-quorum').textContent    = sesion.quorum_requerido;
+
+        // Llenar estados de asistencia
+        const selEst = document.getElementById('estado-asistencia');
+        selEst.innerHTML = '<option value="">Seleccione...</option>';
+        if (cats.estados) {
+            cats.estados.forEach(e => selEst.add(new Option(e.nombre, e.id_estado_asistencia)));
+        } else {
+            selEst.innerHTML = '<option value="1">Presente</option><option value="2">Ausente</option><option value="3">Justificado</option>';
+        }
+
+        // Llenar propuestas
+        const selProp = document.getElementById('propuesta-punto');
+        selProp.innerHTML = '<option value="">Sin propuesta</option>';
+        if (Array.isArray(propuestas)) {
+            propuestas.forEach(p => selProp.add(new Option(`${p.codigo_air || ''} ${p.titulo}`, p.id_propuesta)));
+        }
+
+        renderAgenda(sesion.agenda || []);
+        await cargarAsistencia();
+    }
+
+    async function cargarAsistencia() {
+        try {
+            const res  = await fetch(`/sesiones/${idSesion}/asistencia`,
+                                     { headers: { Authorization: `Bearer ${token}` } });
+            const data = await res.json();
+            const lista = Array.isArray(data) ? data : [];
+
+            document.getElementById('info-asistentes').textContent = lista.length;
+
+            // Verificar quorum
+            const quorumReq = parseInt(document.getElementById('info-quorum').textContent) || 0;
+            const hayQuorum = lista.length >= quorumReq;
+            const divQ = document.getElementById('estado-quorum');
+            divQ.className = hayQuorum ? 'quorum-ok' : 'quorum-no';
+            divQ.textContent = hayQuorum
+                ? `Quorum confirmado: ${lista.length} de ${quorumReq} requeridos`
+                : `Sin quorum: ${lista.length} de ${quorumReq} requeridos`;
+
+            document.getElementById('cuerpo-asistencia').innerHTML = lista.length === 0
+                ? '<tr><td colspan="3">Sin asistentes registrados.</td></tr>'
+                : lista.map(a => `
+                    <tr>
+                        <td>${a.nombre}</td>
+                        <td>${a.cedula}</td>
+                        <td>${a.estado_asistencia || '—'}</td>
+                    </tr>`).join('');
+        } catch(e) {
+            document.getElementById('info-asistentes').textContent = '0';
+        }
+    }
+
+    function renderAgenda(agenda) {
+        document.getElementById('cuerpo-agenda').innerHTML = agenda.length === 0
+            ? '<tr><td colspan="5">Sin puntos de agenda.</td></tr>'
+            : agenda.map(p => `
+                <tr>
+                    <td>${p.orden}</td>
+                    <td>${p.descripcion || '—'}</td>
+                    <td>${p.titulo_propuesta ? `${p.codigo_air || ''} ${p.titulo_propuesta}` : '—'}</td>
+                    <td>${p.numero_resolucion || '<em style="color:#888">Pendiente</em>'}</td>
+                    <td>
+                        ${!p.numero_resolucion
+                            ? `<button class="btn btn-sm btn-primario" onclick="abrirModalRes(${p.id_punto_agenda})">Agregar resolucion</button>`
+                            : ''}
+                    </td>
+                </tr>`).join('');
+    }
+
+    // Buscar asambleista para asistencia
+    function buscarParaAsistencia(valor) {
+        clearTimeout(timerBusqueda);
+        const res = document.getElementById('resultados-asistencia');
+        if (valor.length < 2) { res.style.display = 'none'; return; }
+        timerBusqueda = setTimeout(async () => {
+            const data = await fetch(`/asambleistas?busqueda=${encodeURIComponent(valor)}`,
+                                     { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+            if (!data.length) { res.style.display = 'none'; return; }
+            res.innerHTML = data.map(a => `
+                <div onclick="seleccionarParaAsistencia(${a.asambleista_id},'${a.nombre}','${a.cedula}')"
+                     style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:.9rem">
+                    <strong>${a.nombre}</strong> — ${a.cedula}
+                </div>`).join('');
+            res.style.display = 'block';
+        }, 300);
+    }
+
+    function seleccionarParaAsistencia(id, nombre, cedula) {
+        asambleistaParaAsistencia = id;
+        document.getElementById('busqueda-asistencia').value = `${nombre} (${cedula})`;
+        document.getElementById('resultados-asistencia').style.display = 'none';
+    }
+
+    async function registrarAsistencia() {
+        if (!asambleistaParaAsistencia) {
+            mostrarMsg('Seleccione un asambleista primero.', 'error');
+            return;
+        }
+        const estadoId = document.getElementById('estado-asistencia').value;
+        if (!estadoId) { mostrarMsg('Seleccione el estado de asistencia.', 'error'); return; }
+
+        const res = await fetch(`/sesiones/${idSesion}/asistencia`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body:    JSON.stringify({ id_asambleista: asambleistaParaAsistencia, id_estado_asistencia: estadoId })
+        });
+        const data = await res.json();
+        if (!res.ok) { mostrarMsg(data.error, 'error'); return; }
+        mostrarMsg('Asistencia registrada.', 'ok');
+        asambleistaParaAsistencia = null;
+        document.getElementById('busqueda-asistencia').value = '';
+        await cargarAsistencia();
+    }
+
+    async function agregarPunto() {
+        const body = {
+            descripcion:  document.getElementById('desc-punto').value,
+            orden:        document.getElementById('orden-punto').value,
+            id_propuesta: document.getElementById('propuesta-punto').value || null
+        };
+        if (!body.descripcion || !body.orden) {
+            mostrarMsg('Descripcion y orden son requeridos.', 'error');
+            return;
+        }
+        const res = await fetch(`/sesiones/${idSesion}/puntos`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) { mostrarMsg(data.error, 'error'); return; }
+        mostrarMsg('Punto agregado.', 'ok');
+        document.getElementById('desc-punto').value  = '';
+        document.getElementById('orden-punto').value = '';
+        cargarSesion();
+    }
+
+    function abrirModalRes(puntoId) {
+        document.getElementById('modal-punto-id').value = puntoId;
+        document.getElementById('modal-resolucion').style.display = 'flex';
+    }
+
+    function cerrarModalRes() {
+        document.getElementById('modal-resolucion').style.display = 'none';
+    }
+
+    async function guardarResolucion() {
+        const puntoId = document.getElementById('modal-punto-id').value;
+        const body = {
+            id_punto_agenda:   puntoId,
+            numero_resolucion: document.getElementById('modal-numero-res').value,
+            fecha_emision:     document.getElementById('modal-fecha-res').value
+        };
+        if (!body.numero_resolucion || !body.fecha_emision) {
+            mostrarMsg('Numero y fecha de resolucion son requeridos.', 'error');
+            return;
+        }
+        const res = await fetch(`/sesiones/${idSesion}/resoluciones`, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) { mostrarMsg(data.error, 'error'); cerrarModalRes(); return; }
+        mostrarMsg('Resolucion registrada.', 'ok');
+        cerrarModalRes();
+        cargarSesion();
+    }
+
+    cargarSesion();
+</script>
+
+</body>
+</html>
