@@ -20,8 +20,6 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
-
-    /* ── Navbar ── */
     .navbar {
       background: var(--color-primario); color: #fff;
       padding: 0 28px; display: flex; align-items: center;
@@ -30,8 +28,6 @@
     }
     .navbar a { color: rgba(255,255,255,.85); text-decoration: none; transition: color .15s; }
     .navbar a:hover { color: #fff; }
-
-    /* ── Page header ── */
     .page-header {
       background: var(--color-primario); color: #fff;
       padding: 28px 28px 24px; text-align: center;
@@ -42,16 +38,10 @@
       background: rgba(255,255,255,.18); border-radius: 20px;
       padding: 4px 14px; font-size: .8rem; display: inline-block; margin-top: 12px;
     }
-
-    /* ── Layout ── */
     .contenedor { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
-
-    /* ── Alertas ── */
     .alerta { padding: 12px 16px; border-radius: var(--radio); font-size: .9rem; font-weight: 500; margin-bottom: 16px; }
     .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border: 1px solid #f5c6cb; }
     .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
-
-    /* ── Stats ── */
     .stats-row {
       display: grid; grid-template-columns: repeat(4, 1fr);
       gap: 14px; margin-bottom: 24px;
@@ -72,8 +62,6 @@
     .stat-card.proceso  .val { color: #f0a500; }
     .stat-card.aprobada .val { color: var(--color-exito); }
     .stat-card .lbl { font-size: .78rem; color: #888; margin-top: 3px; }
-
-    /* ── Filtros ── */
     .filtros-bar {
       background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
       padding: 16px 20px; display: flex; gap: 12px; flex-wrap: wrap;
@@ -90,8 +78,6 @@
     .filtros-bar select:focus, .filtros-bar input:focus {
       border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(0,95,163,.12);
     }
-
-    /* ── Tabla ── */
     .card-table {
       background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
       overflow: hidden; margin-bottom: 20px;
@@ -105,8 +91,6 @@
     tbody tr.seleccionada { background: #e7f3ff; border-left: 3px solid var(--color-acento); }
     tbody td { padding: 11px 14px; color: #333; vertical-align: middle; }
     .td-acciones { display: flex; gap: 6px; }
-
-    /* ── Badges de estado ── */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 600; white-space: nowrap; }
     .badge-BORRADOR           { background: #e9ecef;             color: #555; }
     .badge-PENDIENTE_REVISION { background: var(--bg-advertencia); color: var(--color-advertencia); }
@@ -114,8 +98,6 @@
     .badge-EN_DISCUSION       { background: #fff0c7;             color: #7a5a00; }
     .badge-APROBADA           { background: var(--bg-exito);     color: var(--color-exito); }
     .badge-RECHAZADA          { background: var(--bg-peligro);   color: var(--color-peligro); }
-
-    /* ── Panel de detalle ── */
     .detail-panel {
       background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
       border: 2px solid var(--color-acento); margin-bottom: 20px;
@@ -129,7 +111,6 @@
     }
     .detail-header h3 { margin: 0; font-size: 1rem; font-weight: 600; }
     .detail-body { padding: 20px; }
-
     .detail-grid {
       display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 4px;
     }
@@ -138,36 +119,26 @@
       text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px;
     }
     .detail-item .val { font-size: .92rem; color: #222; font-weight: 500; }
-
-    /* ── Secciones dentro del panel ── */
     .seccion { margin-top: 20px; padding-top: 18px; border-top: 1px solid #eef0f3; }
     .seccion h4 {
       font-size: .8rem; font-weight: 700; color: var(--color-primario);
       text-transform: uppercase; letter-spacing: .6px; margin: 0 0 12px;
     }
-
-    /* ── Tags de proponentes ── */
     .proponente-tag {
       display: inline-flex; align-items: center; gap: 5px;
       background: #d0e8ff; color: #003f8a; border-radius: 20px;
       padding: 4px 12px; font-size: .8rem; font-weight: 600; margin: 3px;
     }
-
-    /* ── Texto sustitutivo ── */
     .texto-block {
       background: #f8f9fa; border: 1px solid #eef0f3; border-left: 3px solid var(--color-acento);
       border-radius: 0 var(--radio) var(--radio) 0; padding: 14px 16px;
       font-size: .88rem; line-height: 1.65; color: #333; white-space: pre-wrap;
     }
-
-    /* ── Propuestas derivadas ── */
     .derivada-item {
       padding: 8px 12px; border-bottom: 1px solid #eef0f3; font-size: .85rem;
       display: flex; align-items: center; gap: 10px;
     }
     .derivada-item:last-child { border-bottom: none; }
-
-    /* ── Inline add proponente / cambiar estado ── */
     .inline-action { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 12px; }
     .inline-action .campo-wrap { flex: 1; min-width: 200px; }
     .inline-action .campo-wrap label { font-size: .8rem; font-weight: 600; color: #555; display: block; margin-bottom: 5px; }
@@ -177,8 +148,6 @@
       outline: none; transition: border-color .15s;
     }
     .inline-action select:focus { border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(0,95,163,.12); }
-
-    /* ── Botones ── */
     .btn {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 9px 18px; border-radius: var(--radio); border: none;
@@ -194,8 +163,6 @@
     .btn-exito      { background: var(--color-exito);   color: #fff; }
     .btn-sm { padding: 6px 14px; font-size: .8rem; }
     .btn-cierre { background: rgba(255,255,255,.2); color: #fff; border: none; }
-
-    /* ── Modal ── */
     .overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,.52);
       display: none; align-items: center; justify-content: center; z-index: 999;
@@ -211,8 +178,6 @@
     .modal .subtitulo { font-size: .83rem; color: #888; margin-bottom: 22px; }
     .cerrar-modal { position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; line-height: 1; }
     .cerrar-modal:hover { color: #333; }
-
-    /* ── Campos del modal ── */
     .campo { margin-bottom: 16px; }
     .campo label { display: block; font-size: .85rem; font-weight: 600; color: #444; margin-bottom: 6px; }
     .campo input,
@@ -232,8 +197,6 @@
       display: flex; justify-content: flex-end; gap: 10px;
       margin-top: 22px; padding-top: 16px; border-top: 1px solid #eef0f3;
     }
-
-    /* ── Tom Select overrides ── */
     .ts-wrapper { font-family: 'Segoe UI', sans-serif; }
     .ts-control {
       border: 1px solid #d0d7de !important; border-radius: var(--radio) !important;
@@ -251,20 +214,14 @@
     .ts-dropdown { border-radius: var(--radio) !important; font-size: .88rem !important; }
     .ts-dropdown .option.selected,
     .ts-dropdown .option:hover { background: var(--color-acento) !important; color: #fff !important; }
-
-    /* ── Empty/footer ── */
     .empty { text-align: center; padding: 44px; color: #888; font-size: .9rem; }
     .footer { text-align: center; padding: 24px 0; color: #666; font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 40px; }
-
-    /* ── Spinner ── */
     .spinner {
       display: inline-block; width: 14px; height: 14px;
       border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
       border-radius: 50%; animation: spin .6s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Responsive ── */
     @media (max-width: 900px) {
       .stats-row { grid-template-columns: 1fr 1fr; }
       .detail-grid { grid-template-columns: 1fr 1fr; }
@@ -297,7 +254,6 @@
   <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
   <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
 
-  <!-- Stats -->
   <div class="stats-row">
     <div class="stat-card total">
       <div class="val" id="st-total">—</div>
@@ -317,7 +273,6 @@
     </div>
   </div>
 
-  <!-- Filtros -->
   <div class="filtros-bar">
     <div class="grupo" style="flex:1;min-width:200px">
       <label for="f-busqueda">Título o código AIR</label>
@@ -338,7 +293,6 @@
     <button class="btn btn-primario" onclick="abrirModalCrear()">+ Nueva propuesta</button>
   </div>
 
-  <!-- Tabla -->
   <div class="card-table">
     <table>
       <thead>
@@ -358,15 +312,12 @@
     </table>
   </div>
 
-  <!-- Panel de detalle -->
   <div class="detail-panel" id="detail-panel">
     <div class="detail-header">
       <h3 id="d-titulo-header">Detalle de propuesta</h3>
       <button class="btn btn-sm btn-cierre" onclick="cerrarDetalle()">✕ Cerrar</button>
     </div>
     <div class="detail-body">
-
-      <!-- Info general -->
       <div class="detail-grid">
         <div class="detail-item">
           <div class="lbl">Código AIR</div>
@@ -394,13 +345,11 @@
         </div>
       </div>
 
-      <!-- Texto sustitutivo -->
       <div id="d-texto-wrap" class="seccion" style="display:none">
         <h4>Texto sustitutivo</h4>
         <div class="texto-block" id="d-texto"></div>
       </div>
 
-      <!-- Proponentes -->
       <div class="seccion">
         <h4>Proponentes (<span id="d-count-proponentes">0</span>)</h4>
         <div id="d-proponentes"></div>
@@ -413,13 +362,11 @@
         </div>
       </div>
 
-      <!-- Propuestas derivadas (conciliadas) -->
       <div class="seccion" id="d-derivadas-wrap" style="display:none">
         <h4>Propuestas derivadas / conciliadas</h4>
         <div id="d-derivadas"></div>
       </div>
 
-      <!-- Cambiar estado -->
       <div class="seccion">
         <h4>Cambiar estado</h4>
         <div class="inline-action">
@@ -432,16 +379,13 @@
           <button class="btn btn-secundario" onclick="cambiarEstado()">Actualizar</button>
         </div>
       </div>
-
     </div>
   </div>
 
   <div class="footer">Módulo de Propuestas Normativas — AIR</div>
 </main>
 
-<!-- ══════════════════════════════════════════════════════
-     MODAL — Nueva propuesta
-══════════════════════════════════════════════════════ -->
+<!-- MODAL — Nueva propuesta -->
 <div class="overlay" id="overlay-crear">
   <div class="modal">
     <button class="cerrar-modal" onclick="cerrarModalCrear()" title="Cerrar">×</button>
@@ -457,15 +401,11 @@
     <div class="fila-dos">
       <div class="campo">
         <label for="m-etapa">Etapa <span style="color:red">*</span></label>
-        <select id="m-etapa">
-          <option value="">Seleccione...</option>
-        </select>
+        <select id="m-etapa"><option value="">Seleccione...</option></select>
       </div>
       <div class="campo">
         <label for="m-mayoria">Tipo de mayoría <span style="color:red">*</span></label>
-        <select id="m-mayoria">
-          <option value="">Seleccione...</option>
-        </select>
+        <select id="m-mayoria"><option value="">Seleccione...</option></select>
       </div>
     </div>
 
@@ -483,6 +423,13 @@
         </select>
         <span class="hint">Solo para propuestas conciliadas</span>
       </div>
+    </div>
+
+    <!-- ── NUEVO: Elemento normativo a reformar ── -->
+    <div class="campo" id="campo-elemento-origen" style="display:none">
+      <label for="m-elemento">Elemento normativo a reformar</label>
+      <select id="m-elemento" placeholder="Buscar artículo, inciso o párrafo..."></select>
+      <span class="hint">Artículo o inciso que será reemplazado cuando la propuesta sea aprobada</span>
     </div>
 
     <div class="campo">
@@ -519,6 +466,7 @@ let catalogos         = {};
 let propuestaActualId = null;
 let tsProponentes     = null;
 let tsNuevoPropon     = null;
+let tsElemento        = null;   // ← nuevo: Tom Select para elemento normativo
 let debounceTimer;
 
 // ════════════════════════════════════════════════════════════
@@ -539,12 +487,10 @@ async function init() {
 
     poblarSelect('f-estado', catalogos.estados,  'id_estado_propuesta', 'nombre');
     poblarSelect('f-etapa',  catalogos.etapas,   'id_etapa_propuesta',  'nombre');
-
-    poblarSelect('m-etapa',   catalogos.etapas,   'id_etapa_propuesta',        'nombre');
+    poblarSelect('m-etapa',  catalogos.etapas,   'id_etapa_propuesta',  'nombre');
     poblarSelect('m-mayoria', catalogos.mayorias, 'id_tipo_mayoria_requerida', e => e.nombre_rol);
     poblarSelect('m-reglamento', catalogos.reglamentos, 'id_reglamento',
       e => `${e.sigla} — ${e.nombre_normativa}`);
-
     poblarSelect('sel-nuevo-estado', catalogos.estados, 'id_estado_propuesta', 'nombre');
 
     const opcionesAsm = asambleistas.map(a => ({
@@ -564,6 +510,51 @@ async function init() {
       maxOptions:  400,
       placeholder: 'Buscar asambleísta...',
       create:      false
+    });
+
+    // ── Tom Select con búsqueda dinámica para elemento normativo ──
+    tsElemento = new TomSelect('#m-elemento', {
+      valueField:  'id_elemento',
+      labelField:  'label',
+      searchField: ['label'],
+      placeholder: 'Buscar artículo, inciso o párrafo...',
+      create:      false,
+      maxOptions:  30,
+      load(query, callback) {
+        const idRegl = document.getElementById('m-reglamento').value;
+        if (!query && !idRegl) return callback([]);
+        const params = new URLSearchParams();
+        if (query)  params.set('busqueda', query);
+        if (idRegl) params.set('id_reglamento', idRegl);
+        fetch(`/propuestas/elementos-normativo?${params}`)
+          .then(r => r.json())
+          .then(data => callback(data.map(e => ({
+            id_elemento: String(e.id_elemento),
+            label: `${e.numer_etiqueta ?? 'S/E'} — ${e.contenido_texto ?? ''}`
+          }))))
+          .catch(() => callback([]));
+      }
+    });
+
+    // Cuando cambia el reglamento: mostrar/ocultar selector y precargar elementos
+    document.getElementById('m-reglamento').addEventListener('change', function () {
+      const campoEl = document.getElementById('campo-elemento-origen');
+      campoEl.style.display = this.value ? 'block' : 'none';
+      if (tsElemento) {
+        tsElemento.clear();
+        tsElemento.clearOptions();
+        if (this.value) {
+          fetch(`/propuestas/elementos-normativo?id_reglamento=${this.value}`)
+            .then(r => r.json())
+            .then(data => {
+              tsElemento.addOptions(data.map(e => ({
+                id_elemento: String(e.id_elemento),
+                label: `${e.numer_etiqueta ?? 'S/E'} — ${e.contenido_texto ?? ''}`
+              })));
+            })
+            .catch(() => {});
+        }
+      }
     });
 
     await cargarLista();
@@ -591,11 +582,9 @@ async function cargarLista() {
     const res  = await fetch(`/propuestas?${params}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Error al cargar');
-
     renderTabla(data);
     actualizarStats(data);
     poblarPropuestasPadre(data);
-
   } catch (e) {
     mostrarError('Error al cargar propuestas: ' + e.message);
   }
@@ -608,14 +597,12 @@ function debounceCargar() {
 
 function renderTabla(lista) {
   const tbody = document.getElementById('cuerpo-tabla');
-
   if (!lista.length) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty">
       No hay propuestas que coincidan. Pruebe ajustando los filtros o cree una nueva.
     </td></tr>`;
     return;
   }
-
   tbody.innerHTML = lista.map(p => `
     <tr onclick="verDetalle('${p.id_propuesta}')" id="fila-${p.id_propuesta}">
       <td>
@@ -628,7 +615,7 @@ function renderTabla(lista) {
              title="${esc(p.titulo)}">${esc(p.titulo)}</div>
         ${p.propuesta_padre_titulo
           ? `<div style="font-size:.74rem;color:#888;margin-top:2px">
-               ↳ Conciliada de: ${esc(p.propuesta_padre_titulo.slice(0, 50))}${p.propuesta_padre_titulo.length > 50 ? '…' : ''}
+               ↳ Conciliada de: ${esc(p.propuesta_padre_titulo.slice(0,50))}${p.propuesta_padre_titulo.length > 50 ? '…' : ''}
              </div>`
           : ''}
       </td>
@@ -638,7 +625,7 @@ function renderTabla(lista) {
       <td>
         ${Array.isArray(p.proponentes) && p.proponentes.length
           ? `<span style="font-size:.8rem;color:#333">
-               ${p.proponentes.slice(0, 2).map(n => esc(n)).join(', ')}
+               ${p.proponentes.slice(0,2).map(n => esc(n)).join(', ')}
                ${p.proponentes.length > 2 ? `<span style="color:#888"> +${p.proponentes.length - 2} más</span>` : ''}
              </span>`
           : '<em style="color:#bbb;font-size:.8rem">Sin proponentes</em>'}
@@ -668,9 +655,9 @@ function poblarPropuestasPadre(lista) {
   const sel = document.getElementById('m-padre');
   sel.innerHTML = '<option value="">— No es conciliada —</option>';
   lista.forEach(p => {
-    const opt     = document.createElement('option');
-    opt.value     = p.id_propuesta;
-    const titulo  = p.titulo.slice(0, 65) + (p.titulo.length > 65 ? '…' : '');
+    const opt = document.createElement('option');
+    opt.value = p.id_propuesta;
+    const titulo = p.titulo.slice(0,65) + (p.titulo.length > 65 ? '…' : '');
     opt.textContent = `${p.codigo_air ? p.codigo_air + ' — ' : ''}${titulo}`;
     sel.appendChild(opt);
   });
@@ -683,20 +670,15 @@ async function verDetalle(id) {
   document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('seleccionada'));
   const fila = document.getElementById(`fila-${id}`);
   if (fila) fila.classList.add('seleccionada');
-
   propuestaActualId = id;
-
   try {
     const res  = await fetch(`/propuestas/${id}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Error al cargar la propuesta');
-
     renderDetalle(data);
-
     const panel = document.getElementById('detail-panel');
     panel.classList.add('visible');
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
   } catch (e) {
     mostrarError('Error al cargar el detalle: ' + e.message);
   }
@@ -704,8 +686,7 @@ async function verDetalle(id) {
 
 function renderDetalle(p) {
   document.getElementById('d-titulo-header').textContent =
-    p.titulo.length > 70 ? p.titulo.slice(0, 70) + '…' : p.titulo;
-
+    p.titulo.length > 70 ? p.titulo.slice(0,70) + '…' : p.titulo;
   document.getElementById('d-codigo').textContent  = p.codigo_air        ?? '—';
   document.getElementById('d-etapa').textContent   = p.etapa             ?? '—';
   document.getElementById('d-mayoria').textContent = p.mayoria_requerida ?? '—';
@@ -773,13 +754,11 @@ function cerrarDetalle() {
 // ════════════════════════════════════════════════════════════
 async function agregarProponente() {
   if (!propuestaActualId) return;
-
   const idAsambleista = tsNuevoPropon?.getValue();
   if (!idAsambleista) {
     mostrarError('Seleccione un asambleísta antes de agregar.');
     return;
   }
-
   try {
     const res  = await fetch(`/propuestas/${propuestaActualId}/proponentes`, {
       method:  'POST',
@@ -788,10 +767,8 @@ async function agregarProponente() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Error al agregar proponente');
-
     mostrarOk('Proponente agregado correctamente.');
     await verDetalle(propuestaActualId);
-
   } catch (e) {
     mostrarError('Error al agregar proponente: ' + e.message);
   }
@@ -802,13 +779,11 @@ async function agregarProponente() {
 // ════════════════════════════════════════════════════════════
 async function cambiarEstado() {
   if (!propuestaActualId) return;
-
   const idEstado = document.getElementById('sel-nuevo-estado').value;
   if (!idEstado) {
     mostrarError('Seleccione el nuevo estado antes de actualizar.');
     return;
   }
-
   try {
     const res  = await fetch(`/propuestas/${propuestaActualId}/estado`, {
       method:  'PATCH',
@@ -818,10 +793,14 @@ async function cambiarEstado() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Error al cambiar estado');
 
-    mostrarOk('Estado actualizado correctamente.');
+    if (data.advertencia) {
+      mostrarError(`Advertencia: ${data.advertencia}`);
+    } else {
+      mostrarOk('Estado actualizado correctamente.');
+    }
+
     await cargarLista();
     await verDetalle(propuestaActualId);
-
   } catch (e) {
     mostrarError('Error al cambiar estado: ' + e.message);
   }
@@ -837,7 +816,9 @@ function abrirModalCrear() {
   document.getElementById('m-mayoria').value    = '';
   document.getElementById('m-reglamento').value = '';
   document.getElementById('m-padre').value      = '';
+  document.getElementById('campo-elemento-origen').style.display = 'none';
   if (tsProponentes) tsProponentes.clear();
+  if (tsElemento)   { tsElemento.clear(); tsElemento.clearOptions(); }
   document.getElementById('modal-error').style.display = 'none';
   document.getElementById('overlay-crear').classList.add('visible');
   setTimeout(() => document.getElementById('m-titulo').focus(), 100);
@@ -848,13 +829,14 @@ function cerrarModalCrear() {
 }
 
 async function crearPropuesta() {
-  const titulo    = document.getElementById('m-titulo').value.trim();
-  const idEtapa   = document.getElementById('m-etapa').value;
-  const idMayoria = document.getElementById('m-mayoria').value;
-  const idRegl    = document.getElementById('m-reglamento').value   || null;
-  const idPadre   = document.getElementById('m-padre').value        || null;
-  const texto     = document.getElementById('m-texto').value.trim() || null;
-  const propon    = tsProponentes ? tsProponentes.getValue() : [];
+  const titulo      = document.getElementById('m-titulo').value.trim();
+  const idEtapa     = document.getElementById('m-etapa').value;
+  const idMayoria   = document.getElementById('m-mayoria').value;
+  const idRegl      = document.getElementById('m-reglamento').value || null;
+  const idPadre     = document.getElementById('m-padre').value      || null;
+  const texto       = document.getElementById('m-texto').value.trim() || null;
+  const propon      = tsProponentes ? tsProponentes.getValue() : [];
+  const idElemento  = tsElemento   ? tsElemento.getValue()    : null;  // ← nuevo
 
   if (!titulo)        { mostrarModalError('El título de la propuesta es obligatorio.');      return; }
   if (!idEtapa)       { mostrarModalError('Debe seleccionar una etapa.');                    return; }
@@ -876,7 +858,8 @@ async function crearPropuesta() {
         id_reglamento_base:        idRegl,
         id_propuesta_padre:        idPadre,
         texto_sustitutivo:         texto,
-        proponentes:               propon
+        proponentes:               propon,
+        id_elemento_origen:        idElemento || null   // ← nuevo
       })
     });
     const data = await res.json();
@@ -884,12 +867,8 @@ async function crearPropuesta() {
 
     cerrarModalCrear();
     mostrarOk(`Propuesta "${titulo}" creada correctamente en estado BORRADOR.`);
-
     await cargarLista();
-
-    if (data.id_propuesta) {
-      await verDetalle(data.id_propuesta);
-    }
+    if (data.id_propuesta) await verDetalle(data.id_propuesta);
 
   } catch (e) {
     mostrarModalError('Error al guardar: ' + e.message);
@@ -955,9 +934,6 @@ document.getElementById('overlay-crear').addEventListener('click', e => {
   if (e.target === document.getElementById('overlay-crear')) cerrarModalCrear();
 });
 
-// ════════════════════════════════════════════════════════════
-// ARRANQUE
-// ════════════════════════════════════════════════════════════
 init();
 </script>
 </body>

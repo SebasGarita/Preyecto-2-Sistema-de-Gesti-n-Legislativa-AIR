@@ -103,28 +103,29 @@ const Propuesta = {
   async create({
     id_reglamento_base, id_etapa_propuesta, id_estado_propuesta,
     id_propuesta_padre, titulo, texto_sustitutivo,
-    codigo_air, id_tipo_mayoria_requerida
+    codigo_air, id_tipo_mayoria_requerida, id_elemento_origen
   }) {
     const result = await db.query(`
       INSERT INTO propuesta (
         id_reglamento_base, id_etapa_propuesta, id_estado_propuesta,
         id_propuesta_padre, titulo, texto_sustitutivo,
-        codigo_air, id_tipo_mayoria_requerida
+        codigo_air, id_tipo_mayoria_requerida, id_elemento_origen
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id_propuesta::text AS id_propuesta, *
     `, [
-      id_reglamento_base || null,
+      id_reglamento_base    || null,
       id_etapa_propuesta,
       id_estado_propuesta,
-      id_propuesta_padre || null,
+      id_propuesta_padre    || null,
       titulo,
-      texto_sustitutivo || null,
-      codigo_air || null,
-      id_tipo_mayoria_requerida
+      texto_sustitutivo     || null,
+      codigo_air            || null,
+      id_tipo_mayoria_requerida,
+      id_elemento_origen    || null
     ]);
     return result.rows[0];
-  },
+},
 
   async addProponente({ id_propuesta, id_asambleista }) {
     const result = await db.query(`
@@ -136,25 +137,88 @@ const Propuesta = {
     return result.rows[0];
   },
 
-  async cambiarEstado(id_propuesta, id_estado_propuesta, usuario) {
-    const result = await db.query(`
+async cambiarEstado(req, res) {
+  try {
+    const { id_estado_propuesta } = req.body;
+    if (!id_estado_propuesta) {
+      return res.status(400).json({ error: 'id_estado_propuesta es requerido' });
+    }
+
+    const id = req.params.id;
+    console.log('>> cambiarEstado — id:', id, '| nuevo estado:', id_estado_propuesta);
+
+    // 1. Actualizar estado
+    const updateRes = await db.query(`
       UPDATE propuesta
       SET id_estado_propuesta = $1
       WHERE id_propuesta = $2
-      RETURNING id_propuesta::text AS id_propuesta, *
-    `, [id_estado_propuesta, id_propuesta]);
+      RETURNING *
+    `, [id_estado_propuesta, id]);
 
-    if (result.rows[0]) {
-      await db.query(`
-        INSERT INTO bitacora_propuesta (
-          id_propuesta, id_estado_propuesta,
-          fecha_modificacion, usuario_modificacion
-        ) VALUES ($1, $2, NOW(), $3)
-      `, [id_propuesta, id_estado_propuesta, usuario]);
+    if (!updateRes.rows[0]) {
+      return res.status(404).json({ error: 'Propuesta no encontrada' });
     }
 
-    return result.rows[0];
-  },
+    const propuesta = updateRes.rows[0];
+    console.log('>> propuesta actualizada:', {
+      id_propuesta:        propuesta.id_propuesta,
+      texto_sustitutivo:   propuesta.texto_sustitutivo ? 'SÍ tiene' : 'NO tiene',
+      id_elemento_origen:  propuesta.id_elemento_origen ?? 'NULL',
+      id_reglamento_base:  propuesta.id_reglamento_base ?? 'NULL'
+    });
+
+    // 2. Bitácora
+    await db.query(`
+      INSERT INTO bitacora_propuesta (
+        id_propuesta, id_estado_propuesta,
+        fecha_modificacion, usuario_modificacion
+      ) VALUES ($1, $2, NOW(), $3)
+    `, [id, id_estado_propuesta, req.usuario.username]);
+
+    // 3. Verificar si el nuevo estado es APROBADA
+    const estadoRes = await db.query(`
+      SELECT nombre FROM catalogo_estado_propuestas
+      WHERE id_estado_propuesta = $1
+    `, [id_estado_propuesta]);
+
+    const nombreEstado = estadoRes.rows[0]?.nombre;
+    console.log('>> nombre del estado:', nombreEstado);
+
+    if (nombreEstado === 'APROBADA') {
+      console.log('>> es APROBADA — verificando datos para actualizar elemento_normativo...');
+
+      if (!propuesta.texto_sustitutivo || !propuesta.id_elemento_origen) {
+        console.warn('>> FALTA texto_sustitutivo o id_elemento_origen — no se actualiza normativa');
+        return res.json({
+          ...propuesta,
+          advertencia: 'Aprobada sin actualizar normativa (falta texto o elemento origen)'
+        });
+      }
+
+      console.log('>> insertando nuevo elemento_normativo desde id_elemento:', propuesta.id_elemento_origen);
+
+      await db.query(`
+        INSERT INTO elemento_normativo (
+          id_reglamento, id_elemento_padre, id_nivel_reglamento,
+          numer_etiqueta, contenido_texto, fecha_inicio_vigencia, id_estado_vigencia
+        )
+        SELECT
+          id_reglamento, id_elemento_padre, id_nivel_reglamento,
+          numer_etiqueta, $1, CURRENT_DATE, 1
+        FROM elemento_normativo
+        WHERE id_elemento = $2
+      `, [propuesta.texto_sustitutivo, propuesta.id_elemento_origen]);
+
+      console.log('>> elemento_normativo actualizado correctamente');
+    }
+
+    return res.json(propuesta);
+
+  } catch (err) {
+    console.error('Error cambiarEstado:', err);
+    return res.status(500).json({ error: 'Error al cambiar estado' });
+  }
+},
 
   async getCatalogos() {
     const etapas      = await db.query('SELECT * FROM catalogo_etapas_propuestas        ORDER BY id_etapa_propuesta');

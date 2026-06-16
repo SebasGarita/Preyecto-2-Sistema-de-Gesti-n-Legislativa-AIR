@@ -297,8 +297,8 @@ const Asistencia = {
 
     // 4. Persistir
     // Normalizar tipos — los valores del frontend vienen como strings
-    const idPuntoAgenda = id_punto_agenda ? parseInt(id_punto_agenda, 10) : null;
-    const idPropuesta   = id_propuesta    ? parseInt(id_propuesta, 10)    : null;
+   const idPuntoAgenda = id_punto_agenda ? String(id_punto_agenda) : null;
+    const idPropuesta   = id_propuesta    ? String(id_propuesta)    : null;
     const idUsuario     = id_usuario_registro || null;
 
     let res;
@@ -351,23 +351,24 @@ const Asistencia = {
   },
 
   async getVotacion(idSesion) {
-    const result = await db.query(`
-      SELECT
-        v.*,
-        p.titulo        AS titulo_propuesta,
-        p.codigo_air,
-        pa.descripcion  AS descripcion_punto,
-        ts.nombre       AS tipo_sesion
-      FROM votacion v
-      LEFT JOIN propuesta               p  ON p.id_propuesta   = v.id_propuesta
-      LEFT JOIN punto_agenda            pa ON pa.id_punto_agenda = v.id_punto_agenda
-      LEFT JOIN sesiones                s  ON s.id_sesion       = v.id_sesion
-      LEFT JOIN catalogo_tipo_sesion    ts ON ts.id_tipo_sesion  = s.id_tipo_sesion
-      WHERE v.id_sesion = $1
-      ORDER BY v.fecha_registro ASC
-    `, [idSesion]);
-    return result.rows;
-  },
+  const result = await pool.query(`
+    SELECT
+      v.*,
+      v.id_propuesta::text    AS id_propuesta,   -- ← evita corrupción BIGINT
+      p.titulo                AS titulo_propuesta,
+      p.codigo_air,
+      pa.descripcion          AS descripcion_punto,
+      ts.nombre               AS tipo_sesion
+    FROM votacion v
+    LEFT JOIN propuesta            p  ON p.id_propuesta    = v.id_propuesta
+    LEFT JOIN punto_agenda         pa ON pa.id_punto_agenda = v.id_punto_agenda
+    LEFT JOIN sesiones             s  ON s.id_sesion        = v.id_sesion
+    LEFT JOIN catalogo_tipo_sesion ts ON ts.id_tipo_sesion  = s.id_tipo_sesion
+    WHERE v.id_sesion = $1
+    ORDER BY v.fecha_registro ASC
+  `, [idSesion]);
+  return result.rows;
+},
 
 
   // ────────────────────────────────────────────────────────────

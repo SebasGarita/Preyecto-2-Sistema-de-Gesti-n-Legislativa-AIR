@@ -30,15 +30,14 @@ class VotacionModel {
     }
 
     // Registrar asistencia masiva a una sesión
-    async registrarAsistencia(idSesion, listaPresentes) {
-        for (const idAsambleista of listaPresentes) {
-            await pool.query(
-                `INSERT INTO asistencia_sesion_plenaria
-                    (id_asambleista, id_sesion, id_estado_asistencia)
-                VALUES ($1, $2, 1)
-                ON CONFLICT (id_asambleista, id_sesion) DO NOTHING`,
-                [idAsambleista, idSesion]
-            );
+    async registrarAsistencia(idSesion, listaPresentes, idEstadoPresente) {
+  for (const idAsambleista of listaPresentes) {
+            await pool.query(`
+            INSERT INTO asistencia_sesion_plenaria
+                (id_asambleista, id_sesion, id_estado_asistencia)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (id_asambleista, id_sesion) DO NOTHING
+            `, [idAsambleista, idSesion, idEstadoPresente]);
         }
     }
 
