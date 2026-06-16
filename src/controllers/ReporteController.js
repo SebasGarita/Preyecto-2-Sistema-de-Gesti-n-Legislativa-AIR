@@ -13,13 +13,12 @@ class ReporteController {
     try {
         const anio = new Date().getFullYear();
         const result = await require('../config/db.js').query(
-            `SELECT ultimo_numero, prefijo
-             FROM public.control_folio
-             WHERE anio = $1`,
+            `SELECT ultimo_numero::text AS ultimo_numero_str, prefijo
+            FROM public.control_folio WHERE anio = $1`,
             [anio]
         );
 
-        const ultimo  = result.rows[0]?.ultimo_numero ?? 0;
+        const ultimo = parseInt(result.rows[0]?.ultimo_numero_str ?? '0', 10);
         const prefijo = result.rows[0]?.prefijo       ?? 'DAIR';
         const siguiente = `${prefijo}-${String(ultimo + 1).padStart(3, '0')}-${anio}`;
 

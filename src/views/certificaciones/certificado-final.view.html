@@ -376,66 +376,70 @@
     // Cargar datos del certificado
     // ─────────────────────────────────────────────────────────────
     async function cargarCertificado() {
-      if (!folio) {
-        mostrarError();
-        return;
-      }
-
+      if (!folio) { mostrarError(); return; }
       try {
         const res  = await fetch(`/certificaciones/${encodeURIComponent(folio)}`);
         const data = await res.json();
-
-        if (!res.ok || !data) {
-          mostrarError();
-          return;
-        }
-
-        renderizarCertificado(data);
+        if (!res.ok || !data.ok) { mostrarError(); return; }
+        renderizarCertificado(data.datos);   // ← data.datos, no data
       } catch {
         mostrarError();
       }
+  }
+
+  function renderizarCertificado(c) {
+    document.getElementById('folio-principal').textContent = c.folio_unico ?? folio ?? '–';
+
+    if (c.hash_seguridad) {
+      document.getElementById('hash-certificado').textContent = `SHA-256: ${c.hash_seguridad}`;
     }
 
-    function renderizarCertificado(c) {
-      // Folio y hash
-      document.getElementById('folio-principal').textContent = c.folio ?? folio ?? '–';
-      if (c.hash_integridad) {
-        document.getElementById('hash-certificado').textContent = `SHA-256: ${c.hash_integridad}`;
-      }
+    document.getElementById('dato-nombre').textContent = c.nombre_asambleista ?? '–';
+    document.getElementById('dato-cedula').textContent = c.cedula_asambleista ?? '–';
 
-      // Datos del certificado
-      const nombre = [c.nombre, c.apellidos].filter(Boolean).join(' ') || c.asambleista || '–';
-      document.getElementById('dato-nombre').textContent  = nombre;
-      document.getElementById('dato-cedula').textContent  = c.cedula    ?? '–';
-      document.getElementById('dato-tipo').textContent    = c.tipo_certificacion ?? '–';
-      document.getElementById('dato-periodo').textContent = c.periodo   ?? '–';
-      document.getElementById('dato-emisor').textContent  = c.emitido_por ?? c.usuario ?? '–';
+    // Tipo: viene en el contenido como texto libre
+    document.getElementById('dato-tipo').textContent =
+      c.contenido ? c.contenido.slice(0, 80) + (c.contenido.length > 80 ? '…' : '') : '–';
 
-      // Fecha
-      if (c.fecha_emision) {
-        const d = new Date(c.fecha_emision);
-        document.getElementById('dato-fecha').textContent =
-          d.toLocaleDateString('es-CR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      }
+    // Período: fecha inicio del nombramiento
+    document.getElementById('dato-periodo').textContent =
+      c.fecha_inicio_periodo
+        ? new Date(c.fecha_inicio_periodo).toLocaleDateString('es-CR', { year: 'numeric', month: 'long' })
+        : '–';
 
-      // Estado
-      if (c.estado === 'ANULADO') {
-        const chip = document.getElementById('chip-estado');
-        chip.textContent = 'ANULADO';
-        chip.className   = 'chip chip-anulado';
-      }
+    // Emisor
+    document.getElementById('dato-emisor').textContent = c.emitido_por ?? '–';
 
-      // URL de verificación
-      const urlBase = `${window.location.protocol}//${window.location.host}`;
-      const urlVerif = `${urlBase}/certificaciones/verificar/${encodeURIComponent(c.folio ?? folio)}`;
-      document.getElementById('url-verificacion').textContent = urlVerif;
-
-      // Mostrar contenido
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('banner-exito').style.display  = 'flex';
-      document.getElementById('contenido').style.display     = 'block';
+    // Fecha emisión
+    if (c.fecha_emision) {
+      const d = new Date(c.fecha_emision);
+      document.getElementById('dato-fecha').textContent =
+        d.toLocaleDateString('es-CR', {
+          day: '2-digit', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
     }
 
+    // Estado
+    const chip = document.getElementById('chip-estado');
+    if (c.estado === 'Anulado') {
+      chip.textContent = 'ANULADO';
+      chip.className   = 'chip chip-anulado';
+    } else {
+      chip.textContent = 'VIGENTE';
+      chip.className   = 'chip chip-vigente';
+    }
+
+    // URL verificación
+    const urlBase = `${window.location.protocol}//${window.location.host}`;
+    document.getElementById('url-verificacion').textContent =
+      `${urlBase}/certificaciones/verificar/${encodeURIComponent(c.folio_unico ?? folio)}`;
+
+    // Mostrar
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('banner-exito').style.display  = 'flex';
+    document.getElementById('contenido').style.display     = 'block';
+  }
     function mostrarError() {
       document.getElementById('loading-state').style.display = 'none';
       document.getElementById('error-state').style.display   = 'block';

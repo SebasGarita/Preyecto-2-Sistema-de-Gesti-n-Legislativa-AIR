@@ -249,11 +249,6 @@
                href="/comisiones/comision-detalle.view.html?id=${c.id_comision}">
                Ver detalle
             </a>
-            <button class="btn btn-sm btn-secundario"
-                    onclick="abrirModalEditar(${c.id_comision}, '${esc(c.nombre_comision)}',
-                             ${c.id_tipo_comision}, ${JSON.stringify(c.objeto_acta ?? '')})">
-              Editar
-            </button>
           </div>
         </td>
       </tr>

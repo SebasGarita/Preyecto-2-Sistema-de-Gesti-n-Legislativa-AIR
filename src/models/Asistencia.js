@@ -273,21 +273,21 @@ const Asistencia = {
     votos_favor, votos_contra, votos_abstencion,
     tipo_mayoria, id_usuario_registro
   }) {
-    // 1. Verificar quórum usando la función existente
+    // 1. Verificar quórum
     const quorumRes = await db.query(
       'SELECT validar_quorum_legal($1) AS hay_quorum',
       [id_sesion]
     );
     const quorum_valido = quorumRes.rows[0].hay_quorum;
 
-    // 2. Calcular resultado usando la función existente
+    // 2. Calcular resultado
     const resultadoRes = await db.query(
       'SELECT calcular_resultado_votacion($1, $2, $3) AS resultado',
       [votos_favor, votos_contra, tipo_mayoria]
     );
     const resultado = resultadoRes.rows[0].resultado;
 
-    // 3. Obtener tipo de sesión para incluirlo en la respuesta (trazabilidad)
+    // 3. Tipo de sesión
     const sesionInfo = await db.query(`
       SELECT ts.nombre AS tipo_sesion
       FROM   sesiones s
@@ -295,21 +295,19 @@ const Asistencia = {
       WHERE  s.id_sesion = $1
     `, [id_sesion]);
 
-    // 4. Persistir
-    // Normalizar tipos — los valores del frontend vienen como strings
-   const idPuntoAgenda = id_punto_agenda ? String(id_punto_agenda) : null;
+    // 4. Normalizar tipos
+    const idPuntoAgenda = id_punto_agenda ? String(id_punto_agenda) : null;
     const idPropuesta   = id_propuesta    ? String(id_propuesta)    : null;
     const idUsuario     = id_usuario_registro || null;
 
     let res;
 
     if (idPuntoAgenda) {
-      // Con punto de agenda: upsert usando la constraint única
       res = await db.query(`
         INSERT INTO votacion
           (id_sesion, id_punto_agenda, id_propuesta,
-           votos_favor, votos_contra, votos_abstencion,
-           tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
+          votos_favor, votos_contra, votos_abstencion,
+          tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (id_punto_agenda)
         DO UPDATE SET
@@ -327,12 +325,11 @@ const Asistencia = {
         tipo_mayoria, resultado, quorum_valido, idUsuario
       ]);
     } else {
-      // Sin punto de agenda: INSERT simple, sin ON CONFLICT
       res = await db.query(`
         INSERT INTO votacion
           (id_sesion, id_propuesta,
-           votos_favor, votos_contra, votos_abstencion,
-           tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
+          votos_favor, votos_contra, votos_abstencion,
+          tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `, [
@@ -342,13 +339,69 @@ const Asistencia = {
       ]);
     }
 
+    // 5. ── NUEVO: si hay propuesta y el resultado es APROBADA o RECHAZADA,
+    //            actualizar automáticamente el estado de la propuesta ──
+    if (idPropuesta && (resultado === 'APROBADA' || resultado === 'RECHAZADA')) {
+      const estadoRes = await db.query(`
+        SELECT id_estado_propuesta
+        FROM catalogo_estado_propuestas
+        WHERE nombre = $1
+      `, [resultado]);  // resultado ya es 'APROBADA' o 'RECHAZADA'
+
+      const idEstado = estadoRes.rows[0]?.id_estado_propuesta;
+
+      if (idEstado) {
+        // Actualizar estado de la propuesta
+        await db.query(`
+          UPDATE propuesta
+          SET id_estado_propuesta = $1
+          WHERE id_propuesta = $2
+        `, [String(idEstado), idPropuesta]);
+
+        // Bitácora
+        await db.query(`
+          INSERT INTO bitacora_propuesta (
+            id_propuesta, id_estado_propuesta,
+            fecha_modificacion, usuario_modificacion
+          ) VALUES ($1, $2, NOW(), $3)
+        `, [idPropuesta, String(idEstado), idUsuario ?? 'sistema']);
+
+        // Si es APROBADA y tiene elemento origen, actualizar elemento normativo
+        if (resultado === 'APROBADA') {
+          const propRes = await db.query(`
+            SELECT texto_sustitutivo, id_elemento_origen
+            FROM propuesta
+            WHERE id_propuesta = $1
+          `, [idPropuesta]);
+
+          const propuesta = propRes.rows[0];
+
+          if (propuesta?.texto_sustitutivo && propuesta?.id_elemento_origen) {
+            await db.query(`
+              INSERT INTO elemento_normativo (
+                id_reglamento, id_elemento_padre, id_nivel_reglamento,
+                numer_etiqueta, contenido_texto, fecha_inicio_vigencia, id_estado_vigencia
+              )
+              SELECT
+                id_reglamento, id_elemento_padre, id_nivel_reglamento,
+                numer_etiqueta, $1, CURRENT_DATE, 1
+              FROM elemento_normativo
+              WHERE id_elemento = $2
+            `, [propuesta.texto_sustitutivo, propuesta.id_elemento_origen]);
+          } else {
+            console.warn(`Propuesta ${idPropuesta} aprobada por votación sin texto_sustitutivo o id_elemento_origen`);
+          }
+        }
+      }
+    }
+
     return {
       ...res.rows[0],
       tipo_sesion:  sesionInfo.rows[0]?.tipo_sesion,
       quorum_valido,
       resultado
     };
-  },
+},
 
   async getVotacion(idSesion) {
   const result = await pool.query(`
