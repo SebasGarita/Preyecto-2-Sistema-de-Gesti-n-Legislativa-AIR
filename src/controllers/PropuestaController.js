@@ -43,10 +43,23 @@ const PropuestaController = {
       return res.status(400).json({ error: 'Título, etapa y tipo de mayoría son requeridos' });
     }
 
-    if (!proponentes || proponentes.length === 0) {
-      return res.status(400).json({ error: 'Debe indicar al menos un proponente' });
-    }
+    // CAMBIAR esto:
+for (const id_asambleista of proponentes) {
+  await Propuesta.addProponente({
+    id_propuesta:  nueva.id_propuesta,
+    id_asambleista
+  });
+}
 
+// POR esto:
+if (proponentes && proponentes.length > 0) {
+  for (const id_asambleista of proponentes) {
+    await Propuesta.addProponente({
+      id_propuesta:  nueva.id_propuesta,
+      id_asambleista
+    });
+  }
+}
     // Buscar estado BORRADOR si no viene en el body
     let estadoFinal = id_estado_propuesta;
     if (!estadoFinal) {
