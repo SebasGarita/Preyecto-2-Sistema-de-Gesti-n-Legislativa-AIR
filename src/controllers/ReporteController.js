@@ -38,7 +38,7 @@ class ReporteController {
             const { asambleistaId, contenido } = req.body;
 
 
-            const usuarioId = req.usuario?.id ?? 'sistema';
+            const usuarioId = req.usuario.id;
 
             if (!asambleistaId || !contenido) {
                 return res.status(400).json({

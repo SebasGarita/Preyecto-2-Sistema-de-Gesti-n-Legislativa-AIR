@@ -129,7 +129,7 @@ class CertificadoModel {
                 ce.folio_unico,
                 ce.hash_seguridad,
                 ce.fecha_emision,
-                ce.id_usuario_secretaria,
+                u.username AS usuario_secretaria,
                 ce.estado,
                 ce.folio_sustituido_por,
                 ce.contenido,
@@ -143,7 +143,10 @@ class CertificadoModel {
                ON a.asambleista_id = ce.id_asambleista
              LEFT JOIN public.anulacion_certificacion ac
                ON ac.certificacion_id = ce.id_certificacion
-             WHERE ce.folio_unico = $1`,
+             JOIN public.usuario u
+               ON u.usuario_id = ce.id_usuario_secretaria
+             WHERE ce.folio_unico = $1`
+             ,
             [folioUnico]
         );
         return res.rows[0] ?? null;
