@@ -410,7 +410,8 @@
         </div>
 
         <div class="acciones-formulario">
-          <a href="/asambleistas" class="btn btn-secundario">Cancelar</a>
+          <a href="/asambleistas/asambleista-lista.view.html"
+              class="btn btn-secundario">Cancelar</a>
           <button type="submit" class="btn btn-primario">Guardar asambleísta</button>
         </div>
       </div>
@@ -513,11 +514,16 @@
         const url    = esEdicion ? `/asambleistas/${idEnUrl}` : '/asambleistas';
         const metodo = esEdicion ? 'PUT' : 'POST';
 
-        const res = await fetch(url, {
-            method:  metodo,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
+       const token = sessionStorage.getItem('token');
+
+      const res = await fetch(url, {
+          method: metodo,
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+      });
 
         const data = await res.json();
 
@@ -527,7 +533,10 @@
         }
 
         mostrarOk('Asambleísta guardado correctamente.');
-        setTimeout(() => window.location.href = '/asambleistas', 1500);
+        setTimeout(() => {
+        window.location.href =
+          '/asambleistas/asambleista-lista.view.html';
+        }, 1500);
     }
 
     function mostrarError(msg) {
