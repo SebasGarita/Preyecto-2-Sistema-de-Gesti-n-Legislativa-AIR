@@ -421,7 +421,9 @@
         </div>
         <div class="campo">
           <label>Punto de agenda (opcional)</label>
-          <input type="number" id="v-punto" placeholder="ID del punto de agenda">
+          <select id="v-punto">
+            <option value="">— Seleccione una sesión primero —</option>
+          </select>
         </div>
       </div>
 
@@ -904,10 +906,34 @@ async function cargarHistorialVotaciones(idSesion) {
   document.getElementById('historial-votaciones').style.display = 'block';
 }
 
-// Cargar historial cuando cambia la sesión en votación
+// Cargar historial y puntos de agenda cuando cambia la sesión en votación
 document.getElementById('v-sesion')?.addEventListener('change', function() {
   cargarHistorialVotaciones(this.value);
+  cargarPuntosAgenda(this.value);
 });
+
+async function cargarPuntosAgenda(idSesion) {
+  const sel = document.getElementById('v-punto');
+  sel.innerHTML = '<option value="">— Sin punto de agenda —</option>';
+
+  if (!idSesion) return;
+
+  try {
+    const res  = await fetch(`/sesiones/${idSesion}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.agenda?.length) return;
+
+    data.agenda.forEach(p => {
+      const label = p.titulo_propuesta
+        ? `${p.orden}. ${p.titulo_propuesta}`
+        : `${p.orden}. ${p.descripcion || 'Punto ' + p.orden}`;
+      sel.add(new Option(label, p.id_punto_agenda));
+    });
+  } catch {
+    // Si falla, el select queda con solo la opcion vacia
+  }
+}
 
 
 // ═══════════════════════════════════════════════════════════════

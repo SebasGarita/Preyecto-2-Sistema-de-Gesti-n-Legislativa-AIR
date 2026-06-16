@@ -296,27 +296,51 @@ const Asistencia = {
     `, [id_sesion]);
 
     // 4. Persistir
-    const res = await db.query(`
-      INSERT INTO votacion
-        (id_sesion, id_punto_agenda, id_propuesta,
-         votos_favor, votos_contra, votos_abstencion,
-         tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      ON CONFLICT (id_punto_agenda)
-      DO UPDATE SET
-        votos_favor      = EXCLUDED.votos_favor,
-        votos_contra     = EXCLUDED.votos_contra,
-        votos_abstencion = EXCLUDED.votos_abstencion,
-        tipo_mayoria     = EXCLUDED.tipo_mayoria,
-        resultado        = EXCLUDED.resultado,
-        quorum_valido    = EXCLUDED.quorum_valido,
-        fecha_registro   = NOW()
-      RETURNING *
-    `, [
-      id_sesion, id_punto_agenda || null, id_propuesta || null,
-      votos_favor, votos_contra, votos_abstencion || 0,
-      tipo_mayoria, resultado, quorum_valido, id_usuario_registro || null
-    ]);
+    // Normalizar tipos — los valores del frontend vienen como strings
+    const idPuntoAgenda = id_punto_agenda ? parseInt(id_punto_agenda, 10) : null;
+    const idPropuesta   = id_propuesta    ? parseInt(id_propuesta, 10)    : null;
+    const idUsuario     = id_usuario_registro || null;
+
+    let res;
+
+    if (idPuntoAgenda) {
+      // Con punto de agenda: upsert usando la constraint única
+      res = await db.query(`
+        INSERT INTO votacion
+          (id_sesion, id_punto_agenda, id_propuesta,
+           votos_favor, votos_contra, votos_abstencion,
+           tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (id_punto_agenda)
+        DO UPDATE SET
+          votos_favor      = EXCLUDED.votos_favor,
+          votos_contra     = EXCLUDED.votos_contra,
+          votos_abstencion = EXCLUDED.votos_abstencion,
+          tipo_mayoria     = EXCLUDED.tipo_mayoria,
+          resultado        = EXCLUDED.resultado,
+          quorum_valido    = EXCLUDED.quorum_valido,
+          fecha_registro   = NOW()
+        RETURNING *
+      `, [
+        id_sesion, idPuntoAgenda, idPropuesta,
+        votos_favor, votos_contra, votos_abstencion || 0,
+        tipo_mayoria, resultado, quorum_valido, idUsuario
+      ]);
+    } else {
+      // Sin punto de agenda: INSERT simple, sin ON CONFLICT
+      res = await db.query(`
+        INSERT INTO votacion
+          (id_sesion, id_propuesta,
+           votos_favor, votos_contra, votos_abstencion,
+           tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+      `, [
+        id_sesion, idPropuesta,
+        votos_favor, votos_contra, votos_abstencion || 0,
+        tipo_mayoria, resultado, quorum_valido, idUsuario
+      ]);
+    }
 
     return {
       ...res.rows[0],
