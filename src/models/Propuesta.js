@@ -25,25 +25,26 @@ const Propuesta = {
 
     const result = await db.query(`
       SELECT
-        p.id_propuesta::text           AS id_propuesta,
-        p.id_propuesta_padre::text     AS id_propuesta_padre,
+        p.id_propuesta,
         p.titulo,
         p.codigo_air,
         p.texto_sustitutivo,
-        ep.nombre                      AS etapa,
-        es.nombre                      AS estado,
-        m.nombre_rol                   AS mayoria_requerida,
-        r.nombre_normativa             AS reglamento_base,
+        p.id_elemento_origen,
+        ep.nombre  AS etapa,
+        es.nombre  AS estado,
+        m.nombre_rol AS mayoria_requerida,
+        r.nombre_normativa AS reglamento_base,
         ARRAY_AGG(DISTINCT a.nombre) FILTER (WHERE a.nombre IS NOT NULL) AS proponentes,
-        pp.titulo                      AS propuesta_padre_titulo
+        pp.titulo  AS propuesta_padre_titulo,
+        p.id_propuesta_padre
       FROM propuesta p
-      LEFT JOIN catalogo_etapas_propuestas      ep  ON p.id_etapa_propuesta        = ep.id_etapa_propuesta
-      LEFT JOIN catalogo_estado_propuestas      es  ON p.id_estado_propuesta        = es.id_estado_propuesta
-      LEFT JOIN catalogo_tipo_mayoria_requerida m   ON p.id_tipo_mayoria_requerida  = m.id_tipo_mayoria_requerida
-      LEFT JOIN reglamento                      r   ON p.id_reglamento_base         = r.id_reglamento
-      LEFT JOIN proponente_propuesta            pp2 ON pp2.id_propuesta             = p.id_propuesta
-      LEFT JOIN asambleista                     a   ON pp2.id_asambleista           = a.asambleista_id
-      LEFT JOIN propuesta                       pp  ON p.id_propuesta_padre         = pp.id_propuesta
+      LEFT JOIN catalogo_etapas_propuestas      ep  ON p.id_etapa_propuesta          = ep.id_etapa_propuesta
+      LEFT JOIN catalogo_estado_propuestas      es  ON p.id_estado_propuesta          = es.id_estado_propuesta
+      LEFT JOIN catalogo_tipo_mayoria_requerida m   ON p.id_tipo_mayoria_requerida    = m.id_tipo_mayoria_requerida
+      LEFT JOIN reglamento                      r   ON p.id_reglamento_base           = r.id_reglamento
+      LEFT JOIN proponente_propuesta            pp2 ON pp2.id_propuesta               = p.id_propuesta
+      LEFT JOIN asambleista                     a   ON pp2.id_asambleista             = a.asambleista_id
+      LEFT JOIN propuesta                       pp  ON p.id_propuesta_padre           = pp.id_propuesta
       WHERE ${condiciones.join(' AND ')}
       GROUP BY p.id_propuesta, ep.nombre, es.nombre, m.nombre_rol,
                r.nombre_normativa, pp.titulo
@@ -56,31 +57,23 @@ const Propuesta = {
   async findById(id) {
     const propuesta = await db.query(`
       SELECT
-        p.id_propuesta::text          AS id_propuesta,
-        p.id_propuesta_padre::text    AS id_propuesta_padre,
-        p.id_reglamento_base,
-        p.id_etapa_propuesta,
-        p.id_estado_propuesta,
-        p.id_tipo_mayoria_requerida,
-        p.titulo,
-        p.codigo_air,
-        p.texto_sustitutivo,
-        ep.nombre                     AS etapa,
-        es.nombre                     AS estado,
-        m.nombre_rol                  AS mayoria_requerida,
-        r.nombre_normativa            AS reglamento_base
+        p.*,
+        ep.nombre    AS etapa,
+        es.nombre    AS estado,
+        m.nombre_rol AS mayoria_requerida,
+        r.nombre_normativa AS reglamento_base
       FROM propuesta p
-      LEFT JOIN catalogo_etapas_propuestas      ep ON p.id_etapa_propuesta        = ep.id_etapa_propuesta
-      LEFT JOIN catalogo_estado_propuestas      es ON p.id_estado_propuesta        = es.id_estado_propuesta
-      LEFT JOIN catalogo_tipo_mayoria_requerida m  ON p.id_tipo_mayoria_requerida  = m.id_tipo_mayoria_requerida
-      LEFT JOIN reglamento                      r  ON p.id_reglamento_base         = r.id_reglamento
+      LEFT JOIN catalogo_etapas_propuestas      ep  ON p.id_etapa_propuesta         = ep.id_etapa_propuesta
+      LEFT JOIN catalogo_estado_propuestas      es  ON p.id_estado_propuesta         = es.id_estado_propuesta
+      LEFT JOIN catalogo_tipo_mayoria_requerida m   ON p.id_tipo_mayoria_requerida   = m.id_tipo_mayoria_requerida
+      LEFT JOIN reglamento                      r   ON p.id_reglamento_base          = r.id_reglamento
       WHERE p.id_propuesta = $1
     `, [id]);
 
     if (!propuesta.rows[0]) return null;
 
     const proponentes = await db.query(`
-      SELECT a.asambleista_id::text AS asambleista_id, a.nombre, a.cedula, pp.fecha_registro
+      SELECT a.asambleista_id, a.nombre, a.cedula, pp.fecha_registro
       FROM proponente_propuesta pp
       JOIN asambleista a ON pp.id_asambleista = a.asambleista_id
       WHERE pp.id_propuesta = $1
@@ -88,7 +81,7 @@ const Propuesta = {
     `, [id]);
 
     const propuestasBase = await db.query(`
-      SELECT id_propuesta::text AS id_propuesta, titulo, codigo_air
+      SELECT id_propuesta, titulo, codigo_air
       FROM propuesta
       WHERE id_propuesta_padre = $1
     `, [id]);
@@ -100,6 +93,7 @@ const Propuesta = {
     };
   },
 
+  // ── CORREGIDO: ahora incluye id_elemento_origen ──────────────
   async create({
     id_reglamento_base, id_etapa_propuesta, id_estado_propuesta,
     id_propuesta_padre, titulo, texto_sustitutivo,
@@ -112,20 +106,20 @@ const Propuesta = {
         codigo_air, id_tipo_mayoria_requerida, id_elemento_origen
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id_propuesta::text AS id_propuesta, *
+      RETURNING *
     `, [
-      id_reglamento_base    || null,
+      id_reglamento_base        || null,
       id_etapa_propuesta,
       id_estado_propuesta,
-      id_propuesta_padre    || null,
+      id_propuesta_padre        || null,
       titulo,
-      texto_sustitutivo     || null,
-      codigo_air            || null,
+      texto_sustitutivo         || null,
+      codigo_air                || null,
       id_tipo_mayoria_requerida,
-      id_elemento_origen    || null
+      id_elemento_origen        || null   // ← antes no se guardaba
     ]);
     return result.rows[0];
-},
+  },
 
   async addProponente({ id_propuesta, id_asambleista }) {
     const result = await db.query(`
@@ -137,93 +131,30 @@ const Propuesta = {
     return result.rows[0];
   },
 
-async cambiarEstado(req, res) {
-  try {
-    const { id_estado_propuesta } = req.body;
-    if (!id_estado_propuesta) {
-      return res.status(400).json({ error: 'id_estado_propuesta es requerido' });
-    }
-
-    const id = req.params.id;
-    console.log('>> cambiarEstado — id:', id, '| nuevo estado:', id_estado_propuesta);
-
-    // 1. Actualizar estado
-    const updateRes = await db.query(`
+  async cambiarEstado(id_propuesta, id_estado_propuesta, usuario) {
+    const result = await db.query(`
       UPDATE propuesta
       SET id_estado_propuesta = $1
       WHERE id_propuesta = $2
       RETURNING *
-    `, [id_estado_propuesta, id]);
+    `, [id_estado_propuesta, id_propuesta]);
 
-    if (!updateRes.rows[0]) {
-      return res.status(404).json({ error: 'Propuesta no encontrada' });
-    }
-
-    const propuesta = updateRes.rows[0];
-    console.log('>> propuesta actualizada:', {
-      id_propuesta:        propuesta.id_propuesta,
-      texto_sustitutivo:   propuesta.texto_sustitutivo ? 'SÍ tiene' : 'NO tiene',
-      id_elemento_origen:  propuesta.id_elemento_origen ?? 'NULL',
-      id_reglamento_base:  propuesta.id_reglamento_base ?? 'NULL'
-    });
-
-    // 2. Bitácora
-    await db.query(`
-      INSERT INTO bitacora_propuesta (
-        id_propuesta, id_estado_propuesta,
-        fecha_modificacion, usuario_modificacion
-      ) VALUES ($1, $2, NOW(), $3)
-    `, [id, id_estado_propuesta, req.usuario.username]);
-
-    // 3. Verificar si el nuevo estado es APROBADA
-    const estadoRes = await db.query(`
-      SELECT nombre FROM catalogo_estado_propuestas
-      WHERE id_estado_propuesta = $1
-    `, [id_estado_propuesta]);
-
-    const nombreEstado = estadoRes.rows[0]?.nombre;
-    console.log('>> nombre del estado:', nombreEstado);
-
-    if (nombreEstado === 'APROBADA') {
-      console.log('>> es APROBADA — verificando datos para actualizar elemento_normativo...');
-
-      if (!propuesta.texto_sustitutivo || !propuesta.id_elemento_origen) {
-        console.warn('>> FALTA texto_sustitutivo o id_elemento_origen — no se actualiza normativa');
-        return res.json({
-          ...propuesta,
-          advertencia: 'Aprobada sin actualizar normativa (falta texto o elemento origen)'
-        });
-      }
-
-      console.log('>> insertando nuevo elemento_normativo desde id_elemento:', propuesta.id_elemento_origen);
-
+    if (result.rows[0]) {
       await db.query(`
-        INSERT INTO elemento_normativo (
-          id_reglamento, id_elemento_padre, id_nivel_reglamento,
-          numer_etiqueta, contenido_texto, fecha_inicio_vigencia, id_estado_vigencia
-        )
-        SELECT
-          id_reglamento, id_elemento_padre, id_nivel_reglamento,
-          numer_etiqueta, $1, CURRENT_DATE, 1
-        FROM elemento_normativo
-        WHERE id_elemento = $2
-      `, [propuesta.texto_sustitutivo, propuesta.id_elemento_origen]);
-
-      console.log('>> elemento_normativo actualizado correctamente');
+        INSERT INTO bitacora_propuesta (
+          id_propuesta, id_estado_propuesta,
+          fecha_modificacion, usuario_modificacion
+        ) VALUES ($1, $2, NOW(), $3)
+      `, [id_propuesta, id_estado_propuesta, usuario]);
     }
 
-    return res.json(propuesta);
-
-  } catch (err) {
-    console.error('Error cambiarEstado:', err);
-    return res.status(500).json({ error: 'Error al cambiar estado' });
-  }
-},
+    return result.rows[0];
+  },
 
   async getCatalogos() {
-    const etapas      = await db.query('SELECT * FROM catalogo_etapas_propuestas        ORDER BY id_etapa_propuesta');
-    const estados     = await db.query('SELECT * FROM catalogo_estado_propuestas        ORDER BY id_estado_propuesta');
-    const mayorias    = await db.query('SELECT * FROM catalogo_tipo_mayoria_requerida   ORDER BY id_tipo_mayoria_requerida');
+    const etapas      = await db.query('SELECT * FROM catalogo_etapas_propuestas    ORDER BY id_etapa_propuesta');
+    const estados     = await db.query('SELECT * FROM catalogo_estado_propuestas    ORDER BY id_estado_propuesta');
+    const mayorias    = await db.query('SELECT * FROM catalogo_tipo_mayoria_requerida ORDER BY id_tipo_mayoria_requerida');
     const reglamentos = await db.query('SELECT id_reglamento, nombre_normativa, sigla FROM reglamento ORDER BY nombre_normativa');
     return {
       etapas:       etapas.rows,
@@ -243,7 +174,6 @@ async cambiarEstado(req, res) {
     `, [id_propuesta]);
     return result.rows[0] || null;
   }
-
 };
 
 module.exports = Propuesta;
