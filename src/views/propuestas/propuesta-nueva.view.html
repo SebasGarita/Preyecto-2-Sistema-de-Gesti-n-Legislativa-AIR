@@ -517,8 +517,8 @@
 // ════════════════════════════════════════════════════════════
 let catalogos         = {};
 let propuestaActualId = null;
-let tsProponentes     = null;   // Tom Select multiselect — modal crear
-let tsNuevoPropon     = null;   // Tom Select single — panel detalle
+let tsProponentes     = null;
+let tsNuevoPropon     = null;
 let debounceTimer;
 
 // ════════════════════════════════════════════════════════════
@@ -537,26 +537,21 @@ async function init() {
     catalogos          = await catRes.json();
     const asambleistas = await asmRes.json();
 
-    // Filtros de la tabla
     poblarSelect('f-estado', catalogos.estados,  'id_estado_propuesta', 'nombre');
     poblarSelect('f-etapa',  catalogos.etapas,   'id_etapa_propuesta',  'nombre');
 
-    // Selects del modal crear
     poblarSelect('m-etapa',   catalogos.etapas,   'id_etapa_propuesta',        'nombre');
     poblarSelect('m-mayoria', catalogos.mayorias, 'id_tipo_mayoria_requerida', e => e.nombre_rol);
     poblarSelect('m-reglamento', catalogos.reglamentos, 'id_reglamento',
       e => `${e.sigla} — ${e.nombre_normativa}`);
 
-    // Select de nuevo estado en panel detalle
     poblarSelect('sel-nuevo-estado', catalogos.estados, 'id_estado_propuesta', 'nombre');
 
-    // Opciones de asambleístas para ambos Tom Selects
     const opcionesAsm = asambleistas.map(a => ({
       value: String(a.asambleista_id),
       text:  `${a.nombre} (${a.cedula})`
     }));
 
-    // Tom Select multiselect — modal crear
     tsProponentes = new TomSelect('#m-proponentes', {
       options:     opcionesAsm,
       plugins:     ['remove_button'],
@@ -564,7 +559,6 @@ async function init() {
       placeholder: 'Buscar asambleísta por nombre o cédula...'
     });
 
-    // Tom Select single — agregar proponente en panel detalle
     tsNuevoPropon = new TomSelect('#sel-nuevo-proponente', {
       options:     opcionesAsm,
       maxOptions:  400,
@@ -623,7 +617,7 @@ function renderTabla(lista) {
   }
 
   tbody.innerHTML = lista.map(p => `
-    <tr onclick="verDetalle(${p.id_propuesta})" id="fila-${p.id_propuesta}">
+    <tr onclick="verDetalle('${p.id_propuesta}')" id="fila-${p.id_propuesta}">
       <td>
         <code style="font-size:.82rem;color:var(--color-primario);font-weight:600">
           ${esc(p.codigo_air ?? 'S/C')}
@@ -651,7 +645,7 @@ function renderTabla(lista) {
       </td>
       <td>
         <div class="td-acciones" onclick="event.stopPropagation()">
-          <button class="btn btn-sm btn-primario" onclick="verDetalle(${p.id_propuesta})">
+          <button class="btn btn-sm btn-primario" onclick="verDetalle('${p.id_propuesta}')">
             Ver detalle
           </button>
         </div>
@@ -686,7 +680,6 @@ function poblarPropuestasPadre(lista) {
 // PANEL DE DETALLE
 // ════════════════════════════════════════════════════════════
 async function verDetalle(id) {
-  // Marcar fila seleccionada
   document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('seleccionada'));
   const fila = document.getElementById(`fila-${id}`);
   if (fila) fila.classList.add('seleccionada');
@@ -713,12 +706,11 @@ function renderDetalle(p) {
   document.getElementById('d-titulo-header').textContent =
     p.titulo.length > 70 ? p.titulo.slice(0, 70) + '…' : p.titulo;
 
-  document.getElementById('d-codigo').textContent  = p.codigo_air      ?? '—';
-  document.getElementById('d-etapa').textContent   = p.etapa           ?? '—';
+  document.getElementById('d-codigo').textContent  = p.codigo_air        ?? '—';
+  document.getElementById('d-etapa').textContent   = p.etapa             ?? '—';
   document.getElementById('d-mayoria').textContent = p.mayoria_requerida ?? '—';
   document.getElementById('d-estado-badge').innerHTML = badgeEstado(p.estado);
 
-  // Reglamento base
   if (p.reglamento_base) {
     document.getElementById('d-reglamento').textContent = p.reglamento_base;
     document.getElementById('d-reglamento-item').style.display = 'block';
@@ -726,7 +718,6 @@ function renderDetalle(p) {
     document.getElementById('d-reglamento-item').style.display = 'none';
   }
 
-  // Propuesta padre
   if (p.id_propuesta_padre) {
     document.getElementById('d-padre').textContent = `ID #${p.id_propuesta_padre}`;
     document.getElementById('d-padre-item').style.display = 'block';
@@ -734,7 +725,6 @@ function renderDetalle(p) {
     document.getElementById('d-padre-item').style.display = 'none';
   }
 
-  // Texto sustitutivo
   if (p.texto_sustitutivo) {
     document.getElementById('d-texto').textContent = p.texto_sustitutivo;
     document.getElementById('d-texto-wrap').style.display = 'block';
@@ -742,10 +732,8 @@ function renderDetalle(p) {
     document.getElementById('d-texto-wrap').style.display = 'none';
   }
 
-  // Proponentes
   renderProponentes(p.proponentes ?? []);
 
-  // Propuestas derivadas (conciliadas que apuntan a esta como padre)
   if (p.propuestas_base?.length) {
     document.getElementById('d-derivadas').innerHTML = p.propuestas_base.map(d => `
       <div class="derivada-item">
@@ -758,10 +746,7 @@ function renderDetalle(p) {
     document.getElementById('d-derivadas-wrap').style.display = 'none';
   }
 
-  // Resetear Tom Select de agregar proponente
   if (tsNuevoPropon) tsNuevoPropon.clear();
-
-  // Resetear select de cambiar estado
   document.getElementById('sel-nuevo-estado').value = '';
 }
 
@@ -784,7 +769,7 @@ function cerrarDetalle() {
 }
 
 // ════════════════════════════════════════════════════════════
-// AGREGAR PROPONENTE (desde panel detalle)
+// AGREGAR PROPONENTE
 // ════════════════════════════════════════════════════════════
 async function agregarProponente() {
   if (!propuestaActualId) return;
@@ -805,7 +790,7 @@ async function agregarProponente() {
     if (!res.ok) throw new Error(data.error ?? 'Error al agregar proponente');
 
     mostrarOk('Proponente agregado correctamente.');
-    await verDetalle(propuestaActualId);   // recarga detalle para reflejar el cambio
+    await verDetalle(propuestaActualId);
 
   } catch (e) {
     mostrarError('Error al agregar proponente: ' + e.message);
@@ -834,7 +819,6 @@ async function cambiarEstado() {
     if (!res.ok) throw new Error(data.error ?? 'Error al cambiar estado');
 
     mostrarOk('Estado actualizado correctamente.');
-    // Recargar lista y detalle para reflejar el cambio en ambos
     await cargarLista();
     await verDetalle(propuestaActualId);
 
@@ -847,13 +831,12 @@ async function cambiarEstado() {
 // MODAL — CREAR PROPUESTA
 // ════════════════════════════════════════════════════════════
 function abrirModalCrear() {
-  // Limpiar campos
-  document.getElementById('m-titulo').value = '';
-  document.getElementById('m-texto').value  = '';
-  document.getElementById('m-etapa').value        = '';
-  document.getElementById('m-mayoria').value      = '';
-  document.getElementById('m-reglamento').value   = '';
-  document.getElementById('m-padre').value        = '';
+  document.getElementById('m-titulo').value     = '';
+  document.getElementById('m-texto').value      = '';
+  document.getElementById('m-etapa').value      = '';
+  document.getElementById('m-mayoria').value    = '';
+  document.getElementById('m-reglamento').value = '';
+  document.getElementById('m-padre').value      = '';
   if (tsProponentes) tsProponentes.clear();
   document.getElementById('modal-error').style.display = 'none';
   document.getElementById('overlay-crear').classList.add('visible');
@@ -873,11 +856,10 @@ async function crearPropuesta() {
   const texto     = document.getElementById('m-texto').value.trim() || null;
   const propon    = tsProponentes ? tsProponentes.getValue() : [];
 
-  // Validaciones en frontend
-  if (!titulo)        { mostrarModalError('El título de la propuesta es obligatorio.');       return; }
-  if (!idEtapa)       { mostrarModalError('Debe seleccionar una etapa.');                     return; }
-  if (!idMayoria)     { mostrarModalError('Debe seleccionar el tipo de mayoría requerida.');  return; }
-  if (!propon.length) { mostrarModalError('Debe agregar al menos un proponente.');            return; }
+  if (!titulo)        { mostrarModalError('El título de la propuesta es obligatorio.');      return; }
+  if (!idEtapa)       { mostrarModalError('Debe seleccionar una etapa.');                    return; }
+  if (!idMayoria)     { mostrarModalError('Debe seleccionar el tipo de mayoría requerida.'); return; }
+  if (!propon.length) { mostrarModalError('Debe agregar al menos un proponente.');           return; }
 
   const btn = document.getElementById('btn-crear');
   btn.innerHTML = '<span class="spinner"></span> Guardando...';
@@ -905,7 +887,6 @@ async function crearPropuesta() {
 
     await cargarLista();
 
-    // Abrir automáticamente el detalle de la propuesta recién creada
     if (data.id_propuesta) {
       await verDetalle(data.id_propuesta);
     }
@@ -955,17 +936,18 @@ function mostrarError(msg) {
   el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   setTimeout(() => { el.style.display = 'none'; }, 6000);
 }
+
 function mostrarOk(msg) {
   const el = document.getElementById('msg-ok');
   el.textContent = msg; el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 3500);
 }
+
 function mostrarModalError(msg) {
   const el = document.getElementById('modal-error');
   el.textContent = msg; el.style.display = 'block';
 }
 
-// Cerrar modal con Escape o clic fuera
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') cerrarModalCrear();
 });
