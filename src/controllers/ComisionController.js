@@ -314,7 +314,7 @@ const ComisionController = {
         accion:         'UPSERT',
         tabla_afectada: 'asistencia_sesion_comision',
         detalle:        `Asistencia registrada para sesión ID ${sesionId}: ${registros.length} registros`,
-        registro_id:    Number(sesionId)
+        registro_id: String(sesionId)
       });
 
       return res.json({ registrados: resultado.length, detalle: resultado });

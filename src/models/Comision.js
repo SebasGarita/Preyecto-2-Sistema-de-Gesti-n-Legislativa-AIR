@@ -236,11 +236,11 @@ const Comision = {
       INSERT INTO sesion_comision
         (id_comision, fecha_hora, numero_sesion, descripcion, link_acta)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
+      RETURNING id_sesion_comision::text AS id_sesion_comision, *
     `, [id_comision, fecha_hora, numero_sesion || null,
         descripcion || null, link_acta || null]);
     return result.rows[0];
-  },
+},
 
   /** Devuelve el detalle de una sesión con su lista de asistencia */
   async findSesion(id_sesion_comision) {
@@ -249,7 +249,7 @@ const Comision = {
       FROM sesion_comision sc
       JOIN comision c ON c.id_comision = sc.id_comision
       WHERE sc.id_sesion_comision = $1
-    `, [id_sesion_comision]);
+    `, [String(id_sesion_comision)]);   // ← forzar string
 
     if (!sesion.rows[0]) return null;
 
@@ -267,13 +267,13 @@ const Comision = {
         ON cas.id_estado_asistencia = asc2.id_estado_asistencia
       WHERE asc2.id_sesion_comision = $1
       ORDER BY a.nombre ASC
-    `, [id_sesion_comision]);
+    `, [String(id_sesion_comision)]);   // ← forzar string
 
     return {
       ...sesion.rows[0],
       asistencia: asistencia.rows
     };
-  },
+},
 
   /** Registra o actualiza la asistencia de un asambleísta a una sesión */
   async registrarAsistencia({ id_sesion_comision, asambleista_id, id_estado_asistencia }) {
@@ -286,9 +286,13 @@ const Comision = {
       ON CONFLICT (id_sesion_comision, asambleista_id)
       DO UPDATE SET id_estado_asistencia = EXCLUDED.id_estado_asistencia
       RETURNING *
-    `, [id_sesion_comision, asambleista_id, id_estado_asistencia]);
+    `, [
+      String(id_sesion_comision),
+      String(asambleista_id),
+      String(id_estado_asistencia)   // ← string también
+    ]);
     return result.rows[0];
-  },
+},
 
   /** Registra asistencia masiva (array de { asambleista_id, id_estado_asistencia }) */
   async registrarAsistenciaMasiva(id_sesion_comision, registros) {
