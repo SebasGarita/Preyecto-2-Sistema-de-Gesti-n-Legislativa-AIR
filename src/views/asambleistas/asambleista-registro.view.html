@@ -448,8 +448,8 @@
 
 <script src="/shared/auth.js"></script>
 <script>
-    const idEnUrl = window.location.pathname.split('/').pop();
-    const esEdicion = idEnUrl && !isNaN(idEnUrl);
+    const idEnUrl = new URLSearchParams(window.location.search).get('id');
+    const esEdicion = !!idEnUrl;
 
     function aplicarMascaraCedula(input) {
         let val = input.value.replace(/\D/g, '');
@@ -465,8 +465,16 @@
     }
 
     async function cargarCatalogos() {
-        const res  = await fetch('/asambleistas/catalogos');
-        const data = await res.json();
+    const token = sessionStorage.getItem('token');
+
+    const res = await fetch('/asambleistas/catalogos', {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const data = await res.json();
+
 
         const selectSector = document.getElementById('sector');
         data.sectores.forEach(s => {
@@ -478,6 +486,42 @@
             selectPuesto.add(new Option(p.nombre_puesto, p.id_puesto));
         });
     }
+
+    async function cargarAsambleista() {
+    if (!esEdicion) return;
+
+    const token = sessionStorage.getItem('token');
+
+    const res = await fetch(`/asambleistas/${idEnUrl}`, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    const a = await res.json();
+
+    document.getElementById('titulo-formulario').textContent =
+        'Detalle de Asambleísta';
+
+    document.getElementById('nombre').value = a.nombre || '';
+    document.getElementById('cedula').value = a.cedula || '';
+    document.getElementById('correo').value =
+        a.correo_institucional || '';
+
+    if (a.sector_id)
+        document.getElementById('sector').value = a.sector_id;
+
+    if (a.id_puesto)
+        document.getElementById('puesto').value = a.id_puesto;
+
+    if (a.fecha_inicio)
+        document.getElementById('fecha-inicio').value =
+            a.fecha_inicio.substring(0,10);
+
+    if (a.fecha_fin)
+        document.getElementById('fecha-fin').value =
+            a.fecha_fin.substring(0,10);
+}
 
     async function guardar(e) {
         e.preventDefault();
@@ -564,7 +608,11 @@
         .style.display = "block";
     }
 
-    cargarCatalogos();
+    (async () => {
+    await cargarCatalogos();
+    await cargarAsambleista();
+  })();
+
 </script>
   
 </body>
