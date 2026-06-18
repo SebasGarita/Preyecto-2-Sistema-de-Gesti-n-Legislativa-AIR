@@ -94,6 +94,7 @@ class ReporteController {
                 estado   : req.query.estado    ?? null,
                 desde    : req.query.desde     ?? null,
                 hasta    : req.query.hasta     ?? null,
+                busqueda : req.query.busqueda  ?? null, 
                 pagina   : parseInt(req.query.pagina    ?? '1'),
                 porPagina: parseInt(req.query.porPagina ?? '20')
             };

@@ -202,6 +202,15 @@ class CertificadoModel {
             params.push(filtros.hasta);
         }
 
+
+        if (filtros.busqueda) {
+    condiciones.push(
+        `(LOWER(a.nombre) LIKE $${idx} OR LOWER(a.cedula) LIKE $${idx + 1})`
+    );
+    params.push(`%${filtros.busqueda.toLowerCase()}%`);
+    params.push(`%${filtros.busqueda.toLowerCase()}%`);
+    idx += 2;
+}
         const where     = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
         const pagina    = Math.max(1, filtros.pagina    ?? 1);
         const porPagina = Math.min(100, filtros.porPagina ?? 20);
@@ -231,11 +240,13 @@ class CertificadoModel {
         );
 
         const totalRes = await pool.query(
-            `SELECT COUNT(*) AS total
-             FROM public.certificacion_emitida ce
-             ${where}`,
-            params
-        );
+    `SELECT COUNT(*) AS total
+     FROM public.certificacion_emitida ce
+     JOIN public.asambleista a
+       ON a.asambleista_id = ce.id_asambleista
+     ${where}`,
+    params
+);
 
         return {
             datos    : res.rows,
