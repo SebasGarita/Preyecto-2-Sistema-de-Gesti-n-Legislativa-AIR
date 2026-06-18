@@ -9,6 +9,7 @@ router.use(auditarEscritura);
 router.get('/catalogos', ctrl.catalogos);
 router.get('/',          ctrl.listar);
 router.get('/:id',       ctrl.obtener);
+router.get('/:id/agenda/:idPunto/resolucion', ctrl.getResolucionPorPunto);
 
 // Asistencia
 router.get('/:id/asistencia',  ctrl.asistencia);

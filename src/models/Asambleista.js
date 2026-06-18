@@ -4,31 +4,39 @@ const Asambleista = {
 
   // Lista todos con su nombramiento activo actual (si tiene)
   async findAll({ busqueda } = {}) {
-    const filtro  = busqueda ? `WHERE a.nombre ILIKE $1 OR a.cedula ILIKE $1` : '';
+    const filtro  = busqueda
+      ? `WHERE LOWER(a.nombre) LIKE LOWER($1) OR LOWER(a.cedula) LIKE LOWER($1)`
+      : '';
     const params  = busqueda ? [`%${busqueda}%`] : [];
 
-    const result = await db.query(`
-      SELECT
-        a.asambleista_id,
-        a.cedula,
-        a.nombre,
-        a.correo_institucional,
-        -- Nombramiento vigente actual (puede ser NULL si no tiene)
-        n.id_nombramiento,
-        s.nombre       AS sector_actual,
-        p.nombre_puesto AS puesto_actual,
-        n.fecha_inicio,
-        n.fecha_fin,
-        n.estado
-      FROM asambleista a
-      LEFT JOIN nombramiento n
-        ON n.asambleista_id = a.asambleista_id
-        AND n.estado = 'VIGENTE'
-      LEFT JOIN catalogo_sector  s ON n.sector_id   = s.id_sector
-      LEFT JOIN catalogo_puestos p ON n.id_puesto   = p.id_puesto
-      ${filtro}
-      ORDER BY a.nombre ASC
-    `, params);
+const result = await db.query(`
+  SELECT
+    a.asambleista_id,
+    a.cedula,
+    a.nombre,
+    a.correo_institucional,
+    n.id_nombramiento,
+    s.nombre        AS sector_actual,
+    p.nombre_puesto AS puesto_actual,
+    n.fecha_inicio,
+    n.fecha_fin,
+    CASE
+      WHEN n.fecha_fin IS NOT NULL
+           AND n.fecha_fin < CURRENT_DATE
+      THEN 'VENCIDO'
+      ELSE 'VIGENTE'
+    END AS estado
+  FROM asambleista a
+  LEFT JOIN nombramiento n
+    ON n.asambleista_id = a.asambleista_id
+   AND n.estado = 'VIGENTE'
+  LEFT JOIN catalogo_sector s
+    ON n.sector_id = s.id_sector
+  LEFT JOIN catalogo_puestos p
+    ON n.id_puesto = p.id_puesto
+  ${filtro}
+  ORDER BY a.nombre ASC
+`, params);
 
     return result.rows;
   },
@@ -42,6 +50,30 @@ const Asambleista = {
     `, [id]);
 
     if (!persona.rows[0]) return null;
+
+    // Nombramiento vigente actual (separado para exponer sus IDs al frontend)
+    const vigente = await db.query(`
+      SELECT
+  n.id_nombramiento,
+  n.sector_id,
+  n.id_puesto,
+  n.fecha_inicio,
+  n.fecha_fin,
+  CASE
+    WHEN n.fecha_fin IS NOT NULL
+         AND n.fecha_fin < CURRENT_DATE
+    THEN 'VENCIDO'
+    ELSE 'VIGENTE'
+  END AS estado,
+        s.nombre        AS sector_actual,
+        p.nombre_puesto AS puesto_actual
+      FROM nombramiento n
+      LEFT JOIN catalogo_sector  s ON n.sector_id = s.id_sector
+      LEFT JOIN catalogo_puestos p ON n.id_puesto = p.id_puesto
+      WHERE n.asambleista_id = $1
+ORDER BY n.fecha_inicio DESC
+LIMIT 1
+    `, [id]);
 
     const nombramientos = await db.query(`
       SELECT
@@ -70,7 +102,9 @@ const Asambleista = {
 
     return {
       ...persona.rows[0],
-      nombramientos: nombramientos.rows,
+      // Campos planos del nombramiento vigente (para precargar el formulario)
+      ...(vigente.rows[0] || {}),
+      nombramientos:    nombramientos.rows,
       bitacora_cambios: bitacora.rows
     };
   },
@@ -96,7 +130,6 @@ const Asambleista = {
 
   // Actualiza datos de identidad y guarda en bitácora
   async update(id, { cedula, nombre, correo_institucional, razon_cambio }, usuarioId) {
-    // Primero guarda el estado anterior en bitácora
     const anterior = await db.query(
       'SELECT cedula, nombre FROM asambleista WHERE asambleista_id = $1',
       [id]
@@ -125,7 +158,52 @@ const Asambleista = {
     return result.rows[0];
   },
 
-  // Agrega un nuevo nombramiento (el trigger valida traslape)
+  // ── NUEVO: Actualiza un nombramiento vigente existente ──────────────────────
+  // El trigger tg_traslape_sector solo corre en INSERT, no en UPDATE,
+  // así que validamos manualmente que no quede traslape con otros nombramientos
+  // del mismo asambleísta (distintos al que estamos editando).
+  async updateNombramiento(id_nombramiento, { sector_id, id_puesto, fecha_inicio, fecha_fin }) {
+    // Primero obtenemos el asambleista_id del nombramiento para validar traslape
+    const nom = await db.query(
+      'SELECT asambleista_id FROM nombramiento WHERE id_nombramiento = $1',
+      [id_nombramiento]
+    );
+    if (!nom.rows[0]) return null;
+
+    const asambleista_id = nom.rows[0].asambleista_id;
+    const fin = fecha_fin || null;
+
+    // Validación manual de traslape con otros nombramientos del mismo asambleísta
+    // (excluimos el propio registro que estamos editando)
+    const traslape = await db.query(`
+      SELECT id_nombramiento FROM nombramiento
+      WHERE asambleista_id = $1
+        AND id_nombramiento != $2
+        AND estado = 'VIGENTE'
+        AND fecha_inicio <= COALESCE($4::date, '9999-12-31')
+        AND (fecha_fin IS NULL OR fecha_fin >= $3::date)
+    `, [asambleista_id, id_nombramiento, fecha_inicio, fin]);
+
+    if (traslape.rows.length > 0) {
+      const err = new Error('TRASLAPE_NOMBRAMIENTO: Ya existe otro nombramiento vigente en ese período.');
+      throw err;
+    }
+
+    const result = await db.query(`
+      UPDATE nombramiento
+      SET sector_id   = $1,
+          id_puesto   = $2,
+          fecha_inicio = $3,
+          fecha_fin   = $4
+      WHERE id_nombramiento = $5
+        AND estado = 'VIGENTE'
+      RETURNING *
+    `, [sector_id, id_puesto, fecha_inicio, fin, id_nombramiento]);
+
+    return result.rows[0] || null;
+  },
+
+  // Agrega un nuevo nombramiento (el trigger valida traslape en INSERT)
   async addNombramiento({ asambleista_id, sector_id, id_puesto, fecha_inicio,
                           fecha_fin, id_usuario_registro, resolucion_id }) {
     const result = await db.query(`
@@ -161,10 +239,8 @@ const Asambleista = {
     };
   },
 
-    // Reporte de asistencia histórico para certificación
-  // Cumple: COUNT/SUM por período, desglose exacto de sesiones
+  // Reporte de asistencia histórico para certificación
   async getReporteAsistencia(asambleistaId) {
-    // ── Totales globales ──────────────────────────────────────────────────────
     const totales = await db.query(`
       SELECT
         COUNT(*)                                                        AS total_sesiones,
@@ -184,8 +260,7 @@ const Asambleista = {
         ON asp.id_estado_asistencia = ea.id_estado_asistencia
       WHERE asp.id_asambleista = $1
     `, [asambleistaId]);
- 
-    // ── Desglose por tipo de sesión ───────────────────────────────────────────
+
     const desglose = await db.query(`
       SELECT
         ts.nombre                                                       AS tipo_sesion,
@@ -204,8 +279,7 @@ const Asambleista = {
       GROUP BY ts.nombre
       ORDER BY ts.nombre
     `, [asambleistaId]);
- 
-    // ── Sesiones individuales (para validación BD vs. impreso) ───────────────
+
     const sesiones = await db.query(`
       SELECT
         s.id_sesion,
@@ -223,14 +297,14 @@ const Asambleista = {
       WHERE asp.id_asambleista = $1
       ORDER BY s.fecha ASC
     `, [asambleistaId]);
- 
+
     return {
       totales:  totales.rows[0],
       desglose: desglose.rows,
       sesiones: sesiones.rows
     };
   },
- 
+
 };
 
 module.exports = Asambleista;

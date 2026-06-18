@@ -25,10 +25,10 @@ class CertificadoModel {
 
             // 1. Bloquear el control de folio para el año actual
             const lockRes = await client.query(
-                `SELECT id_control, ultimo_numero
-                 FROM public.control_folio
-                 WHERE anio = $1
-                 FOR UPDATE`,
+                `SELECT id_control, ultimo_numero::text AS ultimo_numero_str
+                FROM public.control_folio
+                WHERE anio = $1
+                FOR UPDATE`,
                 [anio]
             );
 
@@ -47,7 +47,7 @@ class CertificadoModel {
                 ultimoNumero = 0;
             } else {
                 idControl    = lockRes.rows[0].id_control;
-                ultimoNumero = lockRes.rows[0].ultimo_numero;
+                ultimoNumero = parseInt(lockRes.rows[0].ultimo_numero_str, 10);
             }
 
             // 2. Calcular nuevo número y folio DAIR
@@ -129,21 +129,32 @@ class CertificadoModel {
                 ce.folio_unico,
                 ce.hash_seguridad,
                 ce.fecha_emision,
-                ce.id_usuario_secretaria,
                 ce.estado,
                 ce.folio_sustituido_por,
                 ce.contenido,
                 a.nombre          AS nombre_asambleista,
                 a.cedula          AS cedula_asambleista,
+                -- Sector y período del nombramiento vigente
+                cs.nombre         AS sector,
+                n.fecha_inicio    AS fecha_inicio_periodo,
+                -- Usuario secretaria
+                u.username        AS emitido_por,
+                -- Anulación
                 ac.motivo         AS motivo_anulacion,
                 ac.fecha          AS fecha_anulacion,
                 ac.folio_sustitucion
-             FROM public.certificacion_emitida ce
-             JOIN public.asambleista a
-               ON a.asambleista_id = ce.id_asambleista
-             LEFT JOIN public.anulacion_certificacion ac
-               ON ac.certificacion_id = ce.id_certificacion
-             WHERE ce.folio_unico = $1`,
+            FROM public.certificacion_emitida ce
+            JOIN public.asambleista a
+            ON a.asambleista_id = ce.id_asambleista
+            LEFT JOIN public.nombramiento n
+            ON n.asambleista_id = a.asambleista_id AND n.estado = 'VIGENTE'
+            LEFT JOIN public.catalogo_sector cs
+            ON cs.id_sector = n.sector_id
+            LEFT JOIN public.sys_usuario u
+            ON u.id_usuario = ce.id_usuario_secretaria
+            LEFT JOIN public.anulacion_certificacion ac
+            ON ac.certificacion_id = ce.id_certificacion
+            WHERE ce.folio_unico = $1`,
             [folioUnico]
         );
         return res.rows[0] ?? null;
@@ -191,6 +202,15 @@ class CertificadoModel {
             params.push(filtros.hasta);
         }
 
+
+        if (filtros.busqueda) {
+    condiciones.push(
+        `(LOWER(a.nombre) LIKE $${idx} OR LOWER(a.cedula) LIKE $${idx + 1})`
+    );
+    params.push(`%${filtros.busqueda.toLowerCase()}%`);
+    params.push(`%${filtros.busqueda.toLowerCase()}%`);
+    idx += 2;
+}
         const where     = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
         const pagina    = Math.max(1, filtros.pagina    ?? 1);
         const porPagina = Math.min(100, filtros.porPagina ?? 20);
@@ -220,11 +240,13 @@ class CertificadoModel {
         );
 
         const totalRes = await pool.query(
-            `SELECT COUNT(*) AS total
-             FROM public.certificacion_emitida ce
-             ${where}`,
-            params
-        );
+    `SELECT COUNT(*) AS total
+     FROM public.certificacion_emitida ce
+     JOIN public.asambleista a
+       ON a.asambleista_id = ce.id_asambleista
+     ${where}`,
+    params
+);
 
         return {
             datos    : res.rows,

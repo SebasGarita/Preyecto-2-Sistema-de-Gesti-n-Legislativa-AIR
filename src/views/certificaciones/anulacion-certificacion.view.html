@@ -250,11 +250,13 @@
     async function cargarCertificaciones(pagina = 1) {
         paginaActual = pagina;
         const estado = document.getElementById('filtroEstado').value;
+        const busqueda  = document.getElementById('filtroCedula').value.trim();
         const desde  = document.getElementById('filtroDesde').value;
         const hasta  = document.getElementById('filtroHasta').value;
 
         const params = new URLSearchParams({ pagina, porPagina: 15 });
         if (estado) params.set('estado', estado);
+        if (busqueda) params.set('busqueda',  busqueda); 
         if (desde)  params.set('desde',  desde);
         if (hasta)  params.set('hasta',  hasta);
 

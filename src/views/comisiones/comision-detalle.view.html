@@ -542,7 +542,7 @@
           ${i.estado === 'ACTIVO' ? `
             <div class="td-acciones">
               <button class="btn btn-sm btn-peligro"
-                      onclick="removerIntegrante(${i.id_integrante_comision})">
+                      onclick="removerIntegrante('${i.id_integrante_comision}')">
                 Dar de baja
               </button>
             </div>` : '—'}
@@ -634,7 +634,7 @@
           <td>
             <div class="td-acciones">
               <button class="btn btn-sm btn-primario"
-                      onclick="abrirAsistencia(${s.id_sesion_comision},
+                      onclick="abrirAsistencia('${s.id_sesion_comision}',
                                '${esc(s.numero_sesion ?? String(s.id_sesion_comision))}')">
                 Registrar asistencia
               </button>
@@ -715,8 +715,8 @@
   async function guardarAsistencia() {
     const selects  = document.querySelectorAll('#lista-asistencia select[data-id]');
     const registros = Array.from(selects).map(sel => ({
-      asambleista_id:       Number(sel.dataset.id),
-      id_estado_asistencia: Number(sel.value)
+      asambleista_id:       sel.dataset.id,           // conservar como string — puede ser INT8 grande
+      id_estado_asistencia: sel.value         // ID de catálogo pequeño, seguro como number
     }));
     if (!registros.length) { mostrarError('No hay integrantes para registrar'); return; }
 
@@ -749,7 +749,7 @@
         <td>
           <div class="td-acciones">
             <button class="btn btn-sm btn-secundario"
-                    onclick="cargarInformeEditar(${inf.id_informe})">
+                    onclick="cargarInformeEditar('${inf.id_informe}')">
               Editar
             </button>
           </div>
@@ -785,7 +785,7 @@
   }
 
   function cargarInformeEditar(id) {
-    const inf = datoComision.informes.find(i => i.id_informe === id);
+    const inf = datoComision.informes.find(i => String(i.id_informe) === String(id));
     if (!inf) return;
     informeEditandoId = id;
     document.getElementById('f-inf-titulo').value        = inf.titulo ?? '';

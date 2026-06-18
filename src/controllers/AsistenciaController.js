@@ -162,12 +162,14 @@ const AsistenciaController = {
   // POST /asistencia/votacion
   // Verifica quórum, calcula y persiste el resultado de una votación.
   async registrarVotacion(req, res) {
+    
+    
     try {
       const usuarioId = req.usuario.id;
       const {
         id_sesion, id_punto_agenda, id_propuesta,
         votos_favor, votos_contra, votos_abstencion,
-        tipo_mayoria
+        tipo_mayoria, id_resolucion  // ← agregar
       } = req.body;
 
       // Validaciones básicas
@@ -189,12 +191,11 @@ const AsistenciaController = {
 
       const resultado = await Asistencia.registrarVotacion({
         id_sesion, id_punto_agenda, id_propuesta,
-        votos_favor, votos_contra,
-        votos_abstencion: votos_abstencion || 0,
-        tipo_mayoria,
-        id_usuario_registro: usuarioId
+        votos_favor, votos_contra, votos_abstencion,
+        tipo_mayoria, id_usuario_registro: usuarioId,
+        id_resolucion  // ← agregar
       });
-
+      
       // Si no hay quórum la votación igual se guarda para trazabilidad,
       // pero se advierte al cliente.
       if (!resultado.quorum_valido) {
@@ -217,6 +218,7 @@ const AsistenciaController = {
       return res.status(201).json(resultado);
 
     } catch (err) {
+      console.error('ERROR registrarVotacion:', err); 
       return res.status(500).json({ error: err.message });
     }
   },

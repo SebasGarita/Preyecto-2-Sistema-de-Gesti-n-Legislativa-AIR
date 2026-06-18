@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compilador Normativo — AIR</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
     <style>
-        /* ── Variables ── */
         :root {
             --color-primario   : #003366;
             --color-acento     : #005fa3;
@@ -18,234 +18,187 @@
             --radio            : 6px;
             --sombra           : 0 2px 12px rgba(0,0,0,.12);
         }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
 
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f4f6f9; 
-            color: #222; 
-            margin: 0; 
-        }
-
-        /* ── Layout ── */
-        .page-header {
-            background: var(--color-primario); 
-            color: #fff;
-            padding: 28px 28px 24px; 
-            text-align: center;
-        }
-        .page-header h1 { 
-            margin: 0 0 8px; 
-            font-size: 1.8rem; 
-            font-weight: 600; 
-        }
-        .page-header .subtitulo { 
-            margin: 0; 
-            font-size: .95rem; 
-            opacity: .95; 
-        }
+        .page-header { background: var(--color-primario); color: #fff; padding: 28px 28px 24px; text-align: center; }
+        .page-header h1 { margin: 0 0 8px; font-size: 1.8rem; font-weight: 600; }
+        .page-header .subtitulo { margin: 0; font-size: .95rem; opacity: .95; }
         .page-header .badge-modulo {
-            background: rgba(255,255,255,.18); 
-            border-radius: 20px;
-            padding: 4px 14px; 
-            font-size: .8rem; 
-            letter-spacing: .4px;
-            display: inline-block;
-            margin-top: 12px;
-        }
-        
-        .contenedor { 
-            max-width: 1100px; 
-            margin: 28px auto; 
-            padding: 0 20px; 
+            background: rgba(255,255,255,.18); border-radius: 20px;
+            padding: 4px 14px; font-size: .8rem; letter-spacing: .4px;
+            display: inline-block; margin-top: 12px;
         }
 
-        /* ── Formularios y Selects ── */
+        .contenedor { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+
+        .barra-acciones {
+            display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px;
+        }
+
         .campo {
-            background: #fff;
-            border-radius: var(--radio);
-            padding: 24px;
-            box-shadow: var(--sombra);
-            border: 1px solid rgba(0,0,0,.05);
-            margin-bottom: 24px;
+            background: #fff; border-radius: var(--radio); padding: 24px;
+            box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05); margin-bottom: 24px;
         }
-        .campo label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--color-primario);
-            font-size: .95rem;
-        }
+        .campo label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--color-primario); font-size: .95rem; }
         .campo select {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e1e5e9;
-            border-radius: var(--radio);
-            font-size: 1rem;
-            background: #fff;
-            transition: all .15s;
-            font-family: inherit;
+            width: 100%; padding: 12px 16px; border: 2px solid #e1e5e9;
+            border-radius: var(--radio); font-size: 1rem; background: #fff;
+            transition: all .15s; font-family: inherit;
         }
-        .campo select:focus {
-            outline: none;
-            border-color: var(--color-acento);
-            box-shadow: 0 0 0 3px rgba(0,95,163,.1);
-        }
+        .campo select:focus { outline: none; border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(0,95,163,.1); }
 
-        /* ── Layout Split ── */
-        .layout-split {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 24px;
-            margin-top: 24px;
-        }
+        .layout-split { display: grid; grid-template-columns: 320px 1fr; gap: 24px; margin-top: 24px; }
 
-        /* ── Árbol Normativo ── */
         .seccion-arbol {
-            background: #fff;
-            border-radius: var(--radio);
-            padding: 24px;
-            box-shadow: var(--sombra);
-            border: 1px solid rgba(0,0,0,.05);
-            height: 70vh;
-            overflow-y: auto;
+            background: #fff; border-radius: var(--radio); padding: 24px;
+            box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05);
+            height: 70vh; overflow-y: auto;
         }
-        .seccion-arbol h3 {
-            margin: 0 0 20px;
-            font-size: 1.15rem;
-            color: var(--color-primario);
-            font-weight: 600;
+        .seccion-arbol-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
         }
-        .arbol { 
-            list-style: none; 
-            padding-left: 0; 
-            margin: 0;
-        }
-        .arbol ul { 
-            list-style: none; 
-            padding-left: 24px; 
-            border-left: 2px solid #e1e5e9; 
-            margin: 8px 0 0 4px; 
-        }
-        .nodo { 
-            display: block;
-            padding: 8px 12px; 
-            cursor: pointer; 
-            border-radius: var(--radio); 
-            margin: 2px 0; 
-            transition: all .15s;
-            font-size: .92rem;
-        }
-        .nodo:hover { 
-            background: rgba(0,95,163,.08); 
-        }
-        .nodo.seleccionado { 
-            background: var(--color-acento); 
-            color: #fff; 
-            font-weight: 600;
-        }
-        .nivel-Título    { color: var(--color-primario); font-weight: 600; font-size: 1rem; }
-        .nivel-Capítulo  { color: var(--color-acento); font-weight: 600; }
-        .nivel-Artículo  { color: #333; }
-        .nivel-Inciso    { color: #555; font-size: .92rem; }
-        .nivel-Sub-inciso { color: #666; font-size: .88rem; }
+        .seccion-arbol-header h3 { margin: 0; font-size: 1.15rem; color: var(--color-primario); font-weight: 600; }
 
-        /* ── Visor de Contenido ── */
+        .arbol { list-style: none; padding-left: 0; margin: 0; }
+        .arbol ul { list-style: none; padding-left: 24px; border-left: 2px solid #e1e5e9; margin: 8px 0 0 4px; }
+        .nodo {
+            display: block; padding: 8px 12px; cursor: pointer;
+            border-radius: var(--radio); margin: 2px 0; transition: all .15s; font-size: .92rem;
+        }
+        .nodo:hover { background: rgba(0,95,163,.08); }
+        .nodo.seleccionado { background: var(--color-acento); color: #fff; font-weight: 600; }
+        .nivel-Título      { color: var(--color-primario); font-weight: 600; font-size: 1rem; }
+        .nivel-Capítulo    { color: var(--color-acento); font-weight: 600; }
+        .nivel-Artículo    { color: #333; }
+        .nivel-Inciso      { color: #555; font-size: .92rem; }
+        .nivel-Sub-inciso  { color: #666; font-size: .88rem; }
+        /* niveles con slash */
+        .nivel-Inciso\/Párrafo { color: #555; font-size: .92rem; }
+
         .visor {
-            background: #fff;
-            border-radius: var(--radio);
-            padding: 24px;
-            box-shadow: var(--sombra);
-            border: 1px solid rgba(0,0,0,.05);
-            min-height: 400px;
-            display: flex;
-            flex-direction: column;
+            background: #fff; border-radius: var(--radio); padding: 24px;
+            box-shadow: var(--sombra); border: 1px solid rgba(0,0,0,.05);
+            min-height: 400px; display: flex; flex-direction: column;
         }
-        .visor-placeholder {
-            color: #888;
-            text-align: center;
-            padding: 40px 20px;
-            font-style: italic;
-        }
+        .visor-placeholder { color: #888; text-align: center; padding: 40px 20px; font-style: italic; }
 
-        /* ── Badges ── */
         .badge-vigente {
-            background: var(--bg-exito);
-            color: var(--color-exito);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: .8rem;
-            font-weight: 600;
-            letter-spacing: .3px;
+            background: var(--bg-exito); color: var(--color-exito);
+            padding: 4px 12px; border-radius: 20px; font-size: .8rem; font-weight: 600;
         }
 
-        /* ── Trazabilidad ── */
         .trazabilidad {
-            background: var(--bg-advertencia);
-            border-left: 4px solid var(--color-advertencia);
-            padding: 16px;
-            margin-top: 20px;
-            border-radius: 0 var(--radio) var(--radio) 0;
-            font-size: .9rem;
+            background: var(--bg-advertencia); border-left: 4px solid var(--color-advertencia);
+            padding: 16px; margin-top: 20px; border-radius: 0 var(--radio) var(--radio) 0; font-size: .9rem;
         }
-        .trazabilidad strong {
-            color: var(--color-primario);
-        }
+        .trazabilidad strong { color: var(--color-primario); }
 
         /* ── Botones ── */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 20px; 
-            border-radius: var(--radio); 
-            border: none; 
-            cursor: pointer; 
-            font-size: .9rem; 
-            font-weight: 600; 
-            text-decoration: none;
-            transition: all .15s;
-            background: var(--color-acento);
-            color: #fff;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: var(--radio); border: none;
+            cursor: pointer; font-size: .9rem; font-weight: 600;
+            transition: all .15s; background: var(--color-acento); color: #fff;
+            font-family: inherit; text-decoration: none;
         }
-        .btn:hover { 
-            opacity: .9;
-            transform: translateY(-1px);
+        .btn:hover { opacity: .9; transform: translateY(-1px); }
+        .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+        .btn-sm         { padding: 7px 14px; font-size: .82rem; }
+        .btn-secundario { background: #6c757d; }
+        .btn-exito      { background: var(--color-exito); }
+        .btn-outline {
+            background: transparent; border: 2px solid var(--color-acento);
+            color: var(--color-acento);
         }
-        .btn-sm {
-            padding: 8px 16px;
-            font-size: .85rem;
+        .btn-outline:hover { background: var(--color-acento); color: #fff; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.55); z-index: 1000;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.activo { display: flex; }
+        .modal {
+            background: #fff; border-radius: 10px;
+            box-shadow: 0 8px 40px rgba(0,0,0,.25);
+            width: 680px; max-width: 95vw; max-height: 90vh;
+            overflow-y: auto; padding: 32px; position: relative;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #e9ecef;
+        }
+        .modal-header h2 { margin: 0; color: var(--color-primario); font-size: 1.2rem; }
+        .modal-cerrar {
+            background: none; border: none; font-size: 1.5rem;
+            cursor: pointer; color: #666; line-height: 1; padding: 4px 8px;
+            border-radius: 4px; transition: background .15s;
+        }
+        .modal-cerrar:hover { background: #f0f0f0; color: #333; }
+
+        .form-grupo { margin-bottom: 18px; }
+        .form-grupo label { display: block; margin-bottom: 6px; font-weight: 600; color: #444; font-size: .88rem; }
+        .form-grupo input,
+        .form-grupo textarea,
+        .form-grupo select {
+            width: 100%; padding: 10px 14px; border: 2px solid #e1e5e9;
+            border-radius: var(--radio); font-size: .95rem; font-family: inherit;
+            transition: border-color .15s; box-sizing: border-box;
+        }
+        .form-grupo input:focus,
+        .form-grupo textarea:focus,
+        .form-grupo select:focus {
+            outline: none; border-color: var(--color-acento);
+            box-shadow: 0 0 0 3px rgba(0,95,163,.1);
+        }
+        .form-grupo textarea { resize: vertical; min-height: 120px; }
+        .form-grupo .hint { font-size: .75rem; color: #888; margin-top: 4px; }
+        .fila-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .texto-referencia {
+            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: var(--radio);
+            padding: 12px 16px; font-size: .9rem; color: #555; line-height: 1.6;
+            max-height: 100px; overflow-y: auto; font-style: italic;
         }
 
-        /* ── Footer ── */
-        .footer {
-            text-align: center;
-            padding: 24px 0;
-            color: #666;
-            font-size: .88rem;
-            border-top: 1px solid #e9ecef;
-            margin-top: 44px;
+        .modal-footer {
+            display: flex; gap: 12px; justify-content: flex-end;
+            margin-top: 24px; padding-top: 20px; border-top: 1px solid #e9ecef;
         }
 
-        /* ── Responsive ── */
+        .alerta {
+            padding: 12px 16px; border-radius: var(--radio);
+            font-size: .9rem; margin-bottom: 16px; display: none;
+        }
+        .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border-left: 4px solid var(--color-peligro); }
+        .alerta-exito { background: var(--bg-exito);   color: var(--color-exito);   border-left: 4px solid var(--color-exito); }
+
+        /* Tom Select */
+        .ts-wrapper { font-family: 'Segoe UI', sans-serif; }
+        .ts-control {
+            border: 2px solid #e1e5e9 !important; border-radius: var(--radio) !important;
+            font-size: .95rem !important; min-height: 44px !important; padding: 4px 8px !important;
+        }
+        .ts-control:focus-within { border-color: var(--color-acento) !important; box-shadow: 0 0 0 3px rgba(0,95,163,.1) !important; }
+        .ts-control .item { background: #d0e8ff !important; color: #003f8a !important; border-radius: 20px !important; padding: 2px 10px !important; font-size: .82rem !important; font-weight: 600 !important; }
+        .ts-dropdown { border-radius: var(--radio) !important; font-size: .9rem !important; }
+        .ts-dropdown .option.selected,
+        .ts-dropdown .option:hover { background: var(--color-acento) !important; color: #fff !important; }
+
+        .footer { text-align: center; padding: 24px 0; color: #666; font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 44px; }
+
         @media (max-width: 768px) {
-            .layout-split {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            .seccion-arbol, .visor {
-                height: 50vh;
-            }
+            .layout-split { grid-template-columns: 1fr; gap: 20px; }
+            .seccion-arbol, .visor { height: 50vh; }
             .contenedor { padding: 0 16px; }
-            .page-header { padding: 24px 20px 20px; }
-            .page-header h1 { font-size: 1.5rem; }
-            .campo, .seccion-arbol, .visor { padding: 20px; }
-            .arbol ul { padding-left: 16px; }
+            .modal { padding: 24px 20px; }
+            .fila-dos { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-<!-- ── Encabezado ── -->
 <header class="page-header">
     <h1>Compilador Normativo</h1>
     <p class="subtitulo">Explorador interactivo de estructura normativa y visor de contenido vigente</p>
@@ -253,6 +206,14 @@
 </header>
 
 <main class="contenedor">
+
+    <!-- Botones solo visibles para EDITAR_REGLAMENTOS -->
+    <div class="barra-acciones" id="barra-admin" style="display:none">
+        <button class="btn btn-outline btn-sm" onclick="abrirModalReglamento()">
+            + Nuevo reglamento
+        </button>
+    </div>
+
     <div class="campo">
         <label>Seleccionar reglamento</label>
         <select id="selector-reglamento" onchange="cargarArbol(this.value)">
@@ -261,13 +222,17 @@
     </div>
 
     <div class="layout-split" id="panel-arbol" style="display:none">
-        <!-- Árbol jerárquico -->
         <div class="seccion-arbol">
-            <h3>Estructura normativa</h3>
+            <div class="seccion-arbol-header">
+                <h3>Estructura normativa</h3>
+                <!-- Botón agregar elemento, solo para editores -->
+                <button class="btn btn-sm" id="btn-agregar-elemento"
+                        style="display:none" onclick="abrirModalElemento()">
+                    + Agregar
+                </button>
+            </div>
             <ul class="arbol" id="contenedor-arbol"></ul>
         </div>
-
-        <!-- Visor del artículo seleccionado -->
         <div>
             <div class="visor" id="visor-contenido">
                 <div class="visor-placeholder">Seleccione un elemento del árbol para ver su contenido.</div>
@@ -275,121 +240,638 @@
         </div>
     </div>
 
-    <div class="footer">
-        Compilador Normativo — Sistema AIR
-    </div>
+    <div class="footer">Compilador Normativo — Sistema AIR</div>
 </main>
 
+<!-- ══════════════════════════════════════════════
+     MODAL 1 — Nuevo Reglamento
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-reglamento">
+    <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h2>Nuevo reglamento</h2>
+            <button class="modal-cerrar" onclick="cerrarModal('modal-reglamento')">&times;</button>
+        </div>
+        <div class="alerta alerta-error" id="err-reglamento"></div>
+        <div class="alerta alerta-exito" id="ok-reglamento"></div>
+
+        <div class="form-grupo">
+            <label for="reg-nombre">Nombre del reglamento <span style="color:var(--color-peligro)">*</span></label>
+            <input type="text" id="reg-nombre" placeholder="Ej: Reglamento de la Asamblea Institucional Representativa">
+        </div>
+        <div class="form-grupo">
+            <label for="reg-sigla">Sigla <span style="color:var(--color-peligro)">*</span></label>
+            <input type="text" id="reg-sigla" placeholder="Ej: RAIR" style="text-transform:uppercase">
+            <div class="hint">Identificador corto, sin espacios. Se mostrará en el selector.</div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secundario" onclick="cerrarModal('modal-reglamento')">Cancelar</button>
+            <button class="btn btn-exito" id="btn-guardar-reglamento" onclick="guardarReglamento()">
+                Crear reglamento
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL 2 — Agregar Elemento Normativo
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-elemento">
+    <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h2>Agregar elemento normativo</h2>
+            <button class="modal-cerrar" onclick="cerrarModal('modal-elemento')">&times;</button>
+        </div>
+        <div class="alerta alerta-error" id="err-elemento"></div>
+        <div class="alerta alerta-exito" id="ok-elemento"></div>
+
+        <!-- Padre (opcional) -->
+        <div class="form-grupo" id="grupo-padre">
+            <label>Elemento padre <span style="font-weight:400;color:#888">(opcional — déjelo vacío para nivel raíz)</span></label>
+            <div class="texto-referencia" id="ref-padre-texto" style="display:none"></div>
+            <button class="btn btn-outline btn-sm" id="btn-limpiar-padre"
+                    style="display:none;margin-top:8px" onclick="limpiarPadre()">
+                ✕ Quitar padre seleccionado
+            </button>
+            <div class="hint" id="hint-padre">
+                Si seleccionó un elemento en el árbol, este se usará como padre automáticamente.
+            </div>
+        </div>
+
+        <div class="fila-dos">
+            <div class="form-grupo">
+                <label for="el-nivel">Nivel <span style="color:var(--color-peligro)">*</span></label>
+                <select id="el-nivel">
+                    <option value="">Seleccione...</option>
+                </select>
+            </div>
+            <div class="form-grupo">
+                <label for="el-orden">Orden <span style="color:var(--color-peligro)">*</span></label>
+                <input type="number" id="el-orden" min="1" value="1" placeholder="1">
+                <div class="hint">Posición dentro del mismo nivel.</div>
+            </div>
+        </div>
+
+        <div class="form-grupo">
+            <label for="el-etiqueta">Etiqueta / Número <span style="color:var(--color-peligro)">*</span></label>
+            <input type="text" id="el-etiqueta" placeholder="Ej: TITULO I, ARTICULO 1, a.">
+        </div>
+
+        <div class="form-grupo">
+            <label for="el-contenido">Contenido / Texto <span style="color:var(--color-peligro)">*</span></label>
+            <textarea id="el-contenido" placeholder="Texto completo del artículo, inciso o título..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secundario" onclick="cerrarModal('modal-elemento')">Cancelar</button>
+            <button class="btn btn-exito" id="btn-guardar-elemento" onclick="guardarElemento()">
+                Agregar elemento
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL 3 — Proponer Reforma
+════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-reforma">
+    <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+            <h2>Proponer reforma normativa</h2>
+            <button class="modal-cerrar" onclick="cerrarModal('modal-reforma')">&times;</button>
+        </div>
+        <div class="alerta alerta-error" id="err-reforma"></div>
+        <div class="alerta alerta-exito" id="ok-reforma"></div>
+
+        <div class="form-grupo">
+            <label>Elemento a reformar</label>
+            <input type="text" id="ref-elemento" readonly style="background:#f8f9fa;color:#555;">
+        </div>
+        <div class="form-grupo">
+            <label>Texto vigente actual</label>
+            <div class="texto-referencia" id="ref-texto-actual"></div>
+        </div>
+        <div class="form-grupo">
+            <label for="reforma-titulo">Título de la propuesta <span style="color:var(--color-peligro)">*</span></label>
+            <input type="text" id="reforma-titulo" placeholder="Ej: Reforma al Artículo 5 sobre autonomía universitaria">
+        </div>
+        <div class="form-grupo">
+            <label for="reforma-codigo">Código AIR (opcional)</label>
+            <input type="text" id="reforma-codigo" placeholder="Ej: AIR-99-2025">
+        </div>
+        <div class="form-grupo">
+            <label for="reforma-texto">Texto sustitutivo propuesto <span style="color:var(--color-peligro)">*</span></label>
+            <textarea id="reforma-texto" placeholder="Escriba aquí el nuevo texto..."></textarea>
+        </div>
+        <div class="form-grupo">
+            <label for="reforma-etapa">Etapa de la propuesta <span style="color:var(--color-peligro)">*</span></label>
+            <select id="reforma-etapa"><option value="">Cargando...</option></select>
+        </div>
+        <div class="form-grupo">
+            <label for="reforma-mayoria">Tipo de mayoría requerida <span style="color:var(--color-peligro)">*</span></label>
+            <select id="reforma-mayoria"><option value="">Cargando...</option></select>
+        </div>
+        <div class="form-grupo">
+            <label for="reforma-proponentes">
+                Proponentes <span style="color:var(--color-peligro)">*</span>
+                <span style="font-weight:400;color:#888;font-size:.78rem"> — mínimo uno</span>
+            </label>
+            <select id="reforma-proponentes" multiple placeholder="Buscar asambleísta..."></select>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secundario" onclick="cerrarModal('modal-reforma')">Cancelar</button>
+            <button class="btn" id="btn-guardar-reforma" onclick="guardarReforma()">Registrar propuesta</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="/shared/auth.js"></script>
 <script>
-    let arbolPlano = [];
+// ══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ══════════════════════════════════════════════
+let arbolPlano      = [];
+let nodoActual      = null;
+let reglamentoActual = null;
+let catalogos       = null;
+let niveles         = [];
+let tsProponentes   = null;
+let puedeEditar     = false;   // true si tiene EDITAR_REGLAMENTOS
 
-    async function cargarReglamentos() {
+// ══════════════════════════════════════════════
+// INICIALIZACIÓN
+// ══════════════════════════════════════════════
+async function init() {
+    // Leer permisos del JWT
+    const token = sessionStorage.getItem('token');
+    if (token) {
         try {
-            const res = await fetch('/normativa');
-            
-            if (!res.ok) {
-                console.error('Error HTTP:', res.status, await res.text());
-                return;
-            }
-            
-            const data = await res.json();
-            console.log('Reglamentos recibidos:', data);
-            
-            const selector = document.getElementById('selector-reglamento');
-            selector.innerHTML = '<option value="">Seleccione un reglamento...</option>';
-            data.forEach(r => {
-                selector.add(new Option(`${r.sigla} — ${r.nombre_normativa}`, r.id_reglamento));
-            });
-        } catch (err) {
-            console.error('Fetch falló:', err);
-        }
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            puedeEditar = Array.isArray(payload.permisos) &&
+                          payload.permisos.includes('EDITAR_REGLAMENTOS');
+        } catch {}
     }
 
-    async function cargarArbol(id_reglamento) {
-        if (!id_reglamento) return;
+    // Mostrar controles de edición si corresponde
+    if (puedeEditar) {
+        document.getElementById('barra-admin').style.display = 'flex';
+        document.getElementById('btn-agregar-elemento').style.display = 'inline-flex';
+    }
+
+    await Promise.all([
+        cargarReglamentos(),
+        cargarCatalogosNormativa(),
+        cargarCatalogosProforma(),
+        cargarAsambleistas()
+    ]);
+}
+
+// ══════════════════════════════════════════════
+// CARGA DE DATOS
+// ══════════════════════════════════════════════
+async function cargarReglamentos() {
+    try {
+        const res  = await fetch('/normativa');
+        if (!res.ok) return;
+        const data = await res.json();
+        const sel  = document.getElementById('selector-reglamento');
+        sel.innerHTML = '<option value="">Seleccione un reglamento...</option>';
+        data.forEach(r => sel.add(new Option(`${r.sigla} — ${r.nombre_normativa}`, r.id_reglamento)));
+    } catch (e) { console.error('Error reglamentos:', e); }
+}
+
+async function cargarCatalogosNormativa() {
+    try {
+        const res = await fetch('/normativa/catalogos');
+        if (!res.ok) return;
+        const data = await res.json();
+        niveles = data.niveles || [];
+
+        const sel = document.getElementById('el-nivel');
+        sel.innerHTML = '<option value="">Seleccione nivel...</option>';
+        niveles.forEach(n =>
+            sel.add(new Option(n.nombre, n.id_nivel_reglamento))
+        );
+    } catch (e) { console.error('Error catálogos normativa:', e); }
+}
+
+async function cargarCatalogosProforma() {
+    try {
+        const res = await fetch('/propuestas/catalogos');
+        if (!res.ok) return;
+        catalogos = await res.json();
+
+        const selEtapa = document.getElementById('reforma-etapa');
+        selEtapa.innerHTML = '<option value="">Seleccione etapa...</option>';
+        catalogos.etapas.forEach(e =>
+            selEtapa.add(new Option(e.nombre, e.id_etapa_propuesta))
+        );
+
+        const selMayoria = document.getElementById('reforma-mayoria');
+        selMayoria.innerHTML = '<option value="">Seleccione mayoría...</option>';
+        catalogos.mayorias.forEach(m =>
+            selMayoria.add(new Option(m.nombre_rol, m.id_tipo_mayoria_requerida))
+        );
+    } catch (e) { console.error('Error catálogos propuestas:', e); }
+}
+
+async function cargarAsambleistas() {
+    try {
+        const res  = await fetch('/asambleistas');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        tsProponentes = new TomSelect('#reforma-proponentes', {
+            options: data.map(a => ({
+                value: String(a.asambleista_id),
+                text:  `${a.nombre} (${a.cedula})`
+            })),
+            plugins:    ['remove_button'],
+            maxOptions: 400,
+            placeholder: 'Buscar asambleísta por nombre o cédula...'
+        });
+    } catch (e) { console.error('Error asambleístas:', e); }
+}
+
+// ══════════════════════════════════════════════
+// ÁRBOL
+// ══════════════════════════════════════════════
+async function cargarArbol(id_reglamento) {
+    if (!id_reglamento) {
         document.getElementById('panel-arbol').style.display = 'none';
-
-        const res = await fetch(`/normativa/${id_reglamento}/arbol`);
-        arbolPlano = await res.json();
-
-        renderArbol(arbolPlano);
-        document.getElementById('panel-arbol').style.display = 'grid';
+        return;
     }
+    reglamentoActual = id_reglamento;
+    nodoActual = null;
+    document.getElementById('panel-arbol').style.display = 'none';
 
-    function renderArbol(nodos) {
-        const ul = document.getElementById('contenedor-arbol');
-        ul.innerHTML = '';
-        const mapa = {};
+    const res  = await fetch(`/normativa/${id_reglamento}/arbol`);
+    arbolPlano = await res.json();
+    renderArbol(arbolPlano);
+    document.getElementById('panel-arbol').style.display = 'grid';
+    document.getElementById('visor-contenido').innerHTML =
+        '<div class="visor-placeholder">Seleccione un elemento del árbol para ver su contenido.</div>';
+}
 
-        nodos.forEach(n => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <span class="nodo nivel-${n.nivel}"
-                      onclick="seleccionarNodo('${n.id_elemento}', this)"
-                      data-id="${n.id_elemento}">
-                    ${n.numer_etiqueta}
-                </span>
-            `;
-            mapa[n.id_elemento] = li;
-        });
+function renderArbol(nodos) {
+    const ul   = document.getElementById('contenedor-arbol');
+    ul.innerHTML = '';
+    const mapa = {};
 
-        nodos.forEach(n => {
-            const li = mapa[n.id_elemento];
-            if (!n.id_elemento_padre) {
-                ul.appendChild(li);
-            } else {
-                const padre = mapa[n.id_elemento_padre];
-                if (padre) {
-                    let subUl = padre.querySelector('ul');
-                    if (!subUl) { 
-                        subUl = document.createElement('ul'); 
-                        padre.appendChild(subUl); 
-                    }
-                    subUl.appendChild(li);
-                }
+    nodos.forEach(n => {
+        const li = document.createElement('li');
+        // Sanitizar el nivel para la clase CSS (reemplaza / por -)
+        const nivelCls = (n.nivel || '').replace(/\//g, '-');
+        li.innerHTML = `
+            <span class="nodo nivel-${nivelCls}"
+                  onclick="seleccionarNodo('${n.id_elemento}', this)"
+                  data-id="${n.id_elemento}">
+                ${esc(n.numer_etiqueta)}
+            </span>`;
+        mapa[n.id_elemento] = li;
+    });
+
+    nodos.forEach(n => {
+        const li = mapa[n.id_elemento];
+        if (!n.id_elemento_padre) {
+            ul.appendChild(li);
+        } else {
+            const padre = mapa[n.id_elemento_padre];
+            if (padre) {
+                let subUl = padre.querySelector('ul');
+                if (!subUl) { subUl = document.createElement('ul'); padre.appendChild(subUl); }
+                subUl.appendChild(li);
             }
+        }
+    });
+}
+
+async function seleccionarNodo(id_elemento, spanEl) {
+    document.querySelectorAll('.nodo.seleccionado').forEach(n => n.classList.remove('seleccionado'));
+    spanEl.classList.add('seleccionado');
+
+    nodoActual = arbolPlano.find(n => String(n.id_elemento) === String(id_elemento));
+    if (!nodoActual) return;
+
+    const histRes   = await fetch(`/normativa/elemento/${id_elemento}/historial`);
+    const historial = await histRes.json();
+    const anterior  = historial.find(h => h.estado_vigencia === 'Histórico');
+
+    // Botón de reforma solo para usuarios con permiso
+    const btnReforma = puedeEditar
+        ? `<button class="btn btn-sm" onclick="abrirModalReforma()" style="margin-right:8px">
+               + Proponer reforma
+           </button>`
+        : '';
+
+    // Botón agregar hijo solo para editores
+    const btnHijo = puedeEditar
+        ? `<button class="btn btn-sm btn-outline" onclick="abrirModalElementoConPadre()">
+               + Agregar sub-elemento
+           </button>`
+        : '';
+
+    document.getElementById('visor-contenido').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+            <h2 style="margin:0;color:var(--color-primario);font-size:1.3rem;">
+                ${esc(nodoActual.nivel)} ${esc(nodoActual.numer_etiqueta)}
+            </h2>
+            <span class="badge-vigente">● Vigente</span>
+        </div>
+        <div style="flex:1;line-height:1.7;color:#333;font-size:1rem;">
+            ${esc(nodoActual.contenido_texto)}
+        </div>
+        <div class="trazabilidad">
+            <strong>Trazabilidad y versión</strong><br>
+            Vigente desde: ${nodoActual.fecha_inicio_vigencia
+                ? new Date(nodoActual.fecha_inicio_vigencia).toLocaleDateString('es-CR')
+                : 'Fecha de creación del reglamento'}
+            ${anterior ? `<br><em>Versión anterior — Modificado el
+                ${new Date(anterior.fecha_fin_vigencia).toLocaleDateString('es-CR')}</em>` : ''}
+            ${historial[0]?.acuerdo_origen
+                ? `<br>Resolución de origen: <strong>${esc(historial[0].acuerdo_origen)}</strong>` : ''}
+        </div>
+        <div style="margin-top:20px;display:flex;gap:8px;flex-wrap:wrap;">
+            ${btnReforma}
+            ${btnHijo}
+        </div>
+    `;
+}
+
+// ══════════════════════════════════════════════
+// MODAL NUEVO REGLAMENTO
+// ══════════════════════════════════════════════
+function abrirModalReglamento() {
+    document.getElementById('reg-nombre').value = '';
+    document.getElementById('reg-sigla').value  = '';
+    ocultarAlertas('reglamento');
+    abrirModal('modal-reglamento');
+    setTimeout(() => document.getElementById('reg-nombre').focus(), 100);
+}
+
+async function guardarReglamento() {
+    ocultarAlertas('reglamento');
+    const nombre = document.getElementById('reg-nombre').value.trim();
+    const sigla  = document.getElementById('reg-sigla').value.trim().toUpperCase();
+
+    if (!nombre) return mostrarAlerta('reglamento', 'error', 'El nombre del reglamento es obligatorio.');
+    if (!sigla)  return mostrarAlerta('reglamento', 'error', 'La sigla es obligatoria.');
+
+    const btn = document.getElementById('btn-guardar-reglamento');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+
+    try {
+        const res = await fetch('/normativa', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ nombre_normativa: nombre, sigla })
         });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al crear reglamento');
+
+        mostrarAlerta('reglamento', 'exito', `Reglamento "${nombre}" creado correctamente.`);
+        await cargarReglamentos();
+
+        // Seleccionar el reglamento recién creado
+        const sel = document.getElementById('selector-reglamento');
+        sel.value = data.id_reglamento;
+        await cargarArbol(data.id_reglamento);
+
+        setTimeout(() => cerrarModal('modal-reglamento'), 1800);
+    } catch (e) {
+        mostrarAlerta('reglamento', 'error', e.message);
+    } finally {
+        btn.disabled = false; btn.textContent = 'Crear reglamento';
+    }
+}
+
+// ══════════════════════════════════════════════
+// MODAL AGREGAR ELEMENTO
+// ══════════════════════════════════════════════
+let padreParaElemento = null;   // nodo seleccionado como padre
+
+function abrirModalElemento() {
+    // Sin padre predefinido — elemento raíz
+    padreParaElemento = null;
+    _prepararModalElemento();
+}
+
+function abrirModalElementoConPadre() {
+    // Usa el nodo actualmente seleccionado en el árbol como padre
+    padreParaElemento = nodoActual;
+    _prepararModalElemento();
+}
+
+function _prepararModalElemento() {
+    if (!reglamentoActual) {
+        alert('Primero seleccione un reglamento.');
+        return;
+    }
+    ocultarAlertas('elemento');
+    document.getElementById('el-etiqueta').value  = '';
+    document.getElementById('el-contenido').value = '';
+    document.getElementById('el-orden').value     = '1';
+    document.getElementById('el-nivel').value     = '';
+
+    // Mostrar/ocultar referencia del padre
+    const refPadre  = document.getElementById('ref-padre-texto');
+    const btnLimpiar = document.getElementById('btn-limpiar-padre');
+    const hint      = document.getElementById('hint-padre');
+
+    if (padreParaElemento) {
+        refPadre.textContent = `${padreParaElemento.nivel} ${padreParaElemento.numer_etiqueta}`;
+        refPadre.style.display  = 'block';
+        btnLimpiar.style.display = 'inline-flex';
+        hint.style.display      = 'none';
+
+        // Sugerir el siguiente nivel
+        const nivelPadreId = padreParaElemento.id_nivel_reglamento ||
+            niveles.find(n => n.nombre === padreParaElemento.nivel)?.id_nivel_reglamento;
+        if (nivelPadreId) {
+            const siguienteId = parseInt(nivelPadreId) + 1;
+            document.getElementById('el-nivel').value = siguienteId;
+        }
+    } else {
+        refPadre.style.display   = 'none';
+        btnLimpiar.style.display = 'none';
+        hint.style.display       = 'block';
+        // Sugerir nivel Título por defecto
+        document.getElementById('el-nivel').value = '1';
     }
 
-    async function seleccionarNodo(id_elemento, spanEl) {
-        document.querySelectorAll('.nodo.seleccionado').forEach(n => n.classList.remove('seleccionado'));
-        spanEl.classList.add('seleccionado');
+    abrirModal('modal-elemento');
+    setTimeout(() => document.getElementById('el-etiqueta').focus(), 100);
+}
 
-        const nodo = arbolPlano.find(n => String(n.id_elemento) === String(id_elemento));
-        if (!nodo) return;
+function limpiarPadre() {
+    padreParaElemento = null;
+    document.getElementById('ref-padre-texto').style.display   = 'none';
+    document.getElementById('btn-limpiar-padre').style.display = 'none';
+    document.getElementById('hint-padre').style.display        = 'block';
+    document.getElementById('el-nivel').value = '1';
+}
 
-        const histRes  = await fetch(`/normativa/elemento/${id_elemento}/historial`);
-        const historial = await histRes.json();
-        const anterior = historial.find(h => h.estado_vigencia === 'Histórico');
+async function guardarElemento() {
+    ocultarAlertas('elemento');
 
-        document.getElementById('visor-contenido').innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
-                <h2 style="margin:0; color: var(--color-primario); font-size: 1.3rem;">${nodo.nivel} ${nodo.numer_etiqueta}</h2>
-                <span class="badge-vigente">● Vigente</span>
-            </div>
-            <div style="flex: 1; line-height: 1.7; color: #333; font-size: 1rem;">${nodo.contenido_texto}</div>
-            <div class="trazabilidad">
-                <strong>Trazabilidad y versión</strong><br>
-                Vigente desde: ${nodo.fecha_inicio_vigencia
-                    ? new Date(nodo.fecha_inicio_vigencia).toLocaleDateString('es-CR')
-                    : 'Fecha de creación del reglamento'}
-                ${anterior ? `<br><em>Versión anterior existente — Última modificación el
-                    ${new Date(anterior.fecha_fin_vigencia).toLocaleDateString('es-CR')}</em>` : ''}
-                ${historial[0]?.acuerdo_origen
-                    ? `<br>Resolución de origen: <strong>${historial[0].acuerdo_origen}</strong>` : ''}
-            </div>
-            <div style="margin-top:24px">
-                <button class="btn btn-sm" disabled style="opacity:.5;cursor:not-allowed;" title="Módulo en construcción">
-                    + Proponer reforma a este elemento
-                </button>
-            </div>
-        `;
-        document.querySelector('.visor-placeholder')?.remove();
+    const idNivel    = document.getElementById('el-nivel').value;
+    const orden      = parseInt(document.getElementById('el-orden').value);
+    const etiqueta   = document.getElementById('el-etiqueta').value.trim();
+    const contenido  = document.getElementById('el-contenido').value.trim();
+
+    if (!idNivel)   return mostrarAlerta('elemento', 'error', 'Debe seleccionar el nivel.');
+    if (!etiqueta)  return mostrarAlerta('elemento', 'error', 'La etiqueta es obligatoria.');
+    if (!contenido) return mostrarAlerta('elemento', 'error', 'El contenido es obligatorio.');
+    if (!orden || orden < 1) return mostrarAlerta('elemento', 'error', 'El orden debe ser un número mayor a 0.');
+
+    const btn = document.getElementById('btn-guardar-elemento');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+
+    try {
+        const body = {
+            id_reglamento:       reglamentoActual,
+            id_elemento_padre:   padreParaElemento?.id_elemento || null,
+            id_nivel_reglamento: parseInt(idNivel),
+            numer_etiqueta:      etiqueta,
+            contenido_texto:     contenido,
+            orden,
+            id_estado_vigencia:  1   // Vigente
+        };
+
+        const res  = await fetch('/normativa/elemento', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al crear elemento');
+
+        mostrarAlerta('elemento', 'exito', `Elemento "${etiqueta}" agregado correctamente.`);
+
+        // Recargar árbol para mostrar el nuevo elemento
+        await cargarArbol(reglamentoActual);
+        setTimeout(() => cerrarModal('modal-elemento'), 1800);
+    } catch (e) {
+        mostrarAlerta('elemento', 'error', e.message);
+    } finally {
+        btn.disabled = false; btn.textContent = 'Agregar elemento';
     }
+}
 
-    cargarReglamentos();
+// ══════════════════════════════════════════════
+// MODAL PROPONER REFORMA
+// ══════════════════════════════════════════════
+function abrirModalReforma() {
+    if (!nodoActual) return;
+    ocultarAlertas('reforma');
+    document.getElementById('reforma-titulo').value  = '';
+    document.getElementById('reforma-codigo').value  = '';
+    document.getElementById('reforma-texto').value   = '';
+    document.getElementById('reforma-etapa').value   = '';
+    document.getElementById('reforma-mayoria').value = '';
+    if (tsProponentes) tsProponentes.clear();
+
+    document.getElementById('ref-elemento').value =
+        `${nodoActual.nivel} ${nodoActual.numer_etiqueta}`;
+    document.getElementById('ref-texto-actual').textContent =
+        nodoActual.contenido_texto;
+
+    abrirModal('modal-reforma');
+    setTimeout(() => document.getElementById('reforma-titulo').focus(), 100);
+}
+
+async function guardarReforma() {
+    ocultarAlertas('reforma');
+
+    const titulo      = document.getElementById('reforma-titulo').value.trim();
+    const codigo      = document.getElementById('reforma-codigo').value.trim();
+    const texto       = document.getElementById('reforma-texto').value.trim();
+    const etapa       = document.getElementById('reforma-etapa').value;
+    const mayoria     = document.getElementById('reforma-mayoria').value;
+    const proponentes = tsProponentes ? tsProponentes.getValue() : [];
+
+    if (!titulo)            return mostrarAlerta('reforma', 'error', 'El título es obligatorio.');
+    if (!texto)             return mostrarAlerta('reforma', 'error', 'El texto sustitutivo es obligatorio.');
+    if (!etapa)             return mostrarAlerta('reforma', 'error', 'Debe seleccionar la etapa.');
+    if (!mayoria)           return mostrarAlerta('reforma', 'error', 'Debe seleccionar el tipo de mayoría.');
+    if (!proponentes.length) return mostrarAlerta('reforma', 'error', 'Debe agregar al menos un proponente.');
+
+    const btn = document.getElementById('btn-guardar-reforma');
+    btn.disabled = true; btn.textContent = 'Guardando...';
+
+    try {
+        const idEstadoInicial = catalogos?.estados?.[0]?.id_estado_propuesta || null;
+
+        const res = await fetch('/propuestas', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({
+                titulo,
+                texto_sustitutivo:         texto,
+                codigo_air:                codigo || null,
+                id_etapa_propuesta:        etapa,
+                id_estado_propuesta:       idEstadoInicial,
+                id_tipo_mayoria_requerida: mayoria,
+                id_reglamento_base:        nodoActual.id_reglamento,
+                id_elemento_origen:        nodoActual.id_elemento,
+                proponentes
+            })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error al guardar la propuesta');
+
+        mostrarAlerta('reforma', 'exito', 'Propuesta registrada correctamente. Puede gestionarla en el módulo de Propuestas.');
+        setTimeout(() => cerrarModal('modal-reforma'), 2200);
+    } catch (e) {
+        mostrarAlerta('reforma', 'error', e.message);
+    } finally {
+        btn.disabled = false; btn.textContent = 'Registrar propuesta';
+    }
+}
+
+// ══════════════════════════════════════════════
+// HELPERS MODALES Y UI
+// ══════════════════════════════════════════════
+function abrirModal(id) {
+    document.getElementById(id).classList.add('activo');
+}
+function cerrarModal(id) {
+    document.getElementById(id).classList.remove('activo');
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        ['modal-reglamento','modal-elemento','modal-reforma'].forEach(cerrarModal);
+    }
+});
+['modal-reglamento','modal-elemento','modal-reforma'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) cerrarModal(id);
+    });
+});
+
+function mostrarAlerta(modulo, tipo, msg) {
+    const el = document.getElementById(`${tipo === 'error' ? 'err' : 'ok'}-${modulo}`);
+    if (!el) return;
+    el.textContent   = msg;
+    el.style.display = 'block';
+}
+function ocultarAlertas(modulo) {
+    ['err','ok'].forEach(p => {
+        const el = document.getElementById(`${p}-${modulo}`);
+        if (el) el.style.display = 'none';
+    });
+}
+
+function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+init();
 </script>
 </body>
 </html>
-```
