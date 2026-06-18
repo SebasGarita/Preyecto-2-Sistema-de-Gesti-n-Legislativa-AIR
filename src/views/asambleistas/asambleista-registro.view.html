@@ -199,14 +199,8 @@
       opacity: .9;
       transform: translateY(-1px);
     }
-    .btn-primario {
-      background: var(--color-acento);
-      color: #fff;
-    }
-    .btn-secundario {
-      background: #e9ecef;
-      color: #444;
-    }
+    .btn-primario   { background: var(--color-acento); color: #fff; }
+    .btn-secundario { background: #e9ecef; color: #444; }
     .btn-sm {
       padding: 6px 14px;
       font-size: .82rem;
@@ -360,10 +354,10 @@
           </div>
         </fieldset>
 
-        <!-- ── PRIMER NOMBRAMIENTO ── -->
+        <!-- ── NOMBRAMIENTO (creación + edición) ── -->
         <fieldset>
-          <legend>Nombramiento inicial</legend>
-          <p class="hint">
+          <legend id="legend-nombramiento">Nombramiento inicial</legend>
+          <p class="hint" id="hint-nombramiento">
             El sector y el cargo son temporales. Cuando cambien, se agrega un nuevo
             nombramiento sin borrar el historial anterior.
           </p>
@@ -393,26 +387,28 @@
             </div>
           </div>
 
-          <div class="campo">
+          <!-- Solo visible en modo creación -->
+          <div class="campo" id="campo-resolucion">
             <label for="resolucion">Resolución de acreditación (número)</label>
             <input type="text" id="resolucion"
                    placeholder="ej: AIR-RES-001-2024">
           </div>
         </fieldset>
 
-        <div class="campo"
-            id="campo-razon-cambio"
-            style="display:none">
+        <!-- Razón del cambio (solo edición) -->
+        <div class="campo" id="campo-razon-cambio"
+             style="display:none; padding: 0 24px 16px;">
           <label for="razon-cambio">Razón del cambio</label>
-          <input type="text"
-                id="razon-cambio"
-                placeholder="Razón del cambio...">
+          <input type="text" id="razon-cambio"
+                 placeholder="Razón del cambio...">
         </div>
 
         <div class="acciones-formulario">
           <a href="/asambleistas/asambleista-lista.view.html"
-              class="btn btn-secundario">Cancelar</a>
-          <button type="submit" class="btn btn-primario">Guardar asambleísta</button>
+             class="btn btn-secundario">Cancelar</a>
+          <button type="submit" class="btn btn-primario" id="btn-guardar">
+            Guardar asambleísta
+          </button>
         </div>
       </div>
 
@@ -430,7 +426,6 @@
               <th>Desde</th>
               <th>Hasta</th>
               <th>Estado</th>
-              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="cuerpo-historial"></tbody>
@@ -448,172 +443,200 @@
 
 <script src="/shared/auth.js"></script>
 <script>
-    const idEnUrl = new URLSearchParams(window.location.search).get('id');
-    const esEdicion = !!idEnUrl;
+  const idEnUrl  = new URLSearchParams(window.location.search).get('id');
+  const esEdicion = !!idEnUrl;
 
-    function aplicarMascaraCedula(input) {
-        let val = input.value.replace(/\D/g, '');
-        if (val.length > 1 && val.length <= 5)
-            val = val[0] + '-' + val.slice(1);
-        else if (val.length > 5)
-            val = val[0] + '-' + val.slice(1, 5) + '-' + val.slice(5, 9);
-        input.value = val;
+  // Guardamos el id_nombramiento vigente cuando cargamos el asambleísta
+  let idNombramientoVigente = null;
 
-        const valido = /^\d{1}-\d{4}-\d{4}$/.test(val);
-        document.getElementById('cedula-feedback').textContent =
-            val.length > 0 && !valido ? 'Formato requerido: X-XXXX-XXXX' : '';
+  // ── Máscara de cédula ────────────────────────────────────────────────────────
+  function aplicarMascaraCedula(input) {
+    let val = input.value.replace(/\D/g, '');
+    if (val.length > 1 && val.length <= 5)
+      val = val[0] + '-' + val.slice(1);
+    else if (val.length > 5)
+      val = val[0] + '-' + val.slice(1, 5) + '-' + val.slice(5, 9);
+    input.value = val;
+
+    const valido = /^\d{1}-\d{4}-\d{4}$/.test(val);
+    document.getElementById('cedula-feedback').textContent =
+      val.length > 0 && !valido ? 'Formato requerido: X-XXXX-XXXX' : '';
+  }
+
+  // ── Catálogos ────────────────────────────────────────────────────────────────
+  async function cargarCatalogos() {
+    const token = sessionStorage.getItem('token');
+    const res   = await fetch('/asambleistas/catalogos', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    const selectSector = document.getElementById('sector');
+    data.sectores.forEach(s => selectSector.add(new Option(s.nombre, s.id_sector)));
+
+    const selectPuesto = document.getElementById('puesto');
+    data.puestos.forEach(p => selectPuesto.add(new Option(p.nombre_puesto, p.id_puesto)));
+  }
+
+  // ── Carga asambleísta en modo edición ────────────────────────────────────────
+  async function cargarAsambleista() {
+    if (!esEdicion) return;
+
+    const token = sessionStorage.getItem('token');
+    const res   = await fetch(`/asambleistas/${idEnUrl}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const a = await res.json();
+
+    // Título
+    document.getElementById('titulo-formulario').textContent = 'Detalle de Asambleísta';
+    document.getElementById('btn-guardar').textContent       = 'Guardar cambios';
+
+    // Ajustar leyenda y hint del fieldset de nombramiento en modo edición
+    document.getElementById('legend-nombramiento').textContent = 'Nombramiento vigente';
+    document.getElementById('hint-nombramiento').textContent   =
+      'Podés editar el sector, puesto y fechas del nombramiento activo. ' +
+      'Para registrar un cambio permanente usá "Asignar nuevo nombramiento".';
+
+    // Ocultar campo resolución (no aplica en edición)
+    document.getElementById('campo-resolucion').style.display = 'none';
+
+    // Identidad
+    document.getElementById('nombre').value  = a.nombre  || '';
+    document.getElementById('cedula').value  = a.cedula  || '';
+    document.getElementById('correo').value  = a.correo_institucional || '';
+
+    // Nombramiento vigente — guardamos el id para enviarlo en el PUT
+    if (a.id_nombramiento) {
+      idNombramientoVigente = a.id_nombramiento;
+
+      // Sector y puesto: los valores vienen como id desde findById
+      if (a.sector_id)
+        document.getElementById('sector').value = String(a.sector_id);
+      if (a.id_puesto)
+        document.getElementById('puesto').value = String(a.id_puesto);
+      if (a.fecha_inicio)
+        document.getElementById('fecha-inicio').value = a.fecha_inicio.substring(0, 10);
+      if (a.fecha_fin)
+        document.getElementById('fecha-fin').value = a.fecha_fin.substring(0, 10);
     }
 
-    async function cargarCatalogos() {
-    const token = sessionStorage.getItem('token');
+    // Historial de nombramientos
+    const historial = a.nombramientos || [];
+    if (historial.length) {
+      document.getElementById('seccion-historial').style.display = 'block';
+      const tbody = document.getElementById('cuerpo-historial');
+      tbody.innerHTML = historial.map(n => `
+        <tr>
+          <td>${n.sector || '—'}</td>
+          <td>${n.puesto || '—'}</td>
+          <td>${n.fecha_inicio ? formatFecha(n.fecha_inicio) : '—'}</td>
+          <td>${n.fecha_fin    ? formatFecha(n.fecha_fin)    : '—'}</td>
+          <td>
+            <span class="badge ${n.estado === 'VIGENTE' ? 'badge-verde' : 'badge-gris'}">
+              ${n.estado}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+  }
 
-    const res = await fetch('/asambleistas/catalogos', {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
+  // ── Guardar (POST o PUT) ─────────────────────────────────────────────────────
+  async function guardar(e) {
+    e.preventDefault();
+    ocultarMensajes();
+
+    let body;
+
+    if (esEdicion) {
+      body = {
+        // Identidad
+        cedula:               document.getElementById('cedula').value,
+        nombre:               document.getElementById('nombre').value,
+        correo_institucional: document.getElementById('correo').value,
+        razon_cambio:         document.getElementById('razon-cambio').value || 'Actualización',
+
+        // Nombramiento vigente (se actualiza si hay id_nombramiento)
+        id_nombramiento: idNombramientoVigente,
+        sector_id:       document.getElementById('sector').value,
+        id_puesto:       document.getElementById('puesto').value,
+        fecha_inicio:    document.getElementById('fecha-inicio').value,
+        fecha_fin:       document.getElementById('fecha-fin').value || null
+      };
+    } else {
+      body = {
+        cedula:               document.getElementById('cedula').value,
+        nombre:               document.getElementById('nombre').value,
+        correo_institucional: document.getElementById('correo').value,
+        sector_id:            document.getElementById('sector').value,
+        id_puesto:            document.getElementById('puesto').value,
+        fecha_inicio:         document.getElementById('fecha-inicio').value,
+        fecha_fin:            document.getElementById('fecha-fin').value || null,
+        resolucion_id:        null
+      };
+    }
+
+    const url    = esEdicion ? `/asambleistas/${idEnUrl}` : '/asambleistas';
+    const metodo = esEdicion ? 'PUT' : 'POST';
+    const token  = sessionStorage.getItem('token');
+
+    const res  = await fetch(url, {
+      method: metodo,
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
     });
 
     const data = await res.json();
 
-
-        const selectSector = document.getElementById('sector');
-        data.sectores.forEach(s => {
-            selectSector.add(new Option(s.nombre, s.id_sector));
-        });
-
-        const selectPuesto = document.getElementById('puesto');
-        data.puestos.forEach(p => {
-            selectPuesto.add(new Option(p.nombre_puesto, p.id_puesto));
-        });
+    if (!res.ok) {
+      mostrarError(data.error || 'Error al guardar');
+      return;
     }
 
-    async function cargarAsambleista() {
-    if (!esEdicion) return;
+    mostrarOk('Asambleísta guardado correctamente.');
+    setTimeout(() => {
+      window.location.href = '/asambleistas/asambleista-lista.view.html';
+    }, 1500);
+  }
 
-    const token = sessionStorage.getItem('token');
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function formatFecha(f) {
+    return new Date(f).toLocaleDateString('es-CR');
+  }
 
-    const res = await fetch(`/asambleistas/${idEnUrl}`, {
-        headers: {
-            'Authorization': `Bearer ${token}`
-        }
-    });
+  function mostrarError(msg) {
+    const el = document.getElementById('mensaje-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function mostrarOk(msg) {
+    const el = document.getElementById('mensaje-ok');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function ocultarMensajes() {
+    document.getElementById('mensaje-error').style.display = 'none';
+    document.getElementById('mensaje-ok').style.display    = 'none';
+  }
+  function mostrarFormNombramiento() {
+    window.location.href = `/asambleistas/${idEnUrl}/nombramientos/nuevo`;
+  }
 
-    const a = await res.json();
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  if (esEdicion) {
+    document.getElementById('campo-razon-cambio').style.display = 'block';
+  }
 
-    document.getElementById('titulo-formulario').textContent =
-        'Detalle de Asambleísta';
-
-    document.getElementById('nombre').value = a.nombre || '';
-    document.getElementById('cedula').value = a.cedula || '';
-    document.getElementById('correo').value =
-        a.correo_institucional || '';
-
-    if (a.sector_id)
-        document.getElementById('sector').value = a.sector_id;
-
-    if (a.id_puesto)
-        document.getElementById('puesto').value = a.id_puesto;
-
-    if (a.fecha_inicio)
-        document.getElementById('fecha-inicio').value =
-            a.fecha_inicio.substring(0,10);
-
-    if (a.fecha_fin)
-        document.getElementById('fecha-fin').value =
-            a.fecha_fin.substring(0,10);
-}
-
-    async function guardar(e) {
-        e.preventDefault();
-        ocultarMensajes();
-
-        const body = esEdicion
-      ? {
-          cedula: document.getElementById("cedula").value,
-          nombre: document.getElementById("nombre").value,
-          correo_institucional:
-            document.getElementById("correo").value,
-          razon_cambio:
-            document.getElementById("razon-cambio")?.value
-            || "Actualización",
-        }
-      : {
-          cedula:
-            document.getElementById("cedula").value,
-          nombre:
-            document.getElementById("nombre").value,
-          correo_institucional:
-            document.getElementById("correo").value,
-          sector_id:
-            document.getElementById("sector").value,
-          id_puesto:
-            document.getElementById("puesto").value,
-          fecha_inicio:
-            document.getElementById("fecha-inicio").value,
-          fecha_fin:
-            document.getElementById("fecha-fin").value || null,
-          resolucion_id: null
-        };
-
-        const url    = esEdicion ? `/asambleistas/${idEnUrl}` : '/asambleistas';
-        const metodo = esEdicion ? 'PUT' : 'POST';
-
-       const token = sessionStorage.getItem('token');
-
-      const res = await fetch(url, {
-          method: metodo,
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(body)
-      });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-            mostrarError(data.error);
-            return;
-        }
-
-        mostrarOk('Asambleísta guardado correctamente.');
-        setTimeout(() => {
-        window.location.href =
-          '/asambleistas/asambleista-lista.view.html';
-        }, 1500);
-    }
-
-    function mostrarError(msg) {
-        const el = document.getElementById('mensaje-error');
-        el.textContent = msg;
-        el.style.display = 'block';
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-    function mostrarOk(msg) {
-        const el = document.getElementById('mensaje-ok');
-        el.textContent = msg;
-        el.style.display = 'block';
-    }
-    function ocultarMensajes() {
-        document.getElementById('mensaje-error').style.display = 'none';
-        document.getElementById('mensaje-ok').style.display = 'none';
-    }
-    function mostrarFormNombramiento() {
-      window.location.href =
-      `/asambleistas/${idEnUrl}/nombramientos/nuevo`;
-    }
-
-    if (esEdicion) {
-      document.getElementById("campo-razon-cambio")
-        .style.display = "block";
-    }
-
-    (async () => {
+  (async () => {
     await cargarCatalogos();
     await cargarAsambleista();
   })();
-
 </script>
-  
+
 </body>
 </html>

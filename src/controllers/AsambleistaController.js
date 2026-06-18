@@ -1,7 +1,7 @@
 const Asambleista = require('../models/Asambleista');
 const Usuario     = require('../models/Usuario');
 
-// Valida formato de cédula costarricense: 0-0000-0000
+// Valida formato de cédula costarricense: X-XXXX-XXXX
 const validarFormatoCedula = (cedula) => {
   return /^\d{1}-\d{4}-\d{4}$/.test(cedula);
 };
@@ -37,7 +37,6 @@ const AsambleistaController = {
     const { cedula, nombre, correo_institucional,
             sector_id, id_puesto, fecha_inicio, fecha_fin, resolucion_id } = req.body;
 
-    // ── Validaciones ────────────────────────────────────────────────────────
     if (!cedula || !nombre || !sector_id || !id_puesto || !fecha_inicio) {
       return res.status(400).json({
         error: 'Campos requeridos: cédula, nombre, sector, puesto, fecha de inicio'
@@ -50,7 +49,6 @@ const AsambleistaController = {
       });
     }
 
-    // Verificar que no exista ya esa cédula
     const existente = await Asambleista.findByCedula(cedula);
     if (existente) {
       return res.status(409).json({
@@ -58,20 +56,17 @@ const AsambleistaController = {
       });
     }
 
-    // ── Crear identidad permanente ──────────────────────────────────────────
     const nuevo = await Asambleista.create({ cedula, nombre, correo_institucional });
 
-    // ── Crear primer nombramiento ───────────────────────────────────────────
-    // El trigger tg_traslape_sector en BD valida que no haya traslape
     try {
       const nombramiento = await Asambleista.addNombramiento({
-        asambleista_id:     nuevo.asambleista_id,
+        asambleista_id:      nuevo.asambleista_id,
         sector_id,
         id_puesto,
         fecha_inicio,
-        fecha_fin:          fecha_fin || null,
+        fecha_fin:           fecha_fin || null,
         id_usuario_registro: req.usuario.id,
-        resolucion_id:      resolucion_id || null
+        resolucion_id:       resolucion_id || null
       });
 
       await Usuario.registrarLog({
@@ -85,7 +80,6 @@ const AsambleistaController = {
       return res.status(201).json({ ...nuevo, nombramiento });
 
     } catch (err) {
-      // Si el trigger lanza excepción de traslape, la devolvemos limpia
       if (err.message.includes('TRASLAPE_NOMBRAMIENTO')) {
         return res.status(409).json({ error: err.message });
       }
@@ -94,28 +88,33 @@ const AsambleistaController = {
   },
 
   // PUT /asambleistas/:id
+  // Actualiza identidad + nombramiento vigente si vienen sector/puesto/fechas
   async actualizar(req, res) {
-    const { id } = req.params;
-    const { cedula, nombre, correo_institucional, razon_cambio } = req.body;
+  console.log('BODY RECIBIDO:', req.body);
 
-    if (!cedula || !nombre) {
-      return res.status(400).json({ error: 'Cédula y nombre son requeridos' });
-    }
+  const { id } = req.params;
 
-    if (!validarFormatoCedula(cedula)) {
-      return res.status(400).json({
-        error: 'Formato de cédula inválido. Use el formato: X-XXXX-XXXX'
-      });
-    }
+  const {
+    cedula,
+    nombre,
+    correo_institucional,
+    razon_cambio,
+    id_nombramiento,
+    sector_id,
+    id_puesto,
+    fecha_inicio,
+    fecha_fin
+  } = req.body;
 
-    // Verificar que la cédula no esté en uso por OTRO asambleísta
-    const existente = await Asambleista.findByCedula(cedula);
-    if (existente && existente.asambleista_id != id) {
-      return res.status(409).json({
-        error: `Esa cédula pertenece a otro asambleísta: ${existente.nombre}`
-      });
-    }
+  console.log({
+    id_nombramiento,
+    sector_id,
+    id_puesto,
+    fecha_inicio,
+    fecha_fin
+  });
 
+    // ── 1. Actualizar identidad permanente ───────────────────────────────────
     const actualizado = await Asambleista.update(
       id,
       { cedula, nombre, correo_institucional, razon_cambio },
@@ -134,7 +133,38 @@ const AsambleistaController = {
       registro_id:    id
     });
 
-    return res.json(actualizado);
+    // ── 2. Actualizar nombramiento vigente si vienen los campos ──────────────
+    let nominamientoActualizado = null;
+
+    if (id_nombramiento && sector_id && id_puesto && fecha_inicio) {
+      try {
+        nominamientoActualizado = await Asambleista.updateNombramiento(
+          id_nombramiento,
+          { sector_id, id_puesto, fecha_inicio, fecha_fin: fecha_fin || null }
+        );
+
+        if (nominamientoActualizado) {
+          await Usuario.registrarLog({
+            id_usuario:     req.usuario.id,
+            accion:         'UPDATE',
+            tabla_afectada: 'nombramiento',
+            detalle:        `Nombramiento vigente actualizado para asambleísta ID: ${id}`,
+            registro_id:    id_nombramiento
+          });
+        }
+
+      } catch (err) {
+        if (err.message.includes('TRASLAPE_NOMBRAMIENTO')) {
+          return res.status(409).json({
+            error: 'Los datos de identidad se guardaron, pero el nombramiento no se pudo actualizar: ' +
+                   'existe traslape con otro nombramiento vigente en ese período.'
+          });
+        }
+        throw err;
+      }
+    }
+
+    return res.json({ ...actualizado, nombramiento: nominamientoActualizado });
   },
 
   // POST /asambleistas/:id/nombramientos
@@ -148,7 +178,6 @@ const AsambleistaController = {
       });
     }
 
-    // Validar que el asambleísta exista
     const persona = await Asambleista.findById(id);
     if (!persona) {
       return res.status(404).json({ error: 'Asambleísta no encontrado' });
