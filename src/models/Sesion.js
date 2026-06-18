@@ -28,13 +28,14 @@ const Sesion = {
     const sesion = await db.query(`
       SELECT
         s.*,
+        s.id_sesion::text AS id_sesion,   -- ← cast
         tm.nombre AS tipo_modalidad,
         ts.nombre AS tipo_sesion
       FROM sesiones s
       JOIN catalogo_tipo_modalidad tm ON s.id_tipo_modalidad = tm.id_tipo_modalidad
       JOIN catalogo_tipo_sesion    ts ON s.id_tipo_sesion    = ts.id_tipo_sesion
       WHERE s.id_sesion = $1
-    `, [id]);
+    `, [String(id)]);   // ← String()
 
     if (!sesion.rows[0]) return null;
 
@@ -88,7 +89,12 @@ const Sesion = {
       INSERT INTO resolucion (id_agenda, id_punto_agenda, numero_resolucion, fecha_emision)
       VALUES ($1, $2, $3, $4)
       RETURNING *
-    `, [id_sesion, id_punto_agenda, numero_resolucion, fecha_emision]);
+    `, [
+      String(id_sesion),
+      String(id_punto_agenda),   // ← este es el que probablemente llega corrupto
+      numero_resolucion,
+      fecha_emision
+    ]);
     return result.rows[0];
   },
 

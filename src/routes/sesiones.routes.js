@@ -9,6 +9,7 @@ router.use(auditarEscritura);
 router.get('/catalogos', ctrl.catalogos);
 router.get('/',          ctrl.listar);
 router.get('/:id',       ctrl.obtener);
+router.get('/:id/agenda/:idPunto/resolucion', ctrl.getResolucionPorPunto);
 
 router.post('/',
   requierePermiso('GESTIONAR_SESIONES'),

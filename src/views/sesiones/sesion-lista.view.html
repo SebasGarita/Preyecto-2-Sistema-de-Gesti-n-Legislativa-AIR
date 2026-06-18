@@ -393,7 +393,7 @@
                 <td data-label="Tipo">${s.tipo_sesion}</td>
                 <td data-label="Modalidad">${s.tipo_modalidad}</td>
                 <td data-label="Puntos agenda">${s.total_puntos}</td>
-                <td data-label="Acciones"><a href="/sesiones/${s.id_sesion}" class="btn btn-sm btn-secundario">Ver agenda</a></td>
+                <td data-label="Acciones"><a href="/sesiones/sesion-detalle.view.html?id=${s.id_sesion}" class="btn btn-sm btn-secundario">Ver agenda</a></td>
             </tr>
         `).join('');
     }

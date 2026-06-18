@@ -93,12 +93,31 @@ const SesionController = {
     }
   },
 
+  async getResolucionPorPunto(req, res) {
+    try {
+      const db = require('../config/db');
+      const { idPunto } = req.params;
+
+      const result = await db.query(`
+        SELECT r.*, pa.id_propuesta
+        FROM resolucion r
+        JOIN punto_agenda pa ON pa.id_punto_agenda = r.id_punto_agenda
+        WHERE r.id_punto_agenda = $1
+      `, [String(idPunto)]);
+
+      if (!result.rows[0]) {
+        return res.status(404).json({ error: 'Este punto no tiene resolución asignada' });
+      }
+      return res.json(result.rows[0]);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  },
+
   async registrarResolucion(req, res) {
     try {
       const usuarioId = req.usuario?.id;
-      if (!usuarioId) {
-        return res.status(401).json({ error: 'Usuario no autenticado' });
-      }
+      if (!usuarioId) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const { id } = req.params;
       const { id_punto_agenda, numero_resolucion, fecha_emision } = req.body;
@@ -117,15 +136,14 @@ const SesionController = {
       });
 
       await Usuario.registrarLog({
-        id_usuario: usuarioId,
-        accion: 'INSERT',
+        id_usuario:     usuarioId,
+        accion:         'INSERT',
         tabla_afectada: 'resolucion',
-        detalle: `Resolución registrada: ${numero_resolucion}`,
-        registro_id: resolucion.id_resolucion
+        detalle:        `Resolución registrada: ${numero_resolucion}`,
+        registro_id:    resolucion.id_resolucion
       });
 
       return res.status(201).json(resolucion);
-
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }

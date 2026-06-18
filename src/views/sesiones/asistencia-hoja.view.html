@@ -134,7 +134,6 @@
     }
     .persona-info .meta { font-size: .78rem; color: #777; margin-top: 2px; }
 
-    /* Botones de estado — grandes para marcar rápido */
     .btns-estado { display: flex; gap: 6px; }
     .btn-estado {
       padding: 7px 14px; border-radius: var(--radio); border: 2px solid transparent;
@@ -154,12 +153,13 @@
       font-family: inherit; transition: all .15s; text-decoration: none;
     }
     .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
     .btn-primario   { background: var(--acento);  color: #fff; }
     .btn-secundario { background: #e9ecef; color: #444; }
     .btn-exito      { background: var(--exito);   color: #fff; }
     .btn-sm { padding: 6px 14px; font-size: .82rem; }
 
-    /* ── Sticky footer de guardado ── */
+    /* ── Sticky footer ── */
     .sticky-footer {
       position: sticky; bottom: 0; background: #fff;
       border-top: 2px solid #eef0f3; padding: 14px 24px;
@@ -181,18 +181,16 @@
     tbody tr:hover { background: #f0f4f9; }
     tbody td { padding: 10px 14px; color: #333; vertical-align: middle; }
 
-    /* Barra de porcentaje */
     .barra-pct { background: #e9ecef; border-radius: 20px; height: 8px; min-width: 80px; overflow: hidden; }
     .barra-fill { height: 100%; border-radius: 20px; background: var(--acento); transition: width .3s; }
     .barra-fill.alta  { background: var(--exito); }
     .barra-fill.media { background: #f0a500; }
     .barra-fill.baja  { background: var(--peligro); }
 
-    /* Badge */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 600; }
-    .badge-ok  { background: var(--bg-exito);   color: var(--exito); }
+    .badge-ok   { background: var(--bg-exito);   color: var(--exito); }
     .badge-fail { background: var(--bg-peligro); color: var(--peligro); }
-    .badge-adv { background: var(--bg-adv);     color: var(--advertencia); }
+    .badge-adv  { background: var(--bg-adv);     color: var(--advertencia); }
 
     /* ── Período selector ── */
     .periodo-row {
@@ -209,6 +207,17 @@
       padding: 24px; margin-bottom: 20px;
     }
     .votacion-card h3 { font-size: 1rem; color: var(--primario); margin-bottom: 16px; }
+
+    /* ── Grid de campos del formulario de votación ── */
+    .votacion-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;
+    }
+
+    /* ── Info de resolución ── */
+    .resolucion-wrap {
+      grid-column: 1 / -1;
+    }
+
     .votos-grid {
       display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
       margin-bottom: 16px;
@@ -223,10 +232,7 @@
     .voto-campo.abst   input { border-color: #888; color: #888; }
     .voto-campo label  { display: block; text-align: center; font-size: .8rem; font-weight: 600; color: #444; margin-bottom: 6px; }
 
-    /* Empty state */
     .empty { text-align: center; padding: 44px; color: #888; }
-
-    /* Footer */
     .footer { text-align: center; padding: 24px 0; color: #666; font-size: .88rem;
                border-top: 1px solid #e9ecef; margin-top: 40px; }
 
@@ -235,6 +241,7 @@
       .selector-sesion { flex-direction: column; }
       .btns-estado { flex-wrap: wrap; }
       .votos-grid { grid-template-columns: 1fr; }
+      .votacion-grid { grid-template-columns: 1fr; }
       .tabs { overflow-x: auto; }
     }
   </style>
@@ -269,7 +276,6 @@
   ══════════════════════════════════════════════════════════════ -->
   <div class="tab-panel activo" id="panel-hoja">
 
-    <!-- Selector de sesión -->
     <div class="selector-sesion">
       <div class="campo">
         <label for="sel-sesion">Sesión plenaria</label>
@@ -282,7 +288,6 @@
       </button>
     </div>
 
-    <!-- Info de sesión -->
     <div class="info-sesion" id="info-sesion" style="display:none">
       <div class="info-card">
         <div class="val" id="inf-numero">—</div>
@@ -302,7 +307,6 @@
       </div>
     </div>
 
-    <!-- Controles rápidos -->
     <div class="barra-rapida" id="barra-rapida" style="display:none">
       <input type="search" class="buscador-hoja" id="buscador-hoja"
              placeholder="Buscar asambleísta..." oninput="filtrarHoja()">
@@ -314,12 +318,10 @@
       </button>
     </div>
 
-    <!-- Lista de asambleístas -->
     <div class="hoja-lista" id="hoja-lista">
       <div class="empty">Seleccione una sesión para cargar la hoja de asistencia.</div>
     </div>
 
-    <!-- Sticky footer con guardado -->
     <div class="sticky-footer" id="sticky-footer" style="display:none">
       <span class="counter" id="counter-resumen">0 presentes · 0 ausentes</span>
       <div style="display:flex;gap:10px">
@@ -347,19 +349,12 @@
         <input type="date" id="r-fecha-fin">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-secundario btn-sm" onclick="presetPeriodo(2025)">
-          Labor 2025
-        </button>
-        <button class="btn btn-secundario btn-sm" onclick="presetPeriodo(2024)">
-          Labor 2024
-        </button>
-        <button class="btn btn-primario" onclick="cargarReporte()">
-          Generar reporte
-        </button>
+        <button class="btn btn-secundario btn-sm" onclick="presetPeriodo(2025)">Labor 2025</button>
+        <button class="btn btn-secundario btn-sm" onclick="presetPeriodo(2024)">Labor 2024</button>
+        <button class="btn btn-primario" onclick="cargarReporte()">Generar reporte</button>
       </div>
     </div>
 
-    <!-- Resumen global -->
     <div class="info-sesion" id="resumen-global" style="display:none">
       <div class="info-card">
         <div class="val" id="rg-total">—</div>
@@ -379,13 +374,9 @@
       <table>
         <thead>
           <tr>
-            <th>#</th>
-            <th>Asambleísta</th>
-            <th>Cédula</th>
-            <th>Plenarias</th>
-            <th>% Plenaria</th>
-            <th>Comisión</th>
-            <th>% Comisión</th>
+            <th>#</th><th>Asambleísta</th><th>Cédula</th>
+            <th>Plenarias</th><th>% Plenaria</th>
+            <th>Comisión</th><th>% Comisión</th>
           </tr>
         </thead>
         <tbody id="cuerpo-reporte"></tbody>
@@ -402,7 +393,9 @@
     <div class="votacion-card">
       <h3>Registrar resultado de votación</h3>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="votacion-grid">
+
+        <!-- Fila 1: sesión y mayoría -->
         <div class="campo">
           <label>Sesión plenaria *</label>
           <select id="v-sesion"><option value="">Seleccione...</option></select>
@@ -415,6 +408,8 @@
             <option value="Calificada">Calificada (66%)</option>
           </select>
         </div>
+
+        <!-- Fila 2: propuesta y punto de agenda -->
         <div class="campo">
           <label>Propuesta asociada (opcional)</label>
           <select id="v-propuesta"><option value="">— Sin propuesta —</option></select>
@@ -425,8 +420,17 @@
             <option value="">— Seleccione una sesión primero —</option>
           </select>
         </div>
+
+        <!-- ── NUEVO: Resolución asociada al punto ── -->
+        <!-- Campo oculto que guarda el id_resolucion encontrado -->
+        <input type="hidden" id="v-id-resolucion">
+
+        <!-- Bloque que muestra si hay o no resolución para el punto elegido -->
+        <div class="resolucion-wrap" id="resolucion-info" style="display:none"></div>
+
       </div>
 
+      <!-- Votos -->
       <div class="votos-grid">
         <div class="voto-campo favor">
           <label>✓ Votos a favor</label>
@@ -442,24 +446,27 @@
         </div>
       </div>
 
-      <!-- Preview del resultado -->
+      <!-- Preview resultado -->
       <div id="preview-votacion"
            style="background:#f8f9fa;border-radius:var(--radio);padding:14px 18px;
                   margin-bottom:16px;display:flex;align-items:center;gap:14px">
-        <span style="font-size:.88rem;color:#666">Total de votos: <strong id="pv-total">0</strong></span>
-        <span style="font-size:.88rem;color:#666">Resultado estimado:
-          <strong id="pv-resultado" style="color:var(--acento)">—</strong>
+        <span style="font-size:.88rem;color:#666">
+          Total de votos: <strong id="pv-total">0</strong>
+        </span>
+        <span style="font-size:.88rem;color:#666">
+          Resultado estimado: <strong id="pv-resultado" style="color:var(--acento)">—</strong>
         </span>
       </div>
 
       <div style="display:flex;justify-content:flex-end">
-        <button class="btn btn-primario" onclick="registrarVotacion()">
+        <!-- ── NUEVO: id para poder deshabilitarlo cuando no hay resolución ── -->
+        <button class="btn btn-primario" id="btn-registrar-votacion" onclick="registrarVotacion()">
           🗳️ Registrar votación
         </button>
       </div>
     </div>
 
-    <!-- Historial de votaciones de la sesión seleccionada -->
+    <!-- Historial -->
     <div id="historial-votaciones" style="display:none">
       <h3 style="color:var(--primario);font-size:1rem;margin-bottom:12px">
         Votaciones registradas en esta sesión
@@ -469,13 +476,9 @@
           <thead>
             <tr>
               <th>Propuesta / Punto</th>
-              <th>Favor</th>
-              <th>Contra</th>
-              <th>Abst.</th>
-              <th>Mayoría</th>
-              <th>Resultado</th>
-              <th>Quórum</th>
-              <th>Fecha</th>
+              <th>Resolución</th>
+              <th>Favor</th><th>Contra</th><th>Abst.</th>
+              <th>Mayoría</th><th>Resultado</th><th>Quórum</th><th>Fecha</th>
             </tr>
           </thead>
           <tbody id="cuerpo-votaciones"></tbody>
@@ -494,9 +497,9 @@
 // ESTADO GLOBAL
 // ═══════════════════════════════════════════════════════════════
 let catalogos     = {};
-let hojaActual    = null;   // { sesion, asambleistas, quorum_requerido }
-let estadoHoja    = {};     // { asambleista_id: id_estado_asistencia }
-let estadoNombres = {};     // { id_estado_asistencia: nombre }
+let hojaActual    = null;
+let estadoHoja    = {};
+let estadoNombres = {};
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
@@ -506,29 +509,25 @@ async function init() {
     const res = await fetch('/asistencia/catalogos');
     catalogos = await res.json();
 
-    // Poblar selectores de sesión
     poblarSelect('sel-sesion', catalogos.sesiones,
       'id_sesion', s => `${s.numero_sesion} — ${s.fecha} (${s.tipo_sesion})`);
     poblarSelect('v-sesion', catalogos.sesiones,
       'id_sesion', s => `${s.numero_sesion} — ${s.fecha}`);
 
-    // Propuestas para votación (cargar aparte)
     const prRes = await fetch('/propuestas');
     if (prRes.ok) {
       const propuestas = await prRes.json();
       poblarSelect('v-propuesta', propuestas,
-        'id_propuesta', p => `${p.codigo_air ? p.codigo_air+' — ' : ''}${p.titulo}`);
+        'id_propuesta', p => `${p.codigo_air ? p.codigo_air + ' — ' : ''}${p.titulo}`);
     }
 
-    // Mapa de estados para marcar botones
     catalogos.estados_asistencia.forEach(e => {
-        estadoNombres[String(e.id_estado_asistencia)] = e.nombre;
+      estadoNombres[String(e.id_estado_asistencia)] = e.nombre;
     });
 
-    // Fechas por defecto: año actual
     const hoy = new Date();
     document.getElementById('r-fecha-inicio').value = `${hoy.getFullYear()}-01-01`;
-    document.getElementById('r-fecha-fin').value    = hoy.toISOString().slice(0,10);
+    document.getElementById('r-fecha-fin').value    = hoy.toISOString().slice(0, 10);
 
   } catch (e) {
     mostrarError('Error al cargar los datos iniciales. Revise la consola.');
@@ -545,11 +544,10 @@ async function cargarHoja() {
   if (!idSesion) return;
 
   try {
-    const res  = await fetch(`/asistencia/hoja/${idSesion}`);
+    const res = await fetch(`/asistencia/hoja/${idSesion}`);
     if (!res.ok) { mostrarError('No se pudo cargar la hoja'); return; }
     hojaActual = await res.json();
 
-    // Inicializar estado desde lo que ya hay guardado
     estadoHoja = {};
     hojaActual.asambleistas.forEach(a => {
       if (a.id_estado_asistencia) {
@@ -561,8 +559,8 @@ async function cargarHoja() {
     renderHoja();
     actualizarCounter();
 
-    document.getElementById('info-sesion').style.display  = 'grid';
-    document.getElementById('barra-rapida').style.display = 'flex';
+    document.getElementById('info-sesion').style.display   = 'grid';
+    document.getElementById('barra-rapida').style.display  = 'flex';
     document.getElementById('sticky-footer').style.display = 'flex';
 
   } catch (e) {
@@ -581,12 +579,11 @@ function renderInfoSesion() {
 }
 
 function actualizarContadorQuorum() {
-  const presentes = Object.values(estadoHoja).filter(idE => {
-    return estadoNombres[idE] === 'Presente';
-  }).length;
+  const presentes = Object.values(estadoHoja).filter(
+    idE => estadoNombres[idE] === 'Presente'
+  ).length;
 
   document.getElementById('inf-presentes').textContent = presentes;
-
   const card = document.getElementById('card-quorum');
   card.className = 'info-card ' +
     (presentes >= hojaActual.quorum_requerido ? 'quorum-ok' : 'quorum-fail');
@@ -599,9 +596,9 @@ function renderHoja() {
     return;
   }
 
-  const estadoPresId  = idEstadoPorNombre('Presente');
-  const estadoAusId   = idEstadoPorNombre('Ausente sin justificación');
-  const estadoJustId  = idEstadoPorNombre('Ausente justificado');
+  const estadoPresId = idEstadoPorNombre('Presente');
+  const estadoAusId  = idEstadoPorNombre('Ausente sin justificación');
+  const estadoJustId = idEstadoPorNombre('Ausente justificado');
 
   lista.innerHTML = hojaActual.asambleistas.map(a => {
     const estActual = estadoHoja[String(a.asambleista_id)];
@@ -617,33 +614,27 @@ function renderHoja() {
         </div>
         <div class="btns-estado">
           <button class="btn-estado ${clsP}"
-                  onclick="setEstado('${a.asambleista_id}', '${estadoPresId}', this, 'presente')">
+                  onclick="setEstado('${a.asambleista_id}','${estadoPresId}',this,'presente')">
             ✓ Presente
           </button>
           <button class="btn-estado ${clsA}"
-                  onclick="setEstado('${a.asambleista_id}', '${estadoAusId}', this, 'ausente')">
+                  onclick="setEstado('${a.asambleista_id}','${estadoAusId}',this,'ausente')">
             ✗ Ausente
           </button>
           <button class="btn-estado ${clsJ}"
-                  onclick="setEstado('${a.asambleista_id}', '${estadoJustId}', this, 'justificado')">
+                  onclick="setEstado('${a.asambleista_id}','${estadoJustId}',this,'justificado')">
             J Justificado
           </button>
         </div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
 function setEstado(asambleistaId, idEstado, btnClicado, tipo) {
-   estadoHoja[String(asambleistaId)] = String(idEstado); // ← forzar string
-
-  // Actualizar clases del grupo de botones
-  const item  = btnClicado.closest('.hoja-item');
-  item.querySelectorAll('.btn-estado').forEach(b => {
-    b.className = 'btn-estado';
-  });
+  estadoHoja[String(asambleistaId)] = String(idEstado);
+  const item = btnClicado.closest('.hoja-item');
+  item.querySelectorAll('.btn-estado').forEach(b => b.className = 'btn-estado');
   btnClicado.classList.add(`activo-${tipo}`);
-
   actualizarCounter();
   actualizarContadorQuorum();
 }
@@ -652,9 +643,8 @@ function marcarTodos(tipo) {
   const idEstado = tipo === 'presente'
     ? idEstadoPorNombre('Presente')
     : idEstadoPorNombre('Ausente sin justificación');
-
   const clase = tipo === 'presente' ? 'activo-presente' : 'activo-ausente';
-  const pos   = tipo === 'presente' ? 0 : 1;   // índice del botón
+  const pos   = tipo === 'presente' ? 0 : 1;
 
   document.querySelectorAll('.hoja-item:not(.oculto)').forEach(item => {
     const id = item.dataset.id;
@@ -684,10 +674,9 @@ function filtrarHoja() {
 }
 
 function actualizarCounter() {
-  const ids     = Object.keys(estadoHoja).map(Number);
-  const presId  = idEstadoPorNombre('Presente');
-  const presentes = ids.filter(id => estadoHoja[id] == presId).length;
-  const ausentes  = ids.filter(id => estadoHoja[id] != presId).length;
+  const presId    = idEstadoPorNombre('Presente');
+  const presentes = Object.values(estadoHoja).filter(id => id == presId).length;
+  const ausentes  = Object.values(estadoHoja).filter(id => id != presId).length;
   document.getElementById('counter-resumen').textContent =
     `${presentes} presentes · ${ausentes} ausentes / justificados`;
 }
@@ -699,9 +688,6 @@ async function guardarHoja() {
     asambleista_id:       id,
     id_estado_asistencia: estId
   }));
-
-   console.log('Registros a enviar:', registros); // ← agrega esta línea
-    console.log('Catálogo estados:', catalogos.estados_asistencia); // ← y esta
 
   if (!registros.length) {
     mostrarAdvertencia('Marque al menos un estado antes de guardar.');
@@ -718,7 +704,6 @@ async function guardarHoja() {
       body:    JSON.stringify({ registros })
     });
     const data = await res.json();
-
     if (!res.ok) { mostrarError(data.error); return; }
 
     mostrarOk(
@@ -726,7 +711,6 @@ async function guardarHoja() {
       (data.hay_quorum ? 'Quórum ✓' : `Sin quórum (necesita ${data.quorum_requerido})`)
     );
 
-    // Actualizar contador
     document.getElementById('inf-presentes').textContent = data.presentes;
     const card = document.getElementById('card-quorum');
     card.className = 'info-card ' + (data.hay_quorum ? 'quorum-ok' : 'quorum-fail');
@@ -737,7 +721,6 @@ async function guardarHoja() {
     btn.textContent = '💾 Guardar hoja de asistencia'; btn.disabled = false;
   }
 }
-
 
 // ═══════════════════════════════════════════════════════════════
 // TAB 2 — REPORTE DE PARTICIPACIÓN
@@ -758,13 +741,13 @@ async function cargarReporte() {
     const res  = await fetch(`/asistencia/reporte?fechaInicio=${fi}&fechaFin=${ff}`);
     const data = await res.json();
     if (!res.ok) { mostrarError(data.error); return; }
-    renderReporte(data, fi, ff);
+    renderReporte(data);
   } catch (e) {
     mostrarError('Error al cargar el reporte.');
   }
 }
 
-function renderReporte(lista, fi, ff) {
+function renderReporte(lista) {
   if (!lista.length) {
     document.getElementById('resumen-global').style.display = 'none';
     document.getElementById('tabla-reporte-wrapper').style.display = 'none';
@@ -772,7 +755,6 @@ function renderReporte(lista, fi, ff) {
     return;
   }
 
-  // Calcular resumen
   const totalPlenarias = lista[0]?.plenarias_convocadas ?? 0;
   const pctProm = lista.length
     ? (lista.reduce((s, r) => s + (r.pct_plenaria || 0), 0) / lista.length).toFixed(1)
@@ -783,8 +765,7 @@ function renderReporte(lista, fi, ff) {
   document.getElementById('rg-pct-prom').textContent  = `${pctProm}%`;
   document.getElementById('resumen-global').style.display = 'grid';
 
-  const tbody = document.getElementById('cuerpo-reporte');
-  tbody.innerHTML = lista.map((r, i) => `
+  document.getElementById('cuerpo-reporte').innerHTML = lista.map((r, i) => `
     <tr>
       <td>${i + 1}</td>
       <td><strong>${esc(r.nombre)}</strong></td>
@@ -793,8 +774,7 @@ function renderReporte(lista, fi, ff) {
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="barra-pct" style="flex:1">
-            <div class="barra-fill ${colorPct(r.pct_plenaria)}"
-                 style="width:${r.pct_plenaria}%"></div>
+            <div class="barra-fill ${colorPct(r.pct_plenaria)}" style="width:${r.pct_plenaria}%"></div>
           </div>
           <span style="min-width:42px;font-weight:600">${r.pct_plenaria}%</span>
         </div>
@@ -803,8 +783,7 @@ function renderReporte(lista, fi, ff) {
       <td>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="barra-pct" style="flex:1">
-            <div class="barra-fill ${colorPct(r.pct_comision)}"
-                 style="width:${r.pct_comision}%"></div>
+            <div class="barra-fill ${colorPct(r.pct_comision)}" style="width:${r.pct_comision}%"></div>
           </div>
           <span style="min-width:42px;font-weight:600">${r.pct_comision}%</span>
         </div>
@@ -815,15 +794,14 @@ function renderReporte(lista, fi, ff) {
   document.getElementById('tabla-reporte-wrapper').style.display = 'block';
 }
 
-
 // ═══════════════════════════════════════════════════════════════
 // TAB 3 — VOTACIONES
 // ═══════════════════════════════════════════════════════════════
 
 function actualizarPreview() {
-  const f = parseInt(document.getElementById('v-favor').value)  || 0;
-  const c = parseInt(document.getElementById('v-contra').value) || 0;
-  const a = parseInt(document.getElementById('v-abst').value)   || 0;
+  const f       = parseInt(document.getElementById('v-favor').value)  || 0;
+  const c       = parseInt(document.getElementById('v-contra').value) || 0;
+  const a       = parseInt(document.getElementById('v-abst').value)   || 0;
   const mayoria = document.getElementById('v-mayoria').value;
 
   document.getElementById('pv-total').textContent = f + c + a;
@@ -841,13 +819,14 @@ function actualizarPreview() {
 
 async function registrarVotacion() {
   const body = {
-    id_sesion:       document.getElementById('v-sesion').value,
-    tipo_mayoria:    document.getElementById('v-mayoria').value,
-    id_propuesta:    document.getElementById('v-propuesta').value || null,
-    id_punto_agenda: document.getElementById('v-punto').value    || null,
-    votos_favor:     parseInt(document.getElementById('v-favor').value)  || 0,
-    votos_contra:    parseInt(document.getElementById('v-contra').value) || 0,
-    votos_abstencion:parseInt(document.getElementById('v-abst').value)   || 0
+    id_sesion:        document.getElementById('v-sesion').value,
+    tipo_mayoria:     document.getElementById('v-mayoria').value,
+    id_propuesta:     document.getElementById('v-propuesta').value    || null,
+    id_punto_agenda:  document.getElementById('v-punto').value        || null,
+    id_resolucion:    document.getElementById('v-id-resolucion').value || null, // ← NUEVO
+    votos_favor:      parseInt(document.getElementById('v-favor').value)   || 0,
+    votos_contra:     parseInt(document.getElementById('v-contra').value)  || 0,
+    votos_abstencion: parseInt(document.getElementById('v-abst').value)    || 0
   };
 
   if (!body.id_sesion || !body.tipo_mayoria) {
@@ -862,13 +841,12 @@ async function registrarVotacion() {
   });
   const data = await res.json();
 
-  if (!res.ok)         { mostrarError(data.error); return; }
-  if (data.advertencia){ mostrarAdvertencia(data.advertencia); }
+  if (!res.ok)          { mostrarError(data.error); return; }
+  if (data.advertencia) { mostrarAdvertencia(data.advertencia); }
 
   mostrarOk(`Votación registrada: ${data.resultado} | ` +
             `Favor: ${body.votos_favor} · Contra: ${body.votos_contra}`);
 
-  // Recargar historial
   await cargarHistorialVotaciones(body.id_sesion);
 }
 
@@ -876,15 +854,16 @@ async function cargarHistorialVotaciones(idSesion) {
   if (!idSesion) return;
   const res  = await fetch(`/asistencia/votacion/${idSesion}`);
   const data = await res.json();
+
   if (!res.ok || !data.length) {
     document.getElementById('historial-votaciones').style.display = 'none';
     return;
   }
 
-  const tbody = document.getElementById('cuerpo-votaciones');
-  tbody.innerHTML = data.map(v => `
+  document.getElementById('cuerpo-votaciones').innerHTML = data.map(v => `
     <tr>
       <td>${esc(v.titulo_propuesta ?? v.descripcion_punto ?? '—')}</td>
+      <td style="font-size:.8rem;color:#555">${esc(v.numero_resolucion ?? '—')}</td>
       <td style="color:var(--exito);font-weight:600">${v.votos_favor}</td>
       <td style="color:var(--peligro);font-weight:600">${v.votos_contra}</td>
       <td>${v.votos_abstencion}</td>
@@ -906,22 +885,29 @@ async function cargarHistorialVotaciones(idSesion) {
   document.getElementById('historial-votaciones').style.display = 'block';
 }
 
-// Cargar historial y puntos de agenda cuando cambia la sesión en votación
-document.getElementById('v-sesion')?.addEventListener('change', function() {
+// ── Eventos de cambio de sesión y punto de agenda ──
+
+document.getElementById('v-sesion')?.addEventListener('change', function () {
   cargarHistorialVotaciones(this.value);
   cargarPuntosAgenda(this.value);
+});
+
+// NUEVO: al cambiar el punto de agenda, buscar la resolución asociada
+document.getElementById('v-punto')?.addEventListener('change', function () {
+  const idSesion = document.getElementById('v-sesion').value;
+  cargarResolucion(idSesion, this.value);
 });
 
 async function cargarPuntosAgenda(idSesion) {
   const sel = document.getElementById('v-punto');
   sel.innerHTML = '<option value="">— Sin punto de agenda —</option>';
+  limpiarResolucion();
 
   if (!idSesion) return;
 
   try {
     const res  = await fetch(`/sesiones/${idSesion}`);
     const data = await res.json();
-
     if (!res.ok || !data.agenda?.length) return;
 
     data.agenda.forEach(p => {
@@ -931,10 +917,53 @@ async function cargarPuntosAgenda(idSesion) {
       sel.add(new Option(label, p.id_punto_agenda));
     });
   } catch {
-    // Si falla, el select queda con solo la opcion vacia
+    // Si falla, el select queda con solo la opción vacía
   }
 }
 
+// NUEVO: consulta si el punto tiene resolución y muestra el resultado
+async function cargarResolucion(idSesion, idPunto) {
+  limpiarResolucion();
+  if (!idPunto || !idSesion) return;
+
+  try {
+    const res  = await fetch(`/sesiones/${idSesion}/agenda/${idPunto}/resolucion`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Sin resolución — informar pero NO bloquear
+      document.getElementById('resolucion-info').innerHTML = `
+        <div style="font-size:.82rem;color:#856404;padding:8px 12px;
+                    background:#fff3cd;border-radius:6px;border:1px solid #ffc107">
+          ℹ️ Este punto aún no tiene resolución. Podrá registrarla después de votar.
+        </div>`;
+      document.getElementById('resolucion-info').style.display = 'block';
+      // NO deshabilitar el botón
+      document.getElementById('btn-registrar-votacion').disabled = false;
+      return;
+    }
+
+    document.getElementById('v-id-resolucion').value = data.id_resolucion;
+    document.getElementById('resolucion-info').innerHTML = `
+      <div style="font-size:.82rem;color:#1e7e34;padding:8px 12px;
+                  background:#d4edda;border-radius:6px;border:1px solid #c3e6cb">
+        ✓ Resolución: <strong>${esc(data.numero_resolucion)}</strong>
+        · Emitida: ${new Date(data.fecha_emision).toLocaleDateString('es-CR')}
+      </div>`;
+    document.getElementById('resolucion-info').style.display = 'block';
+    document.getElementById('btn-registrar-votacion').disabled = false;
+
+  } catch {
+    limpiarResolucion();
+  }
+}
+
+// NUEVO: limpia el estado de resolución y reactiva el botón
+function limpiarResolucion() {
+  document.getElementById('v-id-resolucion').value      = '';
+  document.getElementById('resolucion-info').style.display = 'none';
+  document.getElementById('btn-registrar-votacion').disabled = false;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -969,7 +998,7 @@ function poblarSelect(selectId, items, valKey, labelFn) {
 
 function esc(str) {
   return String(str ?? '').replace(/[&<>"']/g, c =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function mostrarError(msg) {

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle Sesión — AIR</title>
+  <style>
+    :root {
+      --color-primario   : #003366;
+      --color-acento     : #005fa3;
+      --color-peligro    : #c0392b;
+      --color-exito      : #1e7e34;
+      --color-advertencia: #856404;
+      --bg-advertencia   : #fff3cd;
+      --bg-peligro       : #f8d7da;
+      --bg-exito         : #d4edda;
+      --radio            : 6px;
+      --sombra           : 0 2px 12px rgba(0,0,0,.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #222; margin: 0; }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--color-primario); color: #fff;
+      padding: 0 28px; display: flex; align-items: center;
+      justify-content: space-between; height: 48px; font-size: .88rem; font-weight: 500;
+    }
+    .navbar a { color: rgba(255,255,255,.85); text-decoration: none; transition: color .15s; }
+    .navbar a:hover { color: #fff; }
+
+    /* ── Page header ── */
+    .page-header {
+      background: var(--color-primario); color: #fff;
+      padding: 28px 28px 24px; text-align: center;
+    }
+    .page-header h1 { margin: 0 0 6px; font-size: 1.7rem; font-weight: 600; }
+    .page-header p  { margin: 0; font-size: .9rem; opacity: .9; }
+    .badge-modulo {
+      background: rgba(255,255,255,.18); border-radius: 20px;
+      padding: 4px 14px; font-size: .78rem; display: inline-block; margin-top: 10px;
+    }
+
+    /* ── Layout ── */
+    .contenedor { max-width: 960px; margin: 24px auto; padding: 0 20px; }
+
+    /* ── Alertas ── */
+    .alerta { padding: 12px 16px; border-radius: var(--radio); font-size: .9rem; font-weight: 500; margin-bottom: 16px; }
+    .alerta-error { background: var(--bg-peligro); color: var(--color-peligro); border: 1px solid #f5c6cb; }
+    .alerta-ok    { background: var(--bg-exito);   color: var(--color-exito);   border: 1px solid #c3e6cb; }
+
+    /* ── Stats ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      padding: 16px 20px; text-align: center;
+    }
+    .stat-card .val { font-size: 1.5rem; font-weight: 700; color: var(--color-acento); }
+    .stat-card .lbl { font-size: .78rem; color: #888; margin-top: 3px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff; border-radius: var(--radio); box-shadow: var(--sombra);
+      border: 1px solid rgba(0,0,0,.05); overflow: hidden; margin-bottom: 20px;
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid #eef0f3;
+      background: #fafbfc;
+    }
+    .card-header h3 { margin: 0; font-size: 1rem; color: var(--color-primario); font-weight: 600; }
+    .card-body { padding: 20px; }
+
+    /* ── Tabla ── */
+    .card-table { background: #fff; border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    thead { background: var(--color-primario); color: #fff; }
+    thead th { padding: 11px 16px; text-align: left; font-weight: 600; font-size: .83rem; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #eef0f3; transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f0f4f9; }
+    tbody td { padding: 12px 16px; color: #333; vertical-align: middle; }
+
+    /* ── Número de orden ── */
+    .orden-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--color-acento); color: #fff;
+      font-size: .8rem; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+    .badge-azul    { background: #d0e8ff; color: #003f8a; }
+    .badge-verde   { background: var(--bg-exito); color: var(--color-exito); }
+    .badge-gris    { background: #e9ecef; color: #555; }
+    .badge-amarillo { background: var(--bg-advertencia); color: var(--color-advertencia); }
+
+    /* ── Formulario ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 20px; background: #f8f9fa; border-top: 1px solid #eef0f3; }
+    .form-grid.una-col { grid-template-columns: 1fr; }
+    .campo label { display: block; font-size: .83rem; font-weight: 600; color: #444; margin-bottom: 5px; }
+    .campo input, .campo select, .campo textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid #d0d7de;
+      border-radius: var(--radio); font-size: .88rem; font-family: inherit;
+      background: #fff; outline: none; transition: border-color .15s;
+    }
+    .campo input:focus, .campo select:focus, .campo textarea:focus {
+      border-color: var(--color-acento); box-shadow: 0 0 0 3px rgba(0,95,163,.12);
+    }
+    .campo textarea { resize: vertical; min-height: 72px; }
+    .form-acciones { grid-column: 1/-1; display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* ── Botones ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: var(--radio); border: none;
+      cursor: pointer; font-size: .88rem; font-weight: 600;
+      font-family: inherit; text-decoration: none; transition: all .15s; white-space: nowrap;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primario   { background: var(--color-acento); color: #fff; }
+    .btn-secundario { background: #e9ecef; color: #444; }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+
+    /* ── Info de sesión (grid de datos) ── */
+    .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 20px; }
+    .info-item .lbl { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .info-item .val { font-size: .92rem; color: #222; font-weight: 500; }
+
+    /* ── Empty ── */
+    .empty { text-align: center; padding: 36px; color: #888; font-size: .9rem; }
+
+    /* ── Footer ── */
+    .footer { text-align: center; padding: 24px 0; color: #666; font-size: .88rem; border-top: 1px solid #e9ecef; margin-top: 40px; }
+
+    @media (max-width: 768px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .info-grid  { grid-template-columns: 1fr 1fr; }
+      .form-grid  { grid-template-columns: 1fr; }
+      .contenedor { padding: 0 14px; }
+    }
+    @media (max-width: 480px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .info-grid  { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/sesiones/sesiones-lista.view.html">← Volver a sesiones</a>
+  <span>AIR – Sistema de Gestión Normativa</span>
+</nav>
+
+<header class="page-header">
+  <h1 id="titulo-sesion">Cargando...</h1>
+  <p id="subtitulo-sesion"></p>
+  <span class="badge-modulo">Sesiones Plenarias</span>
+</header>
+
+<main class="contenedor">
+  <div id="msg-error" class="alerta alerta-error" style="display:none"></div>
+  <div id="msg-ok"    class="alerta alerta-ok"    style="display:none"></div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="val" id="st-tipo">—</div>
+      <div class="lbl">Tipo de sesión</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" id="st-modalidad">—</div>
+      <div class="lbl">Modalidad</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" id="st-quorum">—</div>
+      <div class="lbl">Quórum requerido</div>
+    </div>
+    <div class="stat-card">
+      <div class="val" id="st-puntos">—</div>
+      <div class="lbl">Puntos de agenda</div>
+    </div>
+  </div>
+
+  <!-- Datos generales -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Información de la sesión</h3>
+      <span id="link-acta-wrap" style="display:none">
+        <a id="link-acta" href="#" target="_blank" class="btn btn-sm btn-secundario">📄 Ver acta</a>
+      </span>
+    </div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="lbl">Número de sesión</div>
+        <div class="val" id="d-numero">—</div>
+      </div>
+      <div class="info-item">
+        <div class="lbl">Fecha</div>
+        <div class="val" id="d-fecha">—</div>
+      </div>
+      <div class="info-item">
+        <div class="lbl">Tipo</div>
+        <div class="val" id="d-tipo">—</div>
+      </div>
+      <div class="info-item">
+        <div class="lbl">Modalidad</div>
+        <div class="val" id="d-modalidad">—</div>
+      </div>
+      <div class="info-item">
+        <div class="lbl">Quórum requerido</div>
+        <div class="val" id="d-quorum">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agenda -->
+  <div class="card">
+    <div class="card-header">
+      <h3>Puntos de agenda</h3>
+    </div>
+
+    <!-- Tabla de puntos -->
+    <div id="tabla-agenda-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Descripción / Propuesta</th>
+            <th>Etapa</th>
+            <th>Estado propuesta</th>
+            <th>Resolución</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo-agenda">
+          <tr><td colspan="5" class="empty">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Formulario agregar punto -->
+    <div class="form-grid">
+      <div class="campo">
+        <label>Número de orden *</label>
+        <input type="number" id="f-orden" min="1" placeholder="ej: 1">
+      </div>
+      <div class="campo">
+        <label>Propuesta asociada</label>
+        <select id="f-propuesta">
+          <option value="">— Sin propuesta —</option>
+        </select>
+      </div>
+      <div class="campo" style="grid-column:1/-1">
+        <label>Descripción del punto</label>
+        <textarea id="f-descripcion" placeholder="Descripción del punto de agenda (opcional si se asocia una propuesta)..."></textarea>
+      </div>
+      <div class="form-acciones">
+        <button class="btn btn-primario" onclick="agregarPunto()">+ Agregar punto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resoluciones -->
+  <div class="card" id="card-resoluciones" style="display:none">
+    <div class="card-header">
+      <h3>Registrar resolución</h3>
+    </div>
+    <div class="form-grid">
+      <div class="campo">
+        <label>Punto de agenda *</label>
+        <select id="f-res-punto">
+          <option value="">Seleccione un punto...</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Número de resolución *</label>
+        <input type="text" id="f-res-numero" placeholder="ej: RES-AIR-001-2025">
+      </div>
+      <div class="campo">
+        <label>Fecha de emisión *</label>
+        <input type="date" id="f-res-fecha">
+      </div>
+      <div class="form-acciones">
+        <button class="btn btn-primario" onclick="registrarResolucion()">Registrar resolución</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Módulo de Sesiones Plenarias — AIR</div>
+</main>
+
+<script src="/shared/auth.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ════════════════════════════════════════════════════════════
+const idSesion = new URLSearchParams(window.location.search).get('id');
+let sesionData = null;
+
+// ════════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ════════════════════════════════════════════════════════════
+async function init() {
+  if (!idSesion) {
+    mostrarError('No se especificó una sesión. Vuelve al listado.');
+    return;
+  }
+
+  try {
+    const [sesRes, propRes] = await Promise.all([
+      fetch(`/sesiones/${idSesion}`),
+      fetch('/propuestas')
+    ]);
+
+    if (!sesRes.ok) throw new Error('Sesión no encontrada');
+    sesionData = await sesRes.json();
+
+    // Poblar select de propuestas
+    if (propRes.ok) {
+      const propuestas = await propRes.json();
+      const sel = document.getElementById('f-propuesta');
+      propuestas.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id_propuesta;
+        opt.textContent = `${p.codigo_air ? p.codigo_air + ' — ' : ''}${p.titulo.slice(0, 70)}${p.titulo.length > 70 ? '…' : ''}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    renderSesion();
+    renderAgenda();
+
+  } catch (e) {
+    mostrarError('Error al cargar la sesión: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER SESIÓN
+// ════════════════════════════════════════════════════════════
+function renderSesion() {
+  const s = sesionData;
+
+  document.title = `${s.numero_sesion} — AIR`;
+  document.getElementById('titulo-sesion').textContent = s.numero_sesion;
+  document.getElementById('subtitulo-sesion').textContent =
+    `${s.tipo_sesion} · ${s.tipo_modalidad} · ${formatFecha(s.fecha)}`;
+
+  document.getElementById('d-numero').textContent   = s.numero_sesion;
+  document.getElementById('d-fecha').textContent    = formatFecha(s.fecha);
+  document.getElementById('d-tipo').textContent     = s.tipo_sesion;
+  document.getElementById('d-modalidad').textContent = s.tipo_modalidad;
+  document.getElementById('d-quorum').textContent   = s.quorum_requerido ?? '—';
+
+  document.getElementById('st-tipo').textContent     = s.tipo_sesion;
+  document.getElementById('st-modalidad').textContent = s.tipo_modalidad;
+  document.getElementById('st-quorum').textContent   = s.quorum_requerido ?? '—';
+  document.getElementById('st-puntos').textContent   = s.agenda?.length ?? 0;
+
+  if (s.link_acta) {
+    document.getElementById('link-acta').href = s.link_acta;
+    document.getElementById('link-acta-wrap').style.display = 'inline';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER AGENDA
+// ════════════════════════════════════════════════════════════
+function renderAgenda() {
+  const agenda = sesionData.agenda ?? [];
+  const tbody  = document.getElementById('cuerpo-agenda');
+
+  if (!agenda.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">
+      No hay puntos de agenda registrados. Agrega el primero usando el formulario de abajo.
+    </td></tr>`;
+  } else {
+    tbody.innerHTML = agenda.map(p => `
+      <tr>
+        <td><span class="orden-badge">${p.orden}</span></td>
+        <td>
+          ${p.titulo_propuesta
+            ? `<div style="font-weight:600">${esc(p.titulo_propuesta)}</div>
+               ${p.codigo_air ? `<div style="font-size:.76rem;color:#888;margin-top:2px">${esc(p.codigo_air)}</div>` : ''}`
+            : `<div style="color:#555">${esc(p.descripcion ?? '—')}</div>`}
+        </td>
+        <td>${p.etapa ? `<span class="badge badge-azul">${esc(p.etapa)}</span>` : '—'}</td>
+        <td>${estadoBadge(p.estado)}</td>
+        <td>${p.numero_resolucion
+          ? `<span class="badge badge-verde">${esc(p.numero_resolucion)}</span>`
+          : '<em style="color:#bbb;font-size:.8rem">Sin resolución</em>'}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Actualizar stat
+  document.getElementById('st-puntos').textContent = agenda.length;
+
+  // Poblar select de puntos para resolución
+  const selPunto = document.getElementById('f-res-punto');
+  selPunto.innerHTML = '<option value="">Seleccione un punto...</option>';
+  agenda.forEach(p => {
+    const label = p.titulo_propuesta
+      ? `${p.orden}. ${p.titulo_propuesta.slice(0, 50)}`
+      : `${p.orden}. ${p.descripcion ?? 'Punto ' + p.orden}`;
+    selPunto.add(new Option(label, p.id_punto_agenda));
+  });
+
+  // Mostrar sección de resoluciones si hay puntos
+  document.getElementById('card-resoluciones').style.display =
+    agenda.length ? 'block' : 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+// AGREGAR PUNTO DE AGENDA
+// ════════════════════════════════════════════════════════════
+async function agregarPunto() {
+  const orden       = document.getElementById('f-orden').value;
+  const idPropuesta = document.getElementById('f-propuesta').value || null;
+  const descripcion = document.getElementById('f-descripcion').value.trim() || null;
+
+  if (!orden) {
+    mostrarError('El número de orden es requerido.');
+    return;
+  }
+  if (!idPropuesta && !descripcion) {
+    mostrarError('Debe indicar una propuesta o una descripción para el punto.');
+    return;
+  }
+
+  try {
+    const res  = await fetch(`/sesiones/${idSesion}/agenda`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ orden, id_propuesta: idPropuesta, descripcion })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Error al agregar punto');
+
+    mostrarOk('Punto de agenda agregado correctamente.');
+    document.getElementById('f-orden').value       = '';
+    document.getElementById('f-propuesta').value   = '';
+    document.getElementById('f-descripcion').value = '';
+
+    await recargar();
+
+  } catch (e) {
+    mostrarError('Error al agregar punto: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// REGISTRAR RESOLUCIÓN
+// ════════════════════════════════════════════════════════════
+async function registrarResolucion() {
+  const idPunto  = document.getElementById('f-res-punto').value;
+  const numero   = document.getElementById('f-res-numero').value.trim();
+  const fecha    = document.getElementById('f-res-fecha').value;
+
+  if (!idPunto || !numero || !fecha) {
+    mostrarError('Punto de agenda, número de resolución y fecha son requeridos.');
+    return;
+  }
+
+  try {
+    const res  = await fetch(`/sesiones/${idSesion}/resoluciones`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        id_punto_agenda:   idPunto,
+        numero_resolucion: numero,
+        fecha_emision:     fecha
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Error al registrar resolución');
+
+    mostrarOk(`Resolución ${numero} registrada correctamente.`);
+    document.getElementById('f-res-punto').value  = '';
+    document.getElementById('f-res-numero').value = '';
+    document.getElementById('f-res-fecha').value  = '';
+
+    await recargar();
+
+  } catch (e) {
+    mostrarError('Error al registrar resolución: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// RECARGAR
+// ════════════════════════════════════════════════════════════
+async function recargar() {
+  const res  = await fetch(`/sesiones/${idSesion}`);
+  sesionData = await res.json();
+  renderAgenda();
+}
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+function estadoBadge(estado) {
+  if (!estado) return '—';
+  const mapa = {
+    'BORRADOR':           'badge-gris',
+    'PENDIENTE_REVISION': 'badge-amarillo',
+    'AGENDADA':           'badge-azul',
+    'EN_DISCUSION':       'badge-amarillo',
+    'APROBADA':           'badge-verde',
+    'RECHAZADA':          'badge-gris'
+  };
+  return `<span class="badge ${mapa[estado] ?? 'badge-gris'}">${esc(estado)}</span>`;
+}
+
+function formatFecha(f) {
+  if (!f) return '—';
+  return new Date(f).toLocaleDateString('es-CR', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function mostrarError(msg) {
+  const el = document.getElementById('msg-error');
+  el.textContent = msg; el.style.display = 'block';
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => { el.style.display = 'none'; }, 6000);
+}
+
+function mostrarOk(msg) {
+  const el = document.getElementById('msg-ok');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// ════════════════════════════════════════════════════════════
+// ARRANQUE
+// ════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>

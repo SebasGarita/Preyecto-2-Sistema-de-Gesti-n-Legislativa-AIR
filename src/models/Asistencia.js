@@ -271,7 +271,8 @@ const Asistencia = {
   async registrarVotacion({
     id_sesion, id_punto_agenda, id_propuesta,
     votos_favor, votos_contra, votos_abstencion,
-    tipo_mayoria, id_usuario_registro
+    tipo_mayoria, id_usuario_registro,
+    id_resolucion  // ← nuevo parámetro opcional
   }) {
     // 1. Verificar quórum
     const quorumRes = await db.query(
@@ -299,16 +300,16 @@ const Asistencia = {
     const idPuntoAgenda = id_punto_agenda ? String(id_punto_agenda) : null;
     const idPropuesta   = id_propuesta    ? String(id_propuesta)    : null;
     const idUsuario     = id_usuario_registro || null;
-
+    const idResolucion = id_resolucion ? String(id_resolucion) : null;
     let res;
 
     if (idPuntoAgenda) {
       res = await db.query(`
         INSERT INTO votacion
-          (id_sesion, id_punto_agenda, id_propuesta,
+          (id_sesion, id_punto_agenda, id_propuesta, id_resolucion,
           votos_favor, votos_contra, votos_abstencion,
           tipo_mayoria, resultado, quorum_valido, id_usuario_registro)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (id_punto_agenda)
         DO UPDATE SET
           votos_favor      = EXCLUDED.votos_favor,
@@ -317,10 +318,11 @@ const Asistencia = {
           tipo_mayoria     = EXCLUDED.tipo_mayoria,
           resultado        = EXCLUDED.resultado,
           quorum_valido    = EXCLUDED.quorum_valido,
+          id_resolucion    = EXCLUDED.id_resolucion,
           fecha_registro   = NOW()
         RETURNING *
       `, [
-        id_sesion, idPuntoAgenda, idPropuesta,
+        id_sesion, idPuntoAgenda, idPropuesta, idResolucion,
         votos_favor, votos_contra, votos_abstencion || 0,
         tipo_mayoria, resultado, quorum_valido, idUsuario
       ]);
@@ -341,24 +343,19 @@ const Asistencia = {
 
     // 5. ── NUEVO: si hay propuesta y el resultado es APROBADA o RECHAZADA,
     //            actualizar automáticamente el estado de la propuesta ──
+// 5. Si hay propuesta, aprobar o rechazar según resultado
     if (idPropuesta && (resultado === 'APROBADA' || resultado === 'RECHAZADA')) {
       const estadoRes = await db.query(`
-        SELECT id_estado_propuesta
-        FROM catalogo_estado_propuestas
+        SELECT id_estado_propuesta FROM catalogo_estado_propuestas
         WHERE nombre = $1
-      `, [resultado]);  // resultado ya es 'APROBADA' o 'RECHAZADA'
-
+      `, [resultado]);
       const idEstado = estadoRes.rows[0]?.id_estado_propuesta;
 
       if (idEstado) {
-        // Actualizar estado de la propuesta
         await db.query(`
-          UPDATE propuesta
-          SET id_estado_propuesta = $1
-          WHERE id_propuesta = $2
+          UPDATE propuesta SET id_estado_propuesta = $1 WHERE id_propuesta = $2
         `, [String(idEstado), idPropuesta]);
 
-        // Bitácora
         await db.query(`
           INSERT INTO bitacora_propuesta (
             id_propuesta, id_estado_propuesta,
@@ -366,14 +363,12 @@ const Asistencia = {
           ) VALUES ($1, $2, NOW(), $3)
         `, [idPropuesta, String(idEstado), idUsuario ?? 'sistema']);
 
-        // Si es APROBADA y tiene elemento origen, actualizar elemento normativo
+        // Solo si es APROBADA actualizar el compilador normativo
         if (resultado === 'APROBADA') {
           const propRes = await db.query(`
-            SELECT texto_sustitutivo, id_elemento_origen
-            FROM propuesta
-            WHERE id_propuesta = $1
+            SELECT texto_sustitutivo, id_elemento_origen, codigo_air
+            FROM propuesta WHERE id_propuesta = $1
           `, [idPropuesta]);
-
           const propuesta = propRes.rows[0];
 
           if (propuesta?.texto_sustitutivo && propuesta?.id_elemento_origen) {
@@ -389,7 +384,7 @@ const Asistencia = {
               WHERE id_elemento = $2
             `, [propuesta.texto_sustitutivo, propuesta.id_elemento_origen]);
           } else {
-            console.warn(`Propuesta ${idPropuesta} aprobada por votación sin texto_sustitutivo o id_elemento_origen`);
+            console.warn(`Propuesta ${idPropuesta} aprobada sin texto_sustitutivo o id_elemento_origen`);
           }
         }
       }
@@ -404,14 +399,14 @@ const Asistencia = {
 },
 
   async getVotacion(idSesion) {
-  const result = await pool.query(`
+  const result = await db.query(`
     SELECT
       v.*,
-      v.id_propuesta::text    AS id_propuesta,   -- ← evita corrupción BIGINT
-      p.titulo                AS titulo_propuesta,
+      v.id_propuesta::text AS id_propuesta,
+      p.titulo             AS titulo_propuesta,
       p.codigo_air,
-      pa.descripcion          AS descripcion_punto,
-      ts.nombre               AS tipo_sesion
+      pa.descripcion       AS descripcion_punto,
+      ts.nombre            AS tipo_sesion
     FROM votacion v
     LEFT JOIN propuesta            p  ON p.id_propuesta    = v.id_propuesta
     LEFT JOIN punto_agenda         pa ON pa.id_punto_agenda = v.id_punto_agenda
