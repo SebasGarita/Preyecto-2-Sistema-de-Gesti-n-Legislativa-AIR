@@ -157,6 +157,38 @@ const SesionController = {
       return res.status(500).json({ error: error.message });
     }
   }
+async asistencia(req, res) {
+    try {
+      const data = await Sesion.getAsistencia(req.params.id);
+      return res.json(data);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  async registrarAsistencia(req, res) {
+    try {
+      const { id_asambleista, id_estado_asistencia } = req.body;
+      if (!id_asambleista || !id_estado_asistencia) {
+        return res.status(400).json({ error: 'Asambleista y estado son requeridos' });
+      }
+      const data = await Sesion.registrarAsistencia({
+        id_sesion: req.params.id,
+        id_asambleista,
+        id_estado_asistencia
+      });
+      await Usuario.registrarLog({
+        id_usuario:     req.usuario?.id,
+        accion:         'INSERT',
+        tabla_afectada: 'asistencia_sesion_plenaria',
+        detalle:        `Asistencia registrada sesion ${req.params.id}`,
+        registro_id:    req.params.id
+      });
+      return res.status(201).json(data);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
 };
 
 module.exports = SesionController;

@@ -11,14 +11,20 @@ router.get('/',          ctrl.listar);
 router.get('/:id',       ctrl.obtener);
 router.get('/:id/agenda/:idPunto/resolucion', ctrl.getResolucionPorPunto);
 
-router.post('/',
+// Asistencia
+router.get('/:id/asistencia',  ctrl.asistencia);
+router.post('/:id/asistencia',
   requierePermiso('GESTIONAR_SESIONES'),
-  ctrl.crear
+  ctrl.registrarAsistencia
 );
-router.post('/:id/agenda',
+
+// Puntos de agenda
+router.post('/:id/puntos',
   requierePermiso('GESTIONAR_SESIONES'),
   ctrl.agregarPunto
 );
+
+// Resoluciones
 router.post('/:id/resoluciones',
   requierePermiso('GESTIONAR_SESIONES'),
   ctrl.registrarResolucion

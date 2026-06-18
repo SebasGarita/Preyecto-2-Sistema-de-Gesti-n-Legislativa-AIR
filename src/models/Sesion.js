@@ -103,6 +103,32 @@ const Sesion = {
     const modalidades = await db.query('SELECT * FROM catalogo_tipo_modalidad ORDER BY nombre');
     return { tipos: tipos.rows, modalidades: modalidades.rows };
   }
+async getAsistencia(idSesion) {
+    const result = await db.query(`
+      SELECT
+        a.asambleista_id,
+        a.nombre,
+        a.cedula,
+        ca.nombre AS estado_asistencia
+      FROM asistencia_sesion_plenaria asp
+      JOIN asambleista a ON asp.id_asambleista = a.asambleista_id
+      JOIN catalogo_asistencia_sesion_comision ca ON asp.id_estado_asistencia = ca.id_estado_asistencia
+      WHERE asp.id_sesion = $1
+      ORDER BY a.nombre ASC
+    `, [idSesion]);
+    return result.rows;
+  },
+
+  async registrarAsistencia({ id_sesion, id_asambleista, id_estado_asistencia }) {
+    const result = await db.query(`
+      INSERT INTO asistencia_sesion_plenaria (id_asambleista, id_sesion, id_estado_asistencia)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (id_asambleista, id_sesion) DO UPDATE
+        SET id_estado_asistencia = EXCLUDED.id_estado_asistencia
+      RETURNING *
+    `, [id_asambleista, id_sesion, id_estado_asistencia]);
+    return result.rows[0];
+  }
 };
 
 module.exports = Sesion;
